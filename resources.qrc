@@ -1,0 +1,50 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="grids">
+        <file alias="32grid0.png">assets/grids/32grid0.png</file>
+        <file alias="32grid1.png">assets/grids/32grid1.png</file>
+        <file alias="32grid2.png">assets/grids/32grid2.png</file>
+        <file alias="32grid3.png">assets/grids/32grid3.png</file>
+    </qresource>
+    <qresource prefix="logos">
+        <file alias="icon.ico">assets/logos/icon.ico</file>
+        <file alias="logo.png">assets/logos/logo.png</file>
+    </qresource>
+    <qresource prefix="triggers">
+        <file alias="triggerDestination.png">assets/triggers/triggerDestination.png</file>
+        <file alias="triggerDoor.png">assets/triggers/triggerDoor.png</file>
+        <file alias="triggerEscalator.png">assets/triggers/triggerEscalator.png</file>
+        <file alias="triggerLadder.png">assets/triggers/triggerLadder.png</file>
+        <file alias="triggerObject.png">assets/triggers/triggerObject.png</file>
+        <file alias="triggerPerson.png">assets/triggers/triggerPerson.png</file>
+        <file alias="triggerRope.png">assets/triggers/triggerRope.png</file>
+        <file alias="triggerStairway.png">assets/triggers/triggerStairway.png</file>
+        <file alias="triggerSwitch.png">assets/triggers/triggerSwitch.png</file>
+    </qresource>
+    <qresource prefix="ui">
+        <file alias="arrowUp.png">assets/ui/arrowUp.png</file>
+        <file alias="arrowDown.png">assets/ui/arrowDown.png</file>
+        <file alias="bg.png">assets/ui/bg.png</file>
+        <file alias="erase.png">assets/ui/erase.png</file>
+        <file alias="modeAll.png">assets/ui/modeAll.png</file>
+        <file alias="modeAllDark.png">assets/ui/modeAllDark.png</file>
+        <file alias="modeDoor.png">assets/ui/modeDoor.png</file>
+        <file alias="modeDoorDark.png">assets/ui/modeDoorDark.png</file>
+        <file alias="modeEnemy.png">assets/ui/modeEnemy.png</file>
+        <file alias="modeEnemyDark.png">assets/ui/modeEnemyDark.png</file>
+        <file alias="modeGame.png">assets/ui/modeGame.png</file>
+        <file alias="modeGameDark.png">assets/ui/modeGameDark.png</file>
+        <file alias="modeHotspot.png">assets/ui/modeHotspot.png</file>
+        <file alias="modeHotspotDark.png">assets/ui/modeHotspotDark.png</file>
+        <file alias="modeNPC.png">assets/ui/modeNPC.png</file>
+        <file alias="modeNPCDark.png">assets/ui/modeNPCDark.png</file>
+        <file alias="modeSector.png">assets/ui/modeSector.png</file>
+        <file alias="modeSectorDark.png">assets/ui/modeSectorDark.png</file>
+        <file alias="modeTile.png">assets/ui/modeTile.png</file>
+        <file alias="modeTileDark.png">assets/ui/modeTileDark.png</file>
+        <file alias="selectTile.png">assets/ui/selectTile.png</file>
+    </qresource>
+    <qresource prefix="styles">
+        <file alias="eb.qss">assets/styles/eb.qss</file>
+    </qresource>
+</RCC>

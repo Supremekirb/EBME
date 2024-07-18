@@ -1,0 +1,6 @@
+nuitka == 1.5.4
+numpy == 1.26.4
+pillow
+pyside6 == 6.6.1
+pyyaml
+requests # this is to gather png2fts in prepare_environment.py only

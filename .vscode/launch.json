@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: EBME",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/ebme.py",
+            "args": ["--debug", "20", "--system-output"], // 10 gives PIL output stuff which is annoying
+            "console": "integratedTerminal",
+            "justMyCode": true
+        }
+    ]
+}

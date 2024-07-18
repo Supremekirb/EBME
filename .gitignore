@@ -1,0 +1,22 @@
+# dev
+# you can keep a "coilsnake" folder with a project in it for testing
+# and similarly compile it into a ROM
+/coilsnake/
+*.sfc
+*.smc
+
+# compiled
+__pycache__/
+
+# deps
+# we gather png2fts in prepare_environment.py
+eb-png2fts/
+
+# build
+deployment/
+build/
+*.exe
+# spec files autofill python path if it's left blank and also put it in the file, so don't track it.
+# instead, copy the .TEMPLATEs and rename them to remove the extra extension.
+# this is done in prepare_environment.py
+*.spec 

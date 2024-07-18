@@ -1,0 +1,29 @@
+name: build EBME on push to main
+run-name: build (triggered by ${{ github.actor }})
+
+on: 
+  push:
+    branches: [main]
+    
+jobs:
+  build-win:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10.11' 
+          cache: 'pip'
+      - name: Prepare environment
+        run: python prepare_environment.py
+      - name: Build EBME
+        run: pyside6-deploy -c ebme.spec -f
+      - name: Set short SHA for artifact name
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $env:GITHUB_OUTPUT
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: EBME Preview (Windows) - ${{ steps.vars.outputs.sha_short }}
+          path: ebme.exe
+          if-no-files-found: error
