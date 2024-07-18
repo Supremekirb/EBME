@@ -130,35 +130,41 @@ class Project(QWidget):
 
         # successful load
         if isinstance(data, ProjectData):
-            self.projectData = data
-            
-            self.updateStatusLabel("Loading map editor...")
-            self.statusLabel.repaint() # otherwise it may not show before we actually process the next bit
-
-            settings = QSettings()
-            settings.setValue("main/LastProjectPath", self.projectData.dir)
-
-            self.addRecent(self.projectData.getProjectName(), self.projectData.dir)
-            
             try:
-                self.mainWin.mapWin = map_editor.MapEditor(self, self.projectData)
-            except Exception as e:
-                common.showErrorMsg(title="Error loading map editor", text="An error occurred while loading the map editor.", info=str(e))
-                self.updateStatusLabel("Error loading map editor.")
-                logging.warn(f"Error loading map editor: {traceback.format_exc()}")
+                self.projectData = data
+                
+                self.updateStatusLabel("Loading map editor...")
+                self.statusLabel.repaint() # otherwise it may not show before we actually process the next bit
+
+                settings = QSettings()
+                settings.setValue("main/LastProjectPath", self.projectData.dir)
+
+                self.addRecent(self.projectData.getProjectName(), self.projectData.dir)
+                
+                try:
+                    self.mainWin.mapWin = map_editor.MapEditor(self, self.projectData)
+                except Exception as e:
+                    common.showErrorMsg(title="Error loading map editor", text="An error occurred while loading the map editor.", info=str(e))
+                    self.updateStatusLabel("Error loading map editor.")
+                    logging.warn(f"Error loading map editor: {traceback.format_exc()}")
+                
+                else:
+                    self.mainWin.mainTabWin.removeTab(2)
+                    self.mainWin.mainTabWin.removeTab(1)
+                    self.mainWin.mainTabWin.addTab(self.mainWin.mapWin, "Map Editor")
+                    
+                    self.updateStatusLabel(f"Project: {self.projectData.getProjectName()}")
+                    self.enableMapEditor()
+                    self.enableSave()
+                    
+                self.loadProjectInfo()
+                self.projectInfo.setDisabled(False)
+                self.enableReload()
             
-            else:
-                self.mainWin.mainTabWin.removeTab(2)
-                self.mainWin.mainTabWin.removeTab(1)
-                self.mainWin.mainTabWin.addTab(self.mainWin.mapWin, "Map Editor")
-                
-                self.updateStatusLabel(f"Project: {self.projectData.getProjectName()}")
-                self.enableMapEditor()
-                self.enableSave()
-                
-            self.loadProjectInfo()
-            self.projectInfo.setDisabled(False)
-            self.enableReload()
+            except Exception as e:
+                common.showErrorMsg(title="Error loading project", text="An error occurred while loading the project.", info=str(e))
+                self.updateStatusLabel("Error loading project.")
+                logging.warn(f"Error loading project: {traceback.format_exc()}")
             
         else: # returns error data if failed
             self.disableSave()

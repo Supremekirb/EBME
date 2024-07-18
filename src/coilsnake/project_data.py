@@ -125,17 +125,26 @@ class ProjectData():
         return self.tilegfx[tileset][palettegroup][palette][tile]
 
     # project getters
-    def getProjectName(self) -> str:
-        return self.projectSnake['Title']
-    
     def getProjectVersion(self) -> str:
         return self.projectSnake['version']
     
+    def getProjectName(self) -> str:
+        try:
+            return self.projectSnake['Title']
+        except KeyError:
+            return "Untitled"
+    
     def getProjectAuthor(self) -> str:
-        return self.projectSnake['Author']
+        try:
+            return self.projectSnake['Author']
+        except KeyError:
+            return "Anonymous"
     
     def getProjectDescription(self) -> str:
-        return self.projectSnake['Description']
+        try:
+            return self.projectSnake['Description']
+        except KeyError:
+            return "No description."
     
     # special getters for some of the more cursed accesses
     def sectorFromID(self, id: int) -> Sector:
