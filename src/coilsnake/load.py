@@ -614,7 +614,11 @@ def readHotspots(data: ProjectData):
                 end = EBCoords.fromWarp(i[1]["X2"], i[1]["Y2"])
                 
                 if "EBME_Colour" in i[1]:
-                    colour = i[1]["EBME_Colour"]
+                    colourRaw = i[1]["EBME_Colour"]
+                    if isinstance(colourRaw, tuple):
+                        colour = colourRaw
+                    else:    
+                        colour = (int(colourRaw[1:3], 16), int(colourRaw[3:5], 16), int(colourRaw[5:7], 16))
                 else:
                     colour = None
                 if "EBME_Comment" in i[1]:

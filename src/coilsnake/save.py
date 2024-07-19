@@ -361,7 +361,7 @@ def saveHotspots(data: ProjectData):
                 "X1": i.start.coordsWarp()[0],
                 "Y2": i.end.coordsWarp()[1],
                 "X2": i.end.coordsWarp()[0],
-                "EBME_Colour": i.colour,
+                "EBME_Colour": "#{0:02x}{1:02x}{2:02x}".format(i.colour[0], i.colour[1], i.colour[2]),
                 "EBME_Comment": i.comment if i.comment != "" else None
             }
     except Exception as e:
