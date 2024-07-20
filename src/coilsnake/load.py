@@ -230,7 +230,8 @@ def readTiles(data: ProjectData):
             map_tiles = map_tiles.read()
 
             map_tiles = [r.split(" ") for r in map_tiles.split("\n")]
-            del map_tiles[-1] # last newline causes issues, so we do this
+            if map_tiles[-1] == ['']:
+                del map_tiles[-1] # last newline causes issues, so we do this
 
             map_tiles = numpy.array(map_tiles)
 
@@ -615,7 +616,7 @@ def readHotspots(data: ProjectData):
                 
                 if "EBME_Colour" in i[1]:
                     colourRaw = i[1]["EBME_Colour"]
-                    if isinstance(colourRaw, tuple):
+                    if isinstance(colourRaw, list):
                         colour = colourRaw
                     else:    
                         colour = (int(colourRaw[1:3], 16), int(colourRaw[3:5], 16), int(colourRaw[5:7], 16))
