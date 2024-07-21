@@ -30,6 +30,11 @@ def collect_png2fts():
     with open("eb-png2fts/palettepacker.py", "w") as f:
         f.write(r.text)
 
+def compile_resources():
+    # pyside6-rcc is not on path by default, so to be safe we'll use the full path
+    full_path = os.path.join(os.path.dirname(sys.executable), "pyside6-rcc")
+    subprocess.check_call([full_path, "resources.qrc", "-o", "resources_rc.py"])
+
 if __name__ == "__main__":
     print("Updaing pip...")
     update_pip()
@@ -39,4 +44,6 @@ if __name__ == "__main__":
     prepare_spec_files()
     print("Collecting png2fts...")
     collect_png2fts()
+    print("Compiling resources...")
+    compile_resources()
     print("Done!")
