@@ -33,7 +33,11 @@ def collect_png2fts():
 def compile_resources():
     # pyside6-rcc is not on path by default, so to be safe we'll use the full path
     full_path = os.path.join(os.path.dirname(sys.executable), "pyside6-rcc")
-    subprocess.check_call([full_path, "resources.qrc", "-o", "resources_rc.py"])
+    try:
+        subprocess.check_call([full_path, "resources.qrc", "-o", "resources_rc.py"])
+    except FileNotFoundError: # not in a venv. particularly an issue for github actions
+        full_path = os.path.join(os.path.dirname(sys.executable), "Scripts", "pyside6-rcc")
+        subprocess.check_call([full_path, "resources.qrc", "-o", "resources_rc.py"])
 
 if __name__ == "__main__":
     print("Updaing pip...")
