@@ -296,7 +296,10 @@ def readNPCTable(data: ProjectData):
     try:
         hasLoadedYml = False
         data.npcs = []
-        path = data.getResourcePath("eb.MiscTablesModule", "npc_config_table")
+        try:
+            path = data.getResourcePath("eb.MiscTablesModule", "npc_config_table")
+        except KeyError:
+            path = data.getResourcePath("eb.ExpandedTablesModule", "npc_config_table") # projects made with coilsnake-next
         with open(path) as npc_config_table:
             npc_config_table = yaml.load(npc_config_table, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
