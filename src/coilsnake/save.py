@@ -204,10 +204,14 @@ def saveNPCTable(data: ProjectData):
         raise Exception(f"Could not convert NPCs to .yml format.") from e
 
     try:
-        with open(data.getResourcePath('eb.MiscTablesModule', 'npc_config_table'), "w") as file:
+        try:
+            path = data.getResourcePath('eb.MiscTablesModule', 'npc_config_table')
+        except KeyError:
+            path = data.getResourcePath('eb.ExpandedTablesModule', 'npc_config_table')
+        with open(path, "w") as file:
             yaml.dump(npc_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=False, sort_keys=False)
     except Exception as e:
-        raise Exception(f"Could not write NPCs to {os.path.normpath(data.getResourcePath('eb.MiscTablesModule', 'npc_config_table'))}.") from e
+        raise Exception(f"Could not write NPCs to {os.path.normpath(path)}.") from e
         
 
 def saveNPCInstances(data: ProjectData):
