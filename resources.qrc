@@ -42,7 +42,10 @@
         <file alias="modeSectorDark.png">assets/ui/modeSectorDark.png</file>
         <file alias="modeTile.png">assets/ui/modeTile.png</file>
         <file alias="modeTileDark.png">assets/ui/modeTileDark.png</file>
+        <file alias="modeWarp.png">assets/ui/modeWarp.png</file>
+        <file alias="modeWarpDark.png">assets/ui/modeWarpDark.png</file>
         <file alias="selectTile.png">assets/ui/selectTile.png</file>
+        <file alias="warp.png">assets/ui/warp.png</file>
     </qresource>
     <qresource prefix="styles">
         <file alias="eb.qss">assets/styles/eb.qss</file>

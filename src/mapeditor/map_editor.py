@@ -18,6 +18,7 @@ import src.mapeditor.sidebar.npc_sidebar as npc_sidebar
 import src.mapeditor.sidebar.sector_sidebar as sector_sidebar
 import src.mapeditor.sidebar.tile_sidebar as tile_sidebar
 import src.mapeditor.sidebar.trigger_sidebar as trigger_sidebar
+import src.mapeditor.sidebar.warp_sidebar as warp_sidebar
 import src.mapeditor.status_bar as status_bar
 import src.misc.common as common
 import src.misc.debug as debug
@@ -31,6 +32,7 @@ from src.objects.hotspot import Hotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
 from src.objects.sector import Sector
 from src.objects.trigger import Trigger
+from src.objects.warp import Teleport, Warp
 from src.png2fts.png2fts_gui import png2ftsMapEditorGui
 
 
@@ -179,6 +181,7 @@ class MapEditor(QWidget):
             iconDoor = QPixmap(":/ui/modeDoorDark.png")
             iconEnemy = QPixmap(":/ui/modeEnemyDark.png")
             iconHotspot = QPixmap(":/ui/modeHotspotDark.png")
+            iconWarp = QPixmap(":/ui/modeWarpDark.png")
             iconAll = QPixmap(":/ui/modeAllDark.png")
             iconGame = QPixmap(":/ui/modeGameDark.png")
         else:
@@ -188,6 +191,7 @@ class MapEditor(QWidget):
             iconDoor = QPixmap(":/ui/modeDoor.png")
             iconEnemy = QPixmap(":/ui/modeEnemy.png")
             iconHotspot = QPixmap(":/ui/modeHotspot.png")
+            iconWarp = QPixmap(":/ui/modeWarp.png")
             iconAll = QPixmap(":/ui/modeAll.png")
             iconGame = QPixmap(":/ui/modeGame.png")
 
@@ -203,6 +207,7 @@ class MapEditor(QWidget):
         self.sidebarTrigger = trigger_sidebar.SidebarTrigger(self, self.state, self, self.projectData)
         self.sidebarEnemy = enemy_sidebar.SidebarEnemy(self, self.state, self.projectData)
         self.sidebarHotspot = hotspot_sidebar.SidebarHotspot(self, self.state, self, self.projectData)
+        self.sidebarWarp = warp_sidebar.SidebarWarp(self, self.state, self, self.projectData)
         self.sidebarAll = all_sidebar.SidebarAll(self, self.state, self, self.projectData)
         self.sidebarGame = game_sidebar.SidebarGame(self, self.state, self, self.projectData)
 
@@ -212,6 +217,7 @@ class MapEditor(QWidget):
         self.sidebar.addTab(self.sidebarTrigger, iconDoor, "Trigger")
         self.sidebar.addTab(self.sidebarEnemy, iconEnemy, "Enemy")
         self.sidebar.addTab(self.sidebarHotspot, iconHotspot, "Hotspot")
+        self.sidebar.addTab(self.sidebarWarp, iconWarp, "Warp")
         self.sidebar.addTab(self.sidebarAll, iconAll, "View All")
         self.sidebar.addTab(self.sidebarGame, iconGame, "View Game")
         self.sidebar.setTabPosition(QTabWidget.TabPosition.West)
@@ -431,6 +437,7 @@ class MapEditorState():
         self.currentSectors: list[Sector] = []
         self.currentTriggers: list[Trigger] = []
         self.currentHotspot: Hotspot = None
+        self.currentWarp: Warp|Teleport = None
 
         self.placingTiles = False
         self.placingEnemyTiles = False

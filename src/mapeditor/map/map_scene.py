@@ -5,6 +5,8 @@ from math import ceil
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from src.objects.warp import MapEditorWarp
+
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState
 
@@ -93,10 +95,12 @@ class MapEditorScene(QGraphicsScene):
         self.placedTriggersByUUID = {} 
         self.placedEnemyTilesByGroup = {}
         self.placedHotspots: list[MapEditorHotspot] = []
+        self.placedWarps: list[MapEditorWarp] = []
         
         self.populateNPCs()
         self.populateTriggers()
         self.populateHotspots()
+        self.populateWarps()
         self.populateTiles()
     
     def updateSelected(self):
@@ -122,6 +126,18 @@ class MapEditorScene(QGraphicsScene):
                         self.state.currentHotspot = self.projectData.hotspots[i.id]
                         break       
                 self.parent().sidebarHotspot.fromHotspot()
+                
+            case common.MODEINDEX.WARP:
+                self.state.currentWarp = None
+                for i in self.selectedItems():
+                    if isinstance(i, MapEditorWarp):
+                        if i.warpType == "warp":
+                            self.state.currentWarp = self.projectData.warps[i.id]
+                        else:
+                            self.state.currentWarp = self.projectData.teleports[i.id]
+                        break
+                self.parent().sidebarWarp.fromWarp()
+                    
         
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
         coords = EBCoords(event.scenePos().x(), event.scenePos().y())
@@ -563,6 +579,11 @@ class MapEditorScene(QGraphicsScene):
         else:
             MapEditorHotspot.hideHotspots()
         
+        if index == common.MODEINDEX.WARP:
+            MapEditorWarp.showWarps()
+        else:
+            MapEditorWarp.hideWarps()
+            
         if index == common.MODEINDEX.ALL:
             MapEditorTile.showTileIDsModeSwitch()
             if self.parent().sidebarAll.showNPCs.isChecked():
@@ -577,6 +598,10 @@ class MapEditorScene(QGraphicsScene):
             if self.parent().sidebarAll.showHotspots.isChecked():
                 MapEditorHotspot.showHotspots()
             else: MapEditorHotspot.hideHotspots()
+            if self.parent().sidebarAll.showWarps.isChecked():
+                MapEditorWarp.showWarps()
+            else:
+                MapEditorWarp.hideWarps()
             
         if index == common.MODEINDEX.GAME:
             if self.grid.isVisible():
@@ -1507,6 +1532,18 @@ class MapEditorScene(QGraphicsScene):
             hotspot = MapEditorHotspot(i.id, i.start, i.end, i.colour)
             self.placedHotspots.append(hotspot)
             self.addItem(hotspot)
+            
+    def populateWarps(self):
+        self.warpPixmap = QPixmap(":/ui/warp.png")
+        for i in self.projectData.warps:
+            warp = MapEditorWarp(i.dest, i.id, self.warpPixmap, "warp")
+            warp.setText(str(i.id).zfill(4))
+            self.addItem(warp)
+            
+        for i in self.projectData.teleports:
+            teleport = MapEditorWarp(i.dest, i.id, self.warpPixmap, "teleport")
+            teleport.setText(str(i.id).zfill(4))
+            self.addItem(teleport)
         
     def parent(self) -> "MapEditor": # for typing
         return super().parent()
