@@ -40,6 +40,8 @@ from src.actions.tile_actions import ActionPlaceTile
 from src.actions.trigger_actions import (ActionAddTrigger, ActionDeleteTrigger,
                                          ActionMoveTrigger,
                                          ActionUpdateTrigger)
+from src.actions.warp_actions import (ActionMoveTeleport, ActionMoveWarp,
+                                      ActionUpdateTeleport, ActionUpdateWarp)
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.objects.enemy import MapEditorEnemyTile
@@ -96,6 +98,7 @@ class MapEditorScene(QGraphicsScene):
         self.placedEnemyTilesByGroup = {}
         self.placedHotspots: list[MapEditorHotspot] = []
         self.placedWarps: list[MapEditorWarp] = []
+        self.placedTeleports: list[MapEditorWarp] = []
         
         self.populateNPCs()
         self.populateTriggers()
@@ -374,6 +377,14 @@ class MapEditorScene(QGraphicsScene):
             if isinstance(c, ActionChangeHotspotColour) or isinstance(c, ActionChangeHotspotLocation) or isinstance(c, ActionChangeHotspotComment):
                 actionType = "hotspot"
                 self.refreshHotspot(c.hotspot.id)
+                
+            if isinstance(c, ActionMoveWarp) or isinstance(c, ActionUpdateWarp):
+                actionType = "warp"
+                self.refreshWarp(c.warp.id)
+                
+            if isinstance(c, ActionMoveTeleport) or isinstance(c, ActionUpdateTeleport):
+                actionType = "warp"
+                self.refreshTeleport(c.warp.id)
 
         match actionType:
             case "tile":
@@ -399,6 +410,9 @@ class MapEditorScene(QGraphicsScene):
             case "hotspot":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.HOTSPOT)
                 self.parent().sidebarHotspot.fromHotspot()
+            case "warp":
+                self.parent().sidebar.setCurrentIndex(common.MODEINDEX.WARP)
+                self.parent().sidebarWarp.fromWarp()
 
     def onCopy(self):
         match self.state.mode:
@@ -1195,6 +1209,15 @@ class MapEditorScene(QGraphicsScene):
         placement.setRect(hotspot.start.x, hotspot.start.y, hotspot.end.x-hotspot.start.x, hotspot.end.y-hotspot.start.y)
         placement.setBrush(QBrush(QColor.fromRgb(*hotspot.colour, 128)))
         
+    def refreshWarp(self, id: int):
+        warp = self.projectData.warps[id]
+        placement = self.placedWarps[id]
+        placement.setPos(warp.dest.x, warp.dest.y)
+    
+    def refreshTeleport(self, id: int):
+        teleport = self.projectData.teleports[id]
+        placement = self.placedTeleports[id]
+        placement.setPos(teleport.dest.x, teleport.dest.y)
     
     def drawForeground(self, painter: QPainter, rect: QRectF):
         if self.state.mode == common.MODEINDEX.GAME:
@@ -1535,15 +1558,18 @@ class MapEditorScene(QGraphicsScene):
             
     def populateWarps(self):
         self.warpPixmap = QPixmap(":/ui/warp.png")
+        self.teleportPixmap = QPixmap(":/ui/teleport.png")
         for i in self.projectData.warps:
             warp = MapEditorWarp(i.dest, i.id, self.warpPixmap, "warp")
-            warp.setText(str(i.id).zfill(4))
+            warp.setText("W"+str(i.id).zfill(3))
             self.addItem(warp)
+            self.placedWarps.append(warp)
             
         for i in self.projectData.teleports:
-            teleport = MapEditorWarp(i.dest, i.id, self.warpPixmap, "teleport")
-            teleport.setText(str(i.id).zfill(4))
+            teleport = MapEditorWarp(i.dest, i.id, self.teleportPixmap, "teleport")
+            teleport.setText("TP`"+str(i.id).zfill(2))
             self.addItem(teleport)
+            self.placedTeleports.append(teleport)
         
     def parent(self) -> "MapEditor": # for typing
         return super().parent()

@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsRectItem,
                                QGraphicsSimpleTextItem)
 
 import src.misc.common as common
-from src.actions.warp_actions import ActionMoveWarp, ActionMoveTeleport
+from src.actions.warp_actions import ActionMoveTeleport, ActionMoveWarp
 from src.misc.coords import EBCoords
 
 if TYPE_CHECKING:
@@ -52,15 +52,15 @@ class MapEditorWarp(QGraphicsPixmapItem):
         self.num.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable, False)
         self.numBgRect.setPen(Qt.PenStyle.NoPen)
         self.numBgRect.setOpacity(0.5)
-        self.numBgRect.setRect(0, -13, 27, 13)
+        self.numBgRect.setRect(0, -13, 28, 13)
         
         self.numShadow.setFont("EBMain")
         self.numShadow.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable, False)
-        self.numShadow.setPos(1, -12)
+        self.numShadow.setPos(2, -11)
         
         self.num.setFont("EBMain")
         self.num.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsSelectable, False)
-        self.num.setPos(0, -13)
+        self.num.setPos(1, -12)
         self.num.setBrush(WHITEBRUSH)
         
         self.setPos(coords.x, coords.y)

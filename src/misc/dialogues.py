@@ -7,7 +7,8 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                                QGraphicsScene, QGroupBox, QHBoxLayout, QLabel,
                                QLineEdit, QListWidget, QListWidgetItem,
                                QPushButton, QScrollArea, QSizePolicy, QSpinBox,
-                               QStyleFactory, QTextEdit, QVBoxLayout, QWidget)
+                               QStyleFactory, QTextEdit, QUndoView,
+                               QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.quotes as quotes

@@ -142,7 +142,8 @@ def readDirectory(parent, dir):
                                     "text": "Could not load enemy sprite data.",
                                     "info": str(e)})
             raise
-    
+            
+        parent.updates.emit("Loading hotspots...")
         try:
             readHotspots(projectData)
         except Exception as e:
@@ -151,11 +152,21 @@ def readDirectory(parent, dir):
                                     "info": str(e)})
             raise
         
+        parent.updates.emit("Loading warps...")
         try:
             readWarps(projectData)
         except Exception as e:
             parent.returns.emit({"title": "Failed to load warps",
                                     "text": "Could not load warp data.",
+                                    "info": str(e)})
+            raise
+        
+        parent.updates.emit("Loading teleports...")
+        try:
+            readTeleports(projectData)
+        except Exception as e:
+            parent.returns.emit({"title": "Failed to load teleports",
+                                    "text": "Could not load teleport data.",
                                     "info": str(e)})
             raise
         
@@ -680,7 +691,7 @@ def readTeleports(data: ProjectData):
         teleports = []
         path = data.getResourcePath("eb.MiscTablesModule", "psi_teleport_dest_table")
         with open(path) as teleport_table:
-            teleport_table = yaml.load(teleport_table, loader=yaml.CSafeLoader)
+            teleport_table = yaml.load(teleport_table, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
             for i in teleport_table.items():
                 teleports.append(Teleport(i[0], EBCoords.fromWarp(i[1]["X"], i[1]["Y"]), i[1]["Event Flag"], i[1]["Name"]))

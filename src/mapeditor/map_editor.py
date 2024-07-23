@@ -6,7 +6,7 @@ from PySide6.QtGui import (QAction, QActionGroup, QGuiApplication, QImage,
                            QKeySequence, QPalette, QPixmap)
 from PySide6.QtWidgets import (QGraphicsPixmapItem, QGridLayout, QInputDialog,
                                QMenu, QProgressDialog, QSizePolicy, QTabWidget,
-                               QWidget)
+                               QUndoView, QWidget)
 
 import src.mapeditor.map.map_scene as map_scene
 import src.mapeditor.map.map_view as map_view
@@ -217,7 +217,7 @@ class MapEditor(QWidget):
         self.sidebar.addTab(self.sidebarTrigger, iconDoor, "Trigger")
         self.sidebar.addTab(self.sidebarEnemy, iconEnemy, "Enemy")
         self.sidebar.addTab(self.sidebarHotspot, iconHotspot, "Hotspot")
-        self.sidebar.addTab(self.sidebarWarp, iconWarp, "Warp")
+        self.sidebar.addTab(self.sidebarWarp, iconWarp, "Warp && TP")
         self.sidebar.addTab(self.sidebarAll, iconAll, "View All")
         self.sidebar.addTab(self.sidebarGame, iconGame, "View Game")
         self.sidebar.setTabPosition(QTabWidget.TabPosition.West)
@@ -374,13 +374,16 @@ class MapEditor(QWidget):
         self.modeEnemyAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.ENEMY))
         self.modeHotspotAction = QAction("&Hotspot", shortcut=QKeySequence("F6"))
         self.modeHotspotAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.HOTSPOT))
-        self.modeAllAction = QAction("&All", shortcut=QKeySequence("F7"))
+        self.modeWarpAction = QAction("&Warp && TP", shortcut=QKeySequence("F7"))
+        self.modeWarpAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.WARP))
+        self.modeAllAction = QAction("&All", shortcut=QKeySequence("F8"))
         self.modeAllAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.ALL))
-        self.modeGameAction = QAction("&Game", shortcut=QKeySequence("F8"))
+        self.modeGameAction = QAction("&Game", shortcut=QKeySequence("F9"))
         self.modeGameAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.GAME))
         
         self.menuMode.addActions([self.modeTileAction, self.modeSectorAction, self.modeNPCAction, self.modeTriggerAction,
-                                  self.modeEnemyAction, self.modeHotspotAction, self.modeAllAction, self.modeGameAction])
+                                  self.modeEnemyAction, self.modeHotspotAction, self.modeWarpAction,
+                                  self.modeAllAction, self.modeGameAction])
         
         self.menuGoto = QMenu("&Go to")
         self.gotoGenericAction = QAction("&Find...", shortcut=QKeySequence.Find)
@@ -416,10 +419,6 @@ class MapEditor(QWidget):
         self.contentLayout.addWidget(self.sidebar, 0, 0)
         self.contentLayout.addWidget(self.view, 0, 1)
         self.contentLayout.addWidget(self.status, 1, 0, 1, 2)
-
-        # self.undoView = QUndoView()
-        # self.undoView.setStack(self.scene.undoStack)
-        # self.contentLayout.addWidget(self.undoView, 2, 0, 1, 2)
 
         self.sidebar.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
         self.view.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum))
