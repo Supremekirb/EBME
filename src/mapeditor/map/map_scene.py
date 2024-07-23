@@ -20,8 +20,8 @@ from PySide6.QtWidgets import (QApplication, QGraphicsLineItem,
                                QGraphicsPathItem, QGraphicsPixmapItem,
                                QGraphicsRectItem, QGraphicsScene,
                                QGraphicsSceneContextMenuEvent,
-                               QGraphicsSceneMouseEvent, QMenu, QMessageBox,
-                               QProgressDialog)
+                               QGraphicsSceneMouseEvent, QInputDialog, QMenu,
+                               QMessageBox, QProgressDialog)
 
 import src.misc.common as common
 import src.objects.trigger as trigger
@@ -262,11 +262,11 @@ class MapEditorScene(QGraphicsScene):
 
         # no items to pass the event to
         if self.state.tempMode == common.TEMPMODEINDEX.NONE:
+            menu = QMenu()
+            x = event.scenePos().x()
+            y = event.scenePos().y()
             match self.state.mode:
                 case common.MODEINDEX.SECTOR:
-                    menu = QMenu()
-                    x = event.scenePos().x()
-                    y = event.scenePos().y()
                     if len(self.state.currentSectors) > 1:
                         entireSectorStr = "Copy entirety of sectors"
                         dataSectorStr = "Copy data of sectors"
@@ -281,25 +281,21 @@ class MapEditorScene(QGraphicsScene):
                     menu.addAction(paletteSectorStr, self.copySelectedSectorPalettes, shortcut=QKeySequence("Ctrl+Alt+Shift+C"))
                     menu.addSeparator()
                     menu.addAction("Paste", self.onPaste)
-                    menu.exec(event.screenPos())
                 case common.MODEINDEX.NPC:
-                    menu = QMenu()
-                    x = event.scenePos().x()
-                    y = event.scenePos().y()
                     menu.addAction("New NPC", lambda: self.newNPC(EBCoords(x, y)))
                     menu.addAction("Paste", self.onPaste)
-                    menu.exec(event.screenPos())
                 case common.MODEINDEX.TRIGGER:
-                    menu = QMenu()
-                    x = event.scenePos().x()
-                    y = event.scenePos().y()
                     menu.addAction("New &trigger", lambda: self.newTrigger(EBCoords(x, y)))
                     menu.addAction("New &ladder", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
                                                                          trigger.TriggerLadder())))
                     menu.addAction("New &rope", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
                                                                        trigger.TriggerRope())))
                     menu.addAction("Paste", self.onPaste)
-                    menu.exec(event.screenPos())                    
+                case common.MODEINDEX.WARP:
+                    menu.addAction("Move &warp here...", lambda: self.moveWarp(EBCoords(x, y)))
+                    menu.addAction("Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
+                    
+            menu.exec(event.screenPos())          
     
     def onUndo(self):
         command = self.undoStack.command(self.undoStack.index()-1)
@@ -1218,7 +1214,29 @@ class MapEditorScene(QGraphicsScene):
         teleport = self.projectData.teleports[id]
         placement = self.placedTeleports[id]
         placement.setPos(teleport.dest.x, teleport.dest.y)
+        
+    def moveWarp(self, coords: EBCoords):
+        id = QInputDialog().getInt(self.parent(),
+                                   "Move warp here",
+                                   "Warp ID",
+                                   0, 0, len(self.projectData.warps)-1)
+        if id[1]:
+            warp = self.projectData.warps[id[0]]
+            action = ActionMoveWarp(warp, coords)
+            self.undoStack.push(action)
+            self.refreshWarp(id[0])
     
+    def moveTeleport(self, coords: EBCoords):
+        id = QInputDialog().getInt(self.parent(),
+                                   "Move teleport here",
+                                   "Teleport ID",
+                                   0, 0, len(self.projectData.teleports)-1)
+        if id[1]:
+            teleport = self.projectData.teleports[id[0]]
+            action = ActionMoveTeleport(teleport, coords)
+            self.undoStack.push(action)
+            self.refreshTeleport(id[0])
+        
     def drawForeground(self, painter: QPainter, rect: QRectF):
         if self.state.mode == common.MODEINDEX.GAME:
             painter.setPen(Qt.PenStyle.NoPen)
@@ -1464,6 +1482,16 @@ class MapEditorScene(QGraphicsScene):
             if self.state.mode != common.MODEINDEX.GAME:
                 MapEditorNPC.showCollisionBounds()
             settings.setValue("mapeditor/ShowNPCCollisionBounds", True)
+            
+    def toggleWarpIDs(self):
+        settings = QSettings()
+        if MapEditorWarp.warpIDsEnabled:
+            MapEditorWarp.hideWarpIDs()
+            settings.setValue("mapeditor/ShowWarpIDs", False)
+        else:
+            MapEditorWarp.showWarpIDs()
+            settings.setValue("mapeditor/ShowWarpIDs", True)
+        
     
     def setGrid(self, id: int):
         settings = QSettings()

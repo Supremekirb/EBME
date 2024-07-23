@@ -36,6 +36,7 @@ class Teleport():
         
         
 class MapEditorWarp(QGraphicsPixmapItem):
+    warpIDsEnabled = False
     instances = []
     def __init__(self, coords: EBCoords, id: int, pixmap: QPixmap, warpType: Literal["warp", "teleport"]):
         super().__init__(pixmap)
@@ -70,6 +71,11 @@ class MapEditorWarp(QGraphicsPixmapItem):
         self.setFlag(QGraphicsPixmapItem.GraphicsItemFlag.ItemIsMovable, True)
         
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        
+        if not MapEditorWarp.warpIDsEnabled:
+            self.numBgRect.hide()
+            self.num.hide()
+            self.numShadow.hide()
         
         MapEditorWarp.instances.append(self)
     
@@ -148,3 +154,21 @@ class MapEditorWarp(QGraphicsPixmapItem):
     def hideWarps(cls):
         for i in cls.instances:
             i.hide()
+            
+    @classmethod
+    def showWarpIDs(cls):
+        for i in cls.instances:
+            i.numBgRect.show()
+            i.num.show()
+            i.numShadow.show()
+        
+        MapEditorWarp.warpIDsEnabled = True
+    
+    @classmethod
+    def hideWarpIDs(cls):
+        for i in cls.instances:
+            i.numBgRect.hide()
+            i.num.hide()
+            i.numShadow.hide()
+            
+        MapEditorWarp.warpIDsEnabled = False

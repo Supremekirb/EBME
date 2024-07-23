@@ -32,7 +32,7 @@ from src.objects.hotspot import Hotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
 from src.objects.sector import Sector
 from src.objects.trigger import Trigger
-from src.objects.warp import Teleport, Warp
+from src.objects.warp import MapEditorWarp, Teleport, Warp
 from src.png2fts.png2fts_gui import png2ftsMapEditorGui
 
 
@@ -348,6 +348,13 @@ class MapEditor(QWidget):
             MapEditorNPC.showCollisionBounds()
         self.npcCollisionBoundsAction.changed.connect(self.scene.toggleNPCCollisionBounds)
 
+        self.warpIDAction = QAction("Show &warp && teleport  IDs")
+        self.warpIDAction.setCheckable(True)
+        if settings.value("ShowWarpIDs") == "true":
+            self.warpIDAction.setChecked(True)
+            MapEditorWarp.showWarpIDs()
+        self.warpIDAction.changed.connect(self.scene.toggleWarpIDs)
+        
         settings.endGroup()
 
         self.menuView.addActions([self.zoomInAction, self.zoomOutAction])
@@ -357,9 +364,11 @@ class MapEditor(QWidget):
         self.menuView.addActions([self.gridAction])
         self.menuView.addMenu(self.gridMenu)
         self.menuView.addSeparator()
-        self.menuView.addActions([self.tileIDAction, self.npcIDAction])
+        self.menuView.addActions([self.tileIDAction])
         self.menuView.addSeparator()
-        self.menuView.addActions([self.npcVisualBoundsAction, self.npcCollisionBoundsAction])
+        self.menuView.addActions([self.npcIDAction, self.npcVisualBoundsAction, self.npcCollisionBoundsAction])
+        self.menuView.addSeparator()
+        self.menuView.addActions([self.warpIDAction])
         
         self.menuMode = QMenu("&Mode")
         self.modeTileAction = QAction("&Tile", shortcut=QKeySequence("F1"))

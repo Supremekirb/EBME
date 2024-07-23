@@ -143,7 +143,8 @@ class SidebarWarp(QWidget):
         self.warpCoords.y.valueChanged.connect(self.toWarp)
         
         self.warpDir = QComboBox()
-        self.warpDir.addItems(["Up",
+        self.warpDir.addItems(["Null",
+                               "Up",
                                "Up-right",
                                "Right",
                                "Down-right",
@@ -214,5 +215,8 @@ class SidebarWarp(QWidget):
         layout.addWidget(self.teleportGroupBox)
         
         self.setLayout(layout)
+        
+        self.warpGroupBox.setDisabled(True)
+        self.teleportGroupBox.setDisabled(True)
         
         
