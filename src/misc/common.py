@@ -55,6 +55,7 @@ MAPZVALUES = IntEnum("MAPZVALUES", ["TILE", # actual map graphics
                                     "DOORDESTICON", # door destination setting icon
                                     "ENEMY", # enemy tiles
                                     "HOTSPOT", # hotspots
+                                    "WARP", # warp dests
                                     "MAPMASK", # outer tile mask
                                     "SCREENMASK", # screen size mask
                                     ], 
@@ -66,6 +67,7 @@ MODEINDEX = IntEnum("MODEINDEX", ["TILE",
                                   "TRIGGER", 
                                   "ENEMY", 
                                   "HOTSPOT", 
+                                  "WARP",
                                   "ALL", 
                                   "GAME"], 
                                   start=0)
@@ -98,6 +100,12 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "HOTSPOTMOVESIDEBAR", # coords change in sidebar, can merge with itself
                                       "HOTSPOTCOLOURUPDATE", # cannot merge with itself
                                       "HOTSPOTCOMMENTUPDATE", # can merge with itself
+                                      "WARPMOVE", # drag on the map, cannot merge with itself
+                                      "WARPMOVESIDEBAR", # coords change in sidebar, can merge with itself
+                                      "WARPUPDATE", # can merge with itself
+                                      "TELEPORTMOVE", # drag on the map, cannot merge with itself
+                                      "TELEPORTMOVESIDEBAR", # coords change in sidebar, can merge with itself
+                                      "TELEPORTUPDATE", # can merge with itself
                                       ])
 
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18

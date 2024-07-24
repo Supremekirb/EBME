@@ -82,12 +82,30 @@ def writeDirectory(parent, data):
                                  "text": "Could not save map enemy groups.",
                                  "info": str(e)})
             raise
+        
+        parent.updates.emit("Saving hotspots...")
         try:
             saveHotspots(data)
         except Exception as e:
             parent.returns.emit({"title": "Failed to save hotspots",
-                                    "text": "Could not save hotspots.",
-                                    "info": str(e)})
+                                 "text": "Could not save hotspots.",
+                                 "info": str(e)})
+            
+        parent.updates.emit("Saving warps...")
+        try:
+            saveWarps(data)
+        except Exception as e:
+            parent.returns.emit({"title": "Failed to save warps",
+                                 "text": "Could not save warps.",
+                                 "info": str(e)})
+        
+        parent.updates.emit("Saving teleports...")
+        try:
+            saveTeleports(data)
+        except Exception as e:
+            parent.returns.emit({"title": "Failed to save teleports",
+                                 "text": "Could not save teleports.",
+                                 "info": str(e)})
 
         logging.info(f"Successfully saved project at {data.dir}")
         parent.returns.emit(True)
@@ -376,3 +394,42 @@ def saveHotspots(data: ProjectData):
             yaml.dump(hotspots_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write hotspots to {os.path.normpath(data.getResourcePath('eb.MiscTablesModule', 'map_hotspots'))}.") from e
+    
+def saveWarps(data: ProjectData):
+    try:
+        warps_yml = {}
+        for i in data.warps:
+            warps_yml[i.id] = {
+                "Direction": i.dir,
+                "Unknown": i.unknown,
+                "Warp Style": i.style,
+                "X": i.dest.coordsWarp()[0],
+                "Y": i.dest.coordsWarp()[1]
+            }
+    except Exception as e:
+        raise Exception("Could not convert warps to .yml format") from e
+    
+    try:
+        with open(data.getResourcePath('eb.MiscTablesModule', 'teleport_destination_table'), "w") as file:
+            yaml.dump(warps_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
+    except Exception as e:
+        raise Exception(f"Could not write hotspots to {os.path.normpath(data.getResourcePath('eb.MiscTablesModule', 'teleport_destination_table'))}.") from e 
+    
+def saveTeleports(data: ProjectData):
+    try:
+        teleports_yml = {}
+        for i in data.teleports:
+            teleports_yml[i.id] = {
+                "Event Flag": i.flag,
+                "Name": i.name,
+                "X": i.dest.coordsWarp()[0],
+                "Y": i.dest.coordsWarp()[1]
+            }
+    except Exception as e:
+        raise Exception("Could not convert teleports to .yml format") from e
+    
+    try:
+        with open(data.getResourcePath('eb.MiscTablesModule', 'psi_teleport_dest_table'), "w") as file:
+            yaml.dump(teleports_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
+    except Exception as e:
+        raise Exception(f"Could not write teleports to {os.path.normpath(data.getResourcePath('eb.MiscTablesModule', 'psi_teleport_dest_table'))}.") from e

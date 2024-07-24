@@ -7,7 +7,8 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                                QGraphicsScene, QGroupBox, QHBoxLayout, QLabel,
                                QLineEdit, QListWidget, QListWidgetItem,
                                QPushButton, QScrollArea, QSizePolicy, QSpinBox,
-                               QStyleFactory, QTextEdit, QVBoxLayout, QWidget)
+                               QStyleFactory, QTextEdit, QUndoView,
+                               QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.quotes as quotes
@@ -29,7 +30,7 @@ class FindDialog(QDialog):
         form = QFormLayout(self)
 
         self.findType = QComboBox()
-        self.findType.addItems(["NPC", "Enemy tile", "Hotspot"])
+        self.findType.addItems(["NPC", "Enemy tile", "Hotspot", "Warp", "Teleport"])
 
         self.input = QSpinBox()
         self.input.setRange(0, common.WORDLIMIT)
@@ -83,6 +84,19 @@ class FindDialog(QDialog):
                 for i in self.projectData.hotspots:
                     if i.id == objID:
                         item = FindDialogListItem(i, f"-At {i.start.coordsWarp()} to {i.end.coordsWarp()}")
+                        self.resultsList.addItem(item)
+            
+            case "Warp":
+                for i in self.projectData.warps:
+                    if i.id == objID:
+                        item = FindDialogListItem(i, f"-At {i.dest.coordsWarp()}")
+                        self.resultsList.addItem(item)
+                        
+            case "Teleport":
+                for i in self.projectData.teleports:
+                    if i.id == objID:
+                        name = i.name if i.name != "" else "<unnamed>"
+                        item = FindDialogListItem(i, f"-{name}, at {i.dest.coordsWarp()}")
                         self.resultsList.addItem(item)
 
         if self.resultsList.count() == 0:

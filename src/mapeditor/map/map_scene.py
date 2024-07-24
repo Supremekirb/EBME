@@ -5,6 +5,8 @@ from math import ceil
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from src.objects.warp import MapEditorWarp
+
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState
 
@@ -18,8 +20,8 @@ from PySide6.QtWidgets import (QApplication, QGraphicsLineItem,
                                QGraphicsPathItem, QGraphicsPixmapItem,
                                QGraphicsRectItem, QGraphicsScene,
                                QGraphicsSceneContextMenuEvent,
-                               QGraphicsSceneMouseEvent, QMenu, QMessageBox,
-                               QProgressDialog)
+                               QGraphicsSceneMouseEvent, QInputDialog, QMenu,
+                               QMessageBox, QProgressDialog)
 
 import src.misc.common as common
 import src.objects.trigger as trigger
@@ -38,6 +40,8 @@ from src.actions.tile_actions import ActionPlaceTile
 from src.actions.trigger_actions import (ActionAddTrigger, ActionDeleteTrigger,
                                          ActionMoveTrigger,
                                          ActionUpdateTrigger)
+from src.actions.warp_actions import (ActionMoveTeleport, ActionMoveWarp,
+                                      ActionUpdateTeleport, ActionUpdateWarp)
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.objects.enemy import MapEditorEnemyTile
@@ -93,10 +97,13 @@ class MapEditorScene(QGraphicsScene):
         self.placedTriggersByUUID = {} 
         self.placedEnemyTilesByGroup = {}
         self.placedHotspots: list[MapEditorHotspot] = []
+        self.placedWarps: list[MapEditorWarp] = []
+        self.placedTeleports: list[MapEditorWarp] = []
         
         self.populateNPCs()
         self.populateTriggers()
         self.populateHotspots()
+        self.populateWarps()
         self.populateTiles()
     
     def updateSelected(self):
@@ -122,6 +129,18 @@ class MapEditorScene(QGraphicsScene):
                         self.state.currentHotspot = self.projectData.hotspots[i.id]
                         break       
                 self.parent().sidebarHotspot.fromHotspot()
+                
+            case common.MODEINDEX.WARP:
+                self.state.currentWarp = None
+                for i in self.selectedItems():
+                    if isinstance(i, MapEditorWarp):
+                        if i.warpType == "warp":
+                            self.state.currentWarp = self.projectData.warps[i.id]
+                        else:
+                            self.state.currentWarp = self.projectData.teleports[i.id]
+                        break
+                self.parent().sidebarWarp.fromWarp()
+                    
         
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
         coords = EBCoords(event.scenePos().x(), event.scenePos().y())
@@ -243,11 +262,11 @@ class MapEditorScene(QGraphicsScene):
 
         # no items to pass the event to
         if self.state.tempMode == common.TEMPMODEINDEX.NONE:
+            menu = QMenu()
+            x = event.scenePos().x()
+            y = event.scenePos().y()
             match self.state.mode:
                 case common.MODEINDEX.SECTOR:
-                    menu = QMenu()
-                    x = event.scenePos().x()
-                    y = event.scenePos().y()
                     if len(self.state.currentSectors) > 1:
                         entireSectorStr = "Copy entirety of sectors"
                         dataSectorStr = "Copy data of sectors"
@@ -262,25 +281,21 @@ class MapEditorScene(QGraphicsScene):
                     menu.addAction(paletteSectorStr, self.copySelectedSectorPalettes, shortcut=QKeySequence("Ctrl+Alt+Shift+C"))
                     menu.addSeparator()
                     menu.addAction("Paste", self.onPaste)
-                    menu.exec(event.screenPos())
                 case common.MODEINDEX.NPC:
-                    menu = QMenu()
-                    x = event.scenePos().x()
-                    y = event.scenePos().y()
                     menu.addAction("New NPC", lambda: self.newNPC(EBCoords(x, y)))
                     menu.addAction("Paste", self.onPaste)
-                    menu.exec(event.screenPos())
                 case common.MODEINDEX.TRIGGER:
-                    menu = QMenu()
-                    x = event.scenePos().x()
-                    y = event.scenePos().y()
                     menu.addAction("New &trigger", lambda: self.newTrigger(EBCoords(x, y)))
                     menu.addAction("New &ladder", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
                                                                          trigger.TriggerLadder())))
                     menu.addAction("New &rope", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
                                                                        trigger.TriggerRope())))
                     menu.addAction("Paste", self.onPaste)
-                    menu.exec(event.screenPos())                    
+                case common.MODEINDEX.WARP:
+                    menu.addAction("Move &warp here...", lambda: self.moveWarp(EBCoords(x, y)))
+                    menu.addAction("Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
+                    
+            menu.exec(event.screenPos())          
     
     def onUndo(self):
         command = self.undoStack.command(self.undoStack.index()-1)
@@ -358,6 +373,14 @@ class MapEditorScene(QGraphicsScene):
             if isinstance(c, ActionChangeHotspotColour) or isinstance(c, ActionChangeHotspotLocation) or isinstance(c, ActionChangeHotspotComment):
                 actionType = "hotspot"
                 self.refreshHotspot(c.hotspot.id)
+                
+            if isinstance(c, ActionMoveWarp) or isinstance(c, ActionUpdateWarp):
+                actionType = "warp"
+                self.refreshWarp(c.warp.id)
+                
+            if isinstance(c, ActionMoveTeleport) or isinstance(c, ActionUpdateTeleport):
+                actionType = "warp"
+                self.refreshTeleport(c.teleport.id)
 
         match actionType:
             case "tile":
@@ -383,6 +406,9 @@ class MapEditorScene(QGraphicsScene):
             case "hotspot":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.HOTSPOT)
                 self.parent().sidebarHotspot.fromHotspot()
+            case "warp":
+                self.parent().sidebar.setCurrentIndex(common.MODEINDEX.WARP)
+                self.parent().sidebarWarp.fromWarp()
 
     def onCopy(self):
         match self.state.mode:
@@ -563,6 +589,11 @@ class MapEditorScene(QGraphicsScene):
         else:
             MapEditorHotspot.hideHotspots()
         
+        if index == common.MODEINDEX.WARP:
+            MapEditorWarp.showWarps()
+        else:
+            MapEditorWarp.hideWarps()
+            
         if index == common.MODEINDEX.ALL:
             MapEditorTile.showTileIDsModeSwitch()
             if self.parent().sidebarAll.showNPCs.isChecked():
@@ -577,6 +608,10 @@ class MapEditorScene(QGraphicsScene):
             if self.parent().sidebarAll.showHotspots.isChecked():
                 MapEditorHotspot.showHotspots()
             else: MapEditorHotspot.hideHotspots()
+            if self.parent().sidebarAll.showWarps.isChecked():
+                MapEditorWarp.showWarps()
+            else:
+                MapEditorWarp.hideWarps()
             
         if index == common.MODEINDEX.GAME:
             if self.grid.isVisible():
@@ -1170,7 +1205,38 @@ class MapEditorScene(QGraphicsScene):
         placement.setRect(hotspot.start.x, hotspot.start.y, hotspot.end.x-hotspot.start.x, hotspot.end.y-hotspot.start.y)
         placement.setBrush(QBrush(QColor.fromRgb(*hotspot.colour, 128)))
         
+    def refreshWarp(self, id: int):
+        warp = self.projectData.warps[id]
+        placement = self.placedWarps[id]
+        placement.setPos(warp.dest.x, warp.dest.y)
     
+    def refreshTeleport(self, id: int):
+        teleport = self.projectData.teleports[id]
+        placement = self.placedTeleports[id]
+        placement.setPos(teleport.dest.x, teleport.dest.y)
+        
+    def moveWarp(self, coords: EBCoords):
+        id = QInputDialog().getInt(self.parent(),
+                                   "Move warp here",
+                                   "Warp ID",
+                                   0, 0, len(self.projectData.warps)-1)
+        if id[1]:
+            warp = self.projectData.warps[id[0]]
+            action = ActionMoveWarp(warp, coords)
+            self.undoStack.push(action)
+            self.refreshWarp(id[0])
+    
+    def moveTeleport(self, coords: EBCoords):
+        id = QInputDialog().getInt(self.parent(),
+                                   "Move teleport here",
+                                   "Teleport ID",
+                                   0, 0, len(self.projectData.teleports)-1)
+        if id[1]:
+            teleport = self.projectData.teleports[id[0]]
+            action = ActionMoveTeleport(teleport, coords)
+            self.undoStack.push(action)
+            self.refreshTeleport(id[0])
+        
     def drawForeground(self, painter: QPainter, rect: QRectF):
         if self.state.mode == common.MODEINDEX.GAME:
             painter.setPen(Qt.PenStyle.NoPen)
@@ -1416,6 +1482,16 @@ class MapEditorScene(QGraphicsScene):
             if self.state.mode != common.MODEINDEX.GAME:
                 MapEditorNPC.showCollisionBounds()
             settings.setValue("mapeditor/ShowNPCCollisionBounds", True)
+            
+    def toggleWarpIDs(self):
+        settings = QSettings()
+        if MapEditorWarp.warpIDsEnabled:
+            MapEditorWarp.hideWarpIDs()
+            settings.setValue("mapeditor/ShowWarpIDs", False)
+        else:
+            MapEditorWarp.showWarpIDs()
+            settings.setValue("mapeditor/ShowWarpIDs", True)
+        
     
     def setGrid(self, id: int):
         settings = QSettings()
@@ -1507,6 +1583,21 @@ class MapEditorScene(QGraphicsScene):
             hotspot = MapEditorHotspot(i.id, i.start, i.end, i.colour)
             self.placedHotspots.append(hotspot)
             self.addItem(hotspot)
+            
+    def populateWarps(self):
+        self.warpPixmap = QPixmap(":/ui/warp.png")
+        self.teleportPixmap = QPixmap(":/ui/teleport.png")
+        for i in self.projectData.warps:
+            warp = MapEditorWarp(i.dest, i.id, self.warpPixmap, "warp")
+            warp.setText("W"+str(i.id).zfill(3))
+            self.addItem(warp)
+            self.placedWarps.append(warp)
+            
+        for i in self.projectData.teleports:
+            teleport = MapEditorWarp(i.dest, i.id, self.teleportPixmap, "teleport")
+            teleport.setText("TP`"+str(i.id).zfill(2))
+            self.addItem(teleport)
+            self.placedTeleports.append(teleport)
         
     def parent(self) -> "MapEditor": # for typing
         return super().parent()

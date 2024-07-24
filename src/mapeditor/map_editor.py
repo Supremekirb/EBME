@@ -6,7 +6,7 @@ from PySide6.QtGui import (QAction, QActionGroup, QGuiApplication, QImage,
                            QKeySequence, QPalette, QPixmap)
 from PySide6.QtWidgets import (QGraphicsPixmapItem, QGridLayout, QInputDialog,
                                QMenu, QProgressDialog, QSizePolicy, QTabWidget,
-                               QWidget)
+                               QUndoView, QWidget)
 
 import src.mapeditor.map.map_scene as map_scene
 import src.mapeditor.map.map_view as map_view
@@ -18,6 +18,7 @@ import src.mapeditor.sidebar.npc_sidebar as npc_sidebar
 import src.mapeditor.sidebar.sector_sidebar as sector_sidebar
 import src.mapeditor.sidebar.tile_sidebar as tile_sidebar
 import src.mapeditor.sidebar.trigger_sidebar as trigger_sidebar
+import src.mapeditor.sidebar.warp_sidebar as warp_sidebar
 import src.mapeditor.status_bar as status_bar
 import src.misc.common as common
 import src.misc.debug as debug
@@ -31,6 +32,7 @@ from src.objects.hotspot import Hotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
 from src.objects.sector import Sector
 from src.objects.trigger import Trigger
+from src.objects.warp import MapEditorWarp, Teleport, Warp
 from src.png2fts.png2fts_gui import png2ftsMapEditorGui
 
 
@@ -125,11 +127,23 @@ class MapEditor(QWidget):
                 self.sidebarNPC.fromNPCInstances()
             elif isinstance(result, EnemyTile):
                 self.sidebar.setCurrentIndex(common.MODEINDEX.ENEMY)
+                self.state.currentEnemyTile = result.groupID
+                self.sidebarEnemy.selectEnemyTile(result.groupID)
             elif isinstance(result, Hotspot):
                 self.sidebar.setCurrentIndex(common.MODEINDEX.HOTSPOT)
                 self.state.currentHotspot = result
                 self.sidebarHotspot.fromHotspot()
                 return self.view.autoCenterOn(result.start)
+            elif isinstance(result, Warp):
+                self.sidebar.setCurrentIndex(common.MODEINDEX.WARP)
+                self.state.currentWarp = result
+                self.sidebarWarp.fromWarp()
+                return self.view.autoCenterOn(result.dest)
+            elif isinstance(result, Teleport):
+                self.sidebar.setCurrentIndex(common.MODEINDEX.WARP)
+                self.state.currentWarp = result
+                self.sidebarWarp.fromWarp()
+                return self.view.autoCenterOn(result.dest)
                 
             self.view.autoCenterOn(result.coords)
 
@@ -179,6 +193,7 @@ class MapEditor(QWidget):
             iconDoor = QPixmap(":/ui/modeDoorDark.png")
             iconEnemy = QPixmap(":/ui/modeEnemyDark.png")
             iconHotspot = QPixmap(":/ui/modeHotspotDark.png")
+            iconWarp = QPixmap(":/ui/modeWarpDark.png")
             iconAll = QPixmap(":/ui/modeAllDark.png")
             iconGame = QPixmap(":/ui/modeGameDark.png")
         else:
@@ -188,6 +203,7 @@ class MapEditor(QWidget):
             iconDoor = QPixmap(":/ui/modeDoor.png")
             iconEnemy = QPixmap(":/ui/modeEnemy.png")
             iconHotspot = QPixmap(":/ui/modeHotspot.png")
+            iconWarp = QPixmap(":/ui/modeWarp.png")
             iconAll = QPixmap(":/ui/modeAll.png")
             iconGame = QPixmap(":/ui/modeGame.png")
 
@@ -203,6 +219,7 @@ class MapEditor(QWidget):
         self.sidebarTrigger = trigger_sidebar.SidebarTrigger(self, self.state, self, self.projectData)
         self.sidebarEnemy = enemy_sidebar.SidebarEnemy(self, self.state, self.projectData)
         self.sidebarHotspot = hotspot_sidebar.SidebarHotspot(self, self.state, self, self.projectData)
+        self.sidebarWarp = warp_sidebar.SidebarWarp(self, self.state, self, self.projectData)
         self.sidebarAll = all_sidebar.SidebarAll(self, self.state, self, self.projectData)
         self.sidebarGame = game_sidebar.SidebarGame(self, self.state, self, self.projectData)
 
@@ -212,6 +229,7 @@ class MapEditor(QWidget):
         self.sidebar.addTab(self.sidebarTrigger, iconDoor, "Trigger")
         self.sidebar.addTab(self.sidebarEnemy, iconEnemy, "Enemy")
         self.sidebar.addTab(self.sidebarHotspot, iconHotspot, "Hotspot")
+        self.sidebar.addTab(self.sidebarWarp, iconWarp, "Warp && TP")
         self.sidebar.addTab(self.sidebarAll, iconAll, "View All")
         self.sidebar.addTab(self.sidebarGame, iconGame, "View Game")
         self.sidebar.setTabPosition(QTabWidget.TabPosition.West)
@@ -342,6 +360,13 @@ class MapEditor(QWidget):
             MapEditorNPC.showCollisionBounds()
         self.npcCollisionBoundsAction.changed.connect(self.scene.toggleNPCCollisionBounds)
 
+        self.warpIDAction = QAction("Show &warp && teleport  IDs")
+        self.warpIDAction.setCheckable(True)
+        if settings.value("ShowWarpIDs") == "true":
+            self.warpIDAction.setChecked(True)
+            MapEditorWarp.showWarpIDs()
+        self.warpIDAction.changed.connect(self.scene.toggleWarpIDs)
+        
         settings.endGroup()
 
         self.menuView.addActions([self.zoomInAction, self.zoomOutAction])
@@ -351,9 +376,11 @@ class MapEditor(QWidget):
         self.menuView.addActions([self.gridAction])
         self.menuView.addMenu(self.gridMenu)
         self.menuView.addSeparator()
-        self.menuView.addActions([self.tileIDAction, self.npcIDAction])
+        self.menuView.addActions([self.tileIDAction])
         self.menuView.addSeparator()
-        self.menuView.addActions([self.npcVisualBoundsAction, self.npcCollisionBoundsAction])
+        self.menuView.addActions([self.npcIDAction, self.npcVisualBoundsAction, self.npcCollisionBoundsAction])
+        self.menuView.addSeparator()
+        self.menuView.addActions([self.warpIDAction])
         
         self.menuMode = QMenu("&Mode")
         self.modeTileAction = QAction("&Tile", shortcut=QKeySequence("F1"))
@@ -368,13 +395,16 @@ class MapEditor(QWidget):
         self.modeEnemyAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.ENEMY))
         self.modeHotspotAction = QAction("&Hotspot", shortcut=QKeySequence("F6"))
         self.modeHotspotAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.HOTSPOT))
-        self.modeAllAction = QAction("&All", shortcut=QKeySequence("F7"))
+        self.modeWarpAction = QAction("&Warp && TP", shortcut=QKeySequence("F7"))
+        self.modeWarpAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.WARP))
+        self.modeAllAction = QAction("&All", shortcut=QKeySequence("F8"))
         self.modeAllAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.ALL))
-        self.modeGameAction = QAction("&Game", shortcut=QKeySequence("F8"))
+        self.modeGameAction = QAction("&Game", shortcut=QKeySequence("F9"))
         self.modeGameAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.GAME))
         
         self.menuMode.addActions([self.modeTileAction, self.modeSectorAction, self.modeNPCAction, self.modeTriggerAction,
-                                  self.modeEnemyAction, self.modeHotspotAction, self.modeAllAction, self.modeGameAction])
+                                  self.modeEnemyAction, self.modeHotspotAction, self.modeWarpAction,
+                                  self.modeAllAction, self.modeGameAction])
         
         self.menuGoto = QMenu("&Go to")
         self.gotoGenericAction = QAction("&Find...", shortcut=QKeySequence.Find)
@@ -411,10 +441,6 @@ class MapEditor(QWidget):
         self.contentLayout.addWidget(self.view, 0, 1)
         self.contentLayout.addWidget(self.status, 1, 0, 1, 2)
 
-        # self.undoView = QUndoView()
-        # self.undoView.setStack(self.scene.undoStack)
-        # self.contentLayout.addWidget(self.undoView, 2, 0, 1, 2)
-
         self.sidebar.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
         self.view.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum))
 
@@ -431,6 +457,7 @@ class MapEditorState():
         self.currentSectors: list[Sector] = []
         self.currentTriggers: list[Trigger] = []
         self.currentHotspot: Hotspot = None
+        self.currentWarp: Warp|Teleport = None
 
         self.placingTiles = False
         self.placingEnemyTiles = False

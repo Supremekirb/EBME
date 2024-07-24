@@ -11,6 +11,7 @@ from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import MapEditorNPC
 from src.objects.trigger import MapEditorTrigger
+from src.objects.warp import MapEditorWarp
 
 
 class SidebarAll(QWidget):
@@ -44,6 +45,10 @@ class SidebarAll(QWidget):
         self.showEnemyTiles.setChecked(True)
         self.showEnemyTiles.toggled.connect(lambda: MapEditorEnemyTile.showEnemyTiles() if self.showEnemyTiles.isChecked() else MapEditorEnemyTile.hideEnemyTiles())
         
+        self.showWarps = QCheckBox("Show warps")
+        self.showWarps.setChecked(True)
+        self.showWarps.toggled.connect(lambda: MapEditorWarp.showWarps() if self.showWarps.isChecked() else MapEditorWarp.hideWarps())
+        
         self.viewHint = QLabel("Use the View menu to toggle visibility of things like NPC IDs.")
         self.viewHint.setWordWrap(True)
         
@@ -52,6 +57,7 @@ class SidebarAll(QWidget):
         layout.addWidget(self.showTriggers)
         layout.addWidget(self.showEnemyTiles)
         layout.addWidget(self.showHotspots)
+        layout.addWidget(self.showWarps)
         
         groupbox.setLayout(layout)
         contentLayout.addWidget(groupbox)

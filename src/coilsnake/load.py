@@ -20,6 +20,7 @@ from src.objects.tile import MapTile, MapTileGraphic
 from src.objects.trigger import (Trigger, TriggerDoor, TriggerEscalator,
                                  TriggerLadder, TriggerObject, TriggerPerson,
                                  TriggerRope, TriggerStairway, TriggerSwitch)
+from src.objects.warp import Teleport, Warp
 
 
 def readDirectory(parent, dir):
@@ -141,7 +142,8 @@ def readDirectory(parent, dir):
                                     "text": "Could not load enemy sprite data.",
                                     "info": str(e)})
             raise
-    
+            
+        parent.updates.emit("Loading hotspots...")
         try:
             readHotspots(projectData)
         except Exception as e:
@@ -149,7 +151,25 @@ def readDirectory(parent, dir):
                                     "text": "Could not load hotspot.",
                                     "info": str(e)})
             raise
-
+        
+        parent.updates.emit("Loading warps...")
+        try:
+            readWarps(projectData)
+        except Exception as e:
+            parent.returns.emit({"title": "Failed to load warps",
+                                    "text": "Could not load warp data.",
+                                    "info": str(e)})
+            raise
+        
+        parent.updates.emit("Loading teleports...")
+        try:
+            readTeleports(projectData)
+        except Exception as e:
+            parent.returns.emit({"title": "Failed to load teleports",
+                                    "text": "Could not load teleport data.",
+                                    "info": str(e)})
+            raise
+        
         logging.info(f"Successfully loaded project at {projectData.dir}")
         parent.returns.emit(projectData)
 
@@ -642,3 +662,43 @@ def readHotspots(data: ProjectData):
             raise KeyError("Could not find path to map_hotspots in Project.snake.") from e
         else:
             raise KeyError(f"Could not read data of hotspot {i[0]}.") from e
+        
+def readWarps(data: ProjectData):
+    try:
+        hasLoadedYml = False
+        warps = []
+        path = data.getResourcePath("eb.MiscTablesModule", "teleport_destination_table")     
+        with open(path) as warp_table:
+            warp_table = yaml.load(warp_table, Loader=yaml.CSafeLoader)
+            hasLoadedYml = True
+            for i in warp_table.items():
+                if "EBME_Comment" in i[1]:
+                    comment = i[1]["EBME_Comment"]
+                else:
+                    comment = None
+                warps.append(Warp(i[0], EBCoords.fromWarp(i[1]["X"], i[1]["Y"]), i[1]["Direction"], i[1]["Warp Style"], i[1]["Unknown"], comment))
+                
+            data.warps = warps
+    except KeyError as e:
+        if not hasLoadedYml:
+            raise KeyError("Could not find path to teleport_destination_table in Project.snake.") from e
+        else:
+            raise KeyError(f"Could not read data of warp {i[0]}.") from e
+        
+def readTeleports(data: ProjectData):
+    try:
+        hasLoadedYml = False
+        teleports = []
+        path = data.getResourcePath("eb.MiscTablesModule", "psi_teleport_dest_table")
+        with open(path) as teleport_table:
+            teleport_table = yaml.load(teleport_table, Loader=yaml.CSafeLoader)
+            hasLoadedYml = True
+            for i in teleport_table.items():
+                teleports.append(Teleport(i[0], EBCoords.fromWarp(i[1]["X"], i[1]["Y"]), i[1]["Event Flag"], i[1]["Name"]))
+                
+            data.teleports = teleports
+    except KeyError as e:
+        if not hasLoadedYml:
+            raise KeyError("Could not find path to psi_teleport_dest_table in Project.snake.") from e
+        else:
+            raise KeyError(f"Could not read data of teleport {i[0]}") from e

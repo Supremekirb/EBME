@@ -15,6 +15,7 @@ from src.objects.sector import Sector
 from src.objects.sprite import BattleSprite, Sprite
 from src.objects.tile import MapTile, MapTileGraphic
 from src.objects.trigger import Trigger
+from src.objects.warp import Warp, Teleport
 
 
 class ProjectData():
@@ -35,6 +36,8 @@ class ProjectData():
         self.enemyGroups: list[EnemyGroup] = []
         self.battleSprites: list[BattleSprite] = []
         self.hotspots: list[Hotspot] = []
+        self.warps: list[Warp] = []
+        self.teleports: list[Teleport] = []
     
     def loadProjectSnake(self):
         try:
