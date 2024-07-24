@@ -127,11 +127,23 @@ class MapEditor(QWidget):
                 self.sidebarNPC.fromNPCInstances()
             elif isinstance(result, EnemyTile):
                 self.sidebar.setCurrentIndex(common.MODEINDEX.ENEMY)
+                self.state.currentEnemyTile = result
+                self.sidebarEnemy.selectEnemyTile(result.groupID)
             elif isinstance(result, Hotspot):
                 self.sidebar.setCurrentIndex(common.MODEINDEX.HOTSPOT)
                 self.state.currentHotspot = result
                 self.sidebarHotspot.fromHotspot()
                 return self.view.autoCenterOn(result.start)
+            elif isinstance(result, Warp):
+                self.sidebar.setCurrentIndex(common.MODEINDEX.WARP)
+                self.state.currentWarp = result
+                self.sidebarWarp.fromWarp()
+                return self.view.autoCenterOn(result.dest)
+            elif isinstance(result, Teleport):
+                self.sidebar.setCurrentIndex(common.MODEINDEX.WARP)
+                self.state.currentWarp = result
+                self.sidebarWarp.fromWarp()
+                return self.view.autoCenterOn(result.dest)
                 
             self.view.autoCenterOn(result.coords)
 

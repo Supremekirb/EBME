@@ -380,7 +380,7 @@ class MapEditorScene(QGraphicsScene):
                 
             if isinstance(c, ActionMoveTeleport) or isinstance(c, ActionUpdateTeleport):
                 actionType = "warp"
-                self.refreshTeleport(c.warp.id)
+                self.refreshTeleport(c.teleport.id)
 
         match actionType:
             case "tile":

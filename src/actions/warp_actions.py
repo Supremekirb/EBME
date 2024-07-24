@@ -43,25 +43,29 @@ class ActionMoveWarp(QUndoCommand):
         
         
 class ActionUpdateWarp(QUndoCommand):
-    def __init__(self, warp: "Warp", style: int, unknown: int, comment: str):
+    def __init__(self, warp: "Warp", dir: int, style: int, unknown: int, comment: str):
         super().__init__()
         self.setText("Update Warp")
 
         self.warp = warp
+        self.dir = dir
         self.style = style
         self.unknown = unknown
         self.comment = comment
 
+        self._dir = warp.dir
         self._style = warp.style
         self._unknown = warp.unknown
         self._comment = warp.comment
         
     def redo(self):
+        self.warp.dir = self.dir
         self.warp.style = self.style
         self.warp.unknown = self.unknown
         self.warp.comment = self.comment
         
     def undo(self):
+        self.warp.dir = self._dir
         self.warp.style = self._style
         self.warp.unknown = self._unknown
         self.warp.comment = self._comment
@@ -74,6 +78,7 @@ class ActionUpdateWarp(QUndoCommand):
         if other.warp != self.warp:
             return False
         # success
+        self.dir = other.dir
         self.style = other.style
         self.unknown = other.unknown
         self.comment = other.comment
@@ -84,6 +89,9 @@ class ActionUpdateWarp(QUndoCommand):
     
     
 class ActionMoveTeleport(ActionMoveWarp):
+    def __init__(self, teleport: "Teleport", coords: EBCoords):
+        super().__init__(teleport, coords)
+        self.teleport = self.warp
     def mergeWith(self, other: QUndoCommand):
         # wrong action type
         if other.id() != common.ACTIONINDEX.TELEPORTMOVESIDEBAR:

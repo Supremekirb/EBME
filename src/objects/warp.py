@@ -17,7 +17,7 @@ BLACKBRUSH = QBrush(Qt.GlobalColor.black)
 
 class Warp():
     """Warp objects"""
-    def __init__(self, id: int, dest: EBCoords=EBCoords(), dir: str="up",
+    def __init__(self, id: int, dest: EBCoords=EBCoords(), dir: int=0,
                  style: int=0, unknown: int=0, comment: str=None):  
         self.id = id   
         self.dest = dest
