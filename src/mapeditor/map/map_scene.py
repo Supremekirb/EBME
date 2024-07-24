@@ -249,7 +249,8 @@ class MapEditorScene(QGraphicsScene):
         
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
         # query if we have any other buttons pressed. We should only ever open the context menu if ONLY RMB was pressed.
-        if QApplication.mouseButtons() != Qt.MouseButton.NoButton:
+        # (also on some systems (mine) it looks like RMB is still in mouseButtons at this point so...)
+        if QApplication.mouseButtons() not in [Qt.MouseButton.NoButton, Qt.MouseButton.RightButton]:
             return
         
         items = self.items(event.scenePos())
