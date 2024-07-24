@@ -127,7 +127,7 @@ class MapEditor(QWidget):
                 self.sidebarNPC.fromNPCInstances()
             elif isinstance(result, EnemyTile):
                 self.sidebar.setCurrentIndex(common.MODEINDEX.ENEMY)
-                self.state.currentEnemyTile = result
+                self.state.currentEnemyTile = result.groupID
                 self.sidebarEnemy.selectEnemyTile(result.groupID)
             elif isinstance(result, Hotspot):
                 self.sidebar.setCurrentIndex(common.MODEINDEX.HOTSPOT)
