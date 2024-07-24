@@ -1433,7 +1433,7 @@ class MapEditorScene(QGraphicsScene):
 
     def toggleGrid(self):
         settings = QSettings()
-        if settings.value("mapeditor/ShowGrid") == "true":
+        if not self.parent().gridAction.isChecked(): # checked state is updated afterwards
             if self.state.mode != common.MODEINDEX.GAME:
                 self.grid.hide()
             settings.setValue("mapeditor/ShowGrid", False)
