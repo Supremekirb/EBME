@@ -1,10 +1,22 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
     <qresource prefix="grids">
+        <file alias="8grid0.png">assets/grids/8grid0.png</file>
+        <file alias="8grid1.png">assets/grids/8grid1.png</file>
+        <file alias="8grid2.png">assets/grids/8grid2.png</file>
+        <file alias="8grid3.png">assets/grids/8grid3.png</file>
         <file alias="32grid0.png">assets/grids/32grid0.png</file>
         <file alias="32grid1.png">assets/grids/32grid1.png</file>
         <file alias="32grid2.png">assets/grids/32grid2.png</file>
         <file alias="32grid3.png">assets/grids/32grid3.png</file>
+        <file alias="64grid0.png">assets/grids/64grid0.png</file>
+        <file alias="64grid1.png">assets/grids/64grid1.png</file>
+        <file alias="64grid2.png">assets/grids/64grid2.png</file>
+        <file alias="64grid3.png">assets/grids/64grid3.png</file>
+        <file alias="256128grid0.png">assets/grids/256128grid0.png</file>
+        <file alias="256128grid1.png">assets/grids/256128grid1.png</file>
+        <file alias="256128grid2.png">assets/grids/256128grid2.png</file>
+        <file alias="256128grid3.png">assets/grids/256128grid3.png</file>
     </qresource>
     <qresource prefix="logos">
         <file alias="icon.ico">assets/logos/icon.ico</file>

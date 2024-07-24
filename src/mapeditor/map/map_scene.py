@@ -66,6 +66,7 @@ class MapEditorScene(QGraphicsScene):
         self.grid.setZValue(common.MAPZVALUES.GRID)
         self.addItem(self.grid)
         self.grid.hide()
+        self._currentGrid = 0
 
         path = QPainterPath()
         path.addRect(QRect(0, 0, 256, 128))
@@ -554,9 +555,9 @@ class MapEditorScene(QGraphicsScene):
     def changeMode(self, index: int):
         previous = self.state.mode
         
-        
         if index == common.MODEINDEX.TILE:
             MapEditorTile.showTileIDsModeSwitch()
+            self.grid.setBrush
         else:
             if (previous == common.MODEINDEX.TILE or previous == common.MODEINDEX.ALL) and index != common.MODEINDEX.ALL:
                 MapEditorTile.hideTileIDsModeSwitch()
@@ -629,8 +630,11 @@ class MapEditorScene(QGraphicsScene):
             MapEditorNPC.showNPCs()
             
         else:
-            if QSettings().value("mapeditor/ShowGrid") == "true":
-                self.grid.show()
+            try:
+                if self.parent().gridAction.isChecked():
+                    self.grid.show()
+            except AttributeError:
+                pass # this happens on init
                 
             self.previewNPC.hide()
             if QSettings().value("mapeditor/ShowNPCVisualBounds") == "true":
@@ -642,6 +646,9 @@ class MapEditorScene(QGraphicsScene):
             if QSettings().value("mapeditor/ShowNPCIDs") == "true":
                 MapEditorNPC.showNPCIDs()
             else: MapEditorNPC.hideNPCIDs()
+            
+        # fix grid
+        self.setGrid(self._currentGrid, index)
 
     def renderArea(self, coords: EBCoords, w: int, h: int):
         """Render a rectangular region of tiles
@@ -1493,16 +1500,27 @@ class MapEditorScene(QGraphicsScene):
             MapEditorWarp.showWarpIDs()
             settings.setValue("mapeditor/ShowWarpIDs", True)
         
-    
-    def setGrid(self, id: int):
+    def setGrid(self, id: int, indexOverride: int = -1):
         settings = QSettings()
-        try:
-            self.grid.setBrush(QBrush(QPixmap(f":/grids/32grid{id}.png")))
-            settings.setValue("mapeditor/GridStyle", id)
-
-        except FileNotFoundError:
-            logging.warn(f"Invalid grid style ID \"{id}\"")
-            self.grid.setBrush(QBrush(QPixmap(":/grids/32grid0.png")))
+        
+        if indexOverride == -1:
+            mode = self.state.mode
+        else:
+            mode = indexOverride
+            
+        type = "32"
+        if mode in [common.MODEINDEX.TILE, common.MODEINDEX.GAME]:
+            type = "32"
+        elif mode in [common.MODEINDEX.WARP, common.MODEINDEX.TRIGGER, common.MODEINDEX.HOTSPOT]:
+            type = "8"
+        elif mode in [common.MODEINDEX.SECTOR]:
+            type = "256128"
+        elif mode in [common.MODEINDEX.ENEMY]:
+            type = "64"
+    
+        self.grid.setBrush(QBrush(QPixmap(f":/grids/{type}grid{id}.png")))
+        settings.setValue("mapeditor/GridStyle", id)
+        self._currentGrid = id
             
     def populateTiles(self):
         # create tiles, but - and this is the trick for performance - don't render them
