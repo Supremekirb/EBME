@@ -50,6 +50,7 @@ class MapEditor(QWidget):
         self.setupUI()
 
         self.updateTabSize(0)
+        self.scene.selectSector(EBCoords(0, 0))
         logging.info("Map editor initialised")
 
     def changeSidebarTab(self, index):
