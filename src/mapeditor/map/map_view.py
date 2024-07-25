@@ -1,7 +1,8 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QSettings, Qt, QTimeLine, QTimer
-from PySide6.QtGui import QBrush, QMouseEvent, QPaintEvent, QPen, QResizeEvent, QWheelEvent
+from PySide6.QtGui import (QBrush, QMouseEvent, QPaintEvent, QPen,
+                           QResizeEvent, QWheelEvent)
 from PySide6.QtWidgets import (QGraphicsLineItem, QGraphicsPixmapItem,
                                QGraphicsView)
 
@@ -96,9 +97,9 @@ class MapEditorView(QGraphicsView):
     def wheelEvent(self, event: QWheelEvent):
         if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
             if event.angleDelta().y() > 0:
-                self.zoomIn()
+                self.zoomIn(True)
             else:
-                self.zoomOut()
+                self.zoomOut(True)
         else: super().wheelEvent(event)
 
     def renderShown(self):
@@ -150,20 +151,34 @@ class MapEditorView(QGraphicsView):
         QTimer.singleShot(2000, self.scene().doorDestShowIcon.hide) # hide after 2 seconds
         QTimer.singleShot(2000, self.scene().doorDestShowLine.hide)
 
-    def zoomIn(self):
+    def zoomIn(self, onMouse = False):
         self.horizontalScrollBar().blockSignals(True)
+            
         if self.scaleFactor < 800:
+            if onMouse:
+                self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+            
             self.scaleFactor *= 2
             self.scale(2, 2)
+                
+            self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+            
         self.horizontalScrollBar().blockSignals(False)
         self.renderShown()
         self.parent().status.setZoom(self.scaleFactor)
-
-    def zoomOut(self):
+        
+        
+    def zoomOut(self, onMouse = False):
         self.horizontalScrollBar().blockSignals(True)
         if self.scaleFactor > 25:
+            if onMouse:
+                self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+                
             self.scaleFactor //= 2
             self.scale(0.5, 0.5)
+            
+            self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+            
         self.horizontalScrollBar().blockSignals(False)
         self.renderShown()
         self.parent().status.setZoom(self.scaleFactor)
