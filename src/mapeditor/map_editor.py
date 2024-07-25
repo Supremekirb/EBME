@@ -262,13 +262,9 @@ class MapEditor(QWidget):
         self.redoAction = QAction("&Redo")
         self.redoAction.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
         self.redoAction.triggered.connect(self.scene.onRedo)
-        self.clearAction = QAction("Clear map...")
-        self.clearAction.triggered.connect(self.scene.onClear)
         self.menuEdit.addActions([self.deleteAction, self.cutAction, self.copyAction, self.pasteAction])
         self.menuEdit.addSeparator()
         self.menuEdit.addActions([self.undoAction, self.redoAction])
-        self.menuEdit.addSeparator()
-        self.menuEdit.addActions([self.clearAction])
         
         # hidden actions for sectors
         self.copyShiftAction = QAction("Copy", shortcut=QKeySequence("Ctrl+Shift+C"))
@@ -427,7 +423,9 @@ class MapEditor(QWidget):
         self.renderMapAction.triggered.connect(self.renderMap)
         self.png2ftsAction = QAction("&Import PNG with png2fts")
         self.png2ftsAction.triggered.connect(self.dopng2fts)
-        self.menuTools.addActions([self.renderMapAction, self.png2ftsAction])
+        self.clearAction = QAction("Clear map...")
+        self.clearAction.triggered.connect(self.scene.onClear)
+        self.menuTools.addActions([self.renderMapAction, self.png2ftsAction, self.clearAction])
 
         self.menuHelp = QMenu("&Help")
         self.aboutAction = QAction("&About EBME...")
