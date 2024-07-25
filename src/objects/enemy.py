@@ -24,13 +24,19 @@ class EnemyTile:
 class EnemyMapGroup:
     """Enemy tile groups"""
     colours = []
-    def __init__(self, groupID: int, flag: int, subgroup1: dict, subgroup2: dict, subgroup1rate = int, subgroup2rate = int):
+    def __init__(self, groupID: int, flag: int, colour: tuple|None, 
+                 subgroup1: dict, subgroup2: dict, subgroup1rate = int, subgroup2rate = int):
         self.groupID = groupID
         self.flag = flag
         self.subGroup1 = subgroup1
         self.subGroup2 = subgroup2
         self.subGroup1Rate = subgroup1rate
         self.subGroup2Rate = subgroup2rate
+        
+        if colour == None:
+            self.colour = EnemyMapGroup.colourGen(self.groupID)
+        else:
+            self.colour = colour
 
         EnemyMapGroup.colours.append(EnemyMapGroup.colourGen(self.groupID))
 
@@ -181,9 +187,8 @@ class MapEditorEnemyTile(QGraphicsRectItem):
             for i in self.sprites2:
                 i.show()
 
-            if not group in MapEditorEnemyTile.brushes:
-                colour = EnemyMapGroup.colours[group]
-                MapEditorEnemyTile.brushes[group] = QBrush(QColor(colour[0], colour[1], colour[2], 178))
+            colour = EnemyMapGroup.colours[group]
+            MapEditorEnemyTile.brushes[group] = QBrush(QColor(colour[0], colour[1], colour[2], 178))
             
             self.setBrush(MapEditorEnemyTile.brushes[group])
 

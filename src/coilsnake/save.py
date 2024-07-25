@@ -362,7 +362,8 @@ def saveMapEnemyGroups(data: ProjectData):
                 "Sub-Group 1": subGroup1,
                 "Sub-Group 1 Rate": i.subGroup1Rate,
                 "Sub-Group 2": subGroup2,
-                "Sub-Group 2 Rate": i.subGroup2Rate
+                "Sub-Group 2 Rate": i.subGroup2Rate,
+                "EBME_Colour": "#{0:02x}{1:02x}{2:02x}".format(i.colour[0], i.colour[1], i.colour[2])
             }
         
     except Exception as e:

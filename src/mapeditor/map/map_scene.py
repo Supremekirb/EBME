@@ -917,6 +917,7 @@ class MapEditorScene(QGraphicsScene):
                     break
             
     def refreshEnemyMapGroup(self, group: int):
+        self.parent().sidebarEnemy.view.ensureCorrectColour(group)
         try:
             for i in self.placedEnemyTilesByGroup[group]:
                 coords = EBCoords(i.x(), i.y())

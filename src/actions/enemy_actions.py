@@ -27,7 +27,7 @@ class ActionPlaceEnemyTile(QUndoCommand):
     
 class ActionUpdateEnemyMapGroup(QUndoCommand):
     def __init__(self, group: EnemyMapGroup,
-                 flag: int, subGroup1: dict,
+                 flag: int, colour: tuple, subGroup1: dict,
                  subGroup2: dict, subGroup1Rate: int,
                  subGroup2Rate: int):
         super().__init__()
@@ -35,12 +35,14 @@ class ActionUpdateEnemyMapGroup(QUndoCommand):
         
         self.group = group
         self.flag = flag
+        self.colour = colour
         self.subGroup1 = subGroup1
         self.subGroup2 = subGroup2
         self.subGroup1Rate = subGroup1Rate
         self.subGroup2Rate = subGroup2Rate
         
         self._flag = group.flag
+        self._colour = group.colour
         self._subGroup1 = group.subGroup1
         self._subGroup2 = group.subGroup2
         self._subGroup1Rate = group.subGroup1Rate
@@ -48,6 +50,8 @@ class ActionUpdateEnemyMapGroup(QUndoCommand):
         
     def redo(self):
         self.group.flag = self.flag
+        self.group.colour = self.colour
+        EnemyMapGroup.colours[self.group.groupID] = self.colour
         self.group.subGroup1 = self.subGroup1
         self.group.subGroup2 = self.subGroup2
         self.group.subGroup1Rate = self.subGroup1Rate
@@ -55,6 +59,8 @@ class ActionUpdateEnemyMapGroup(QUndoCommand):
         
     def undo(self):
         self.group.flag = self._flag
+        self.group.colour = self._colour
+        EnemyMapGroup.colours[self.group.groupID] = self._colour
         self.group.subGroup1 = self._subGroup1
         self.group.subGroup2 = self._subGroup2
         self.group.subGroup1Rate = self._subGroup1Rate
@@ -70,6 +76,7 @@ class ActionUpdateEnemyMapGroup(QUndoCommand):
         
         # success
         self.flag = other.flag
+        self.colour = other.colour
         self.subGroup1 = other.subGroup1
         self.subGroup2 = other.subGroup2
         self.subGroup1Rate = other.subGroup1Rate

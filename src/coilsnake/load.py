@@ -525,8 +525,14 @@ def readMapEnemyGroups(data: ProjectData):
         with open(path) as map_enemy_groups:
             map_enemy_groups = yaml.load(map_enemy_groups, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
-            for i in map_enemy_groups.items():       
-                enemyMapGroups.append(EnemyMapGroup(i[0], i[1]["Event Flag"], i[1]["Sub-Group 1"], i[1]["Sub-Group 2"],
+            for i in map_enemy_groups.items():
+                if "EBME_Colour" in i[1]:
+                    colourRaw = i[1]["EBME_Colour"]
+                    colour = (int(colourRaw[1:3], 16), int(colourRaw[3:5], 16), int(colourRaw[5:7], 16))
+                else:
+                    colour = None
+                    
+                enemyMapGroups.append(EnemyMapGroup(i[0], i[1]["Event Flag"], colour, i[1]["Sub-Group 1"], i[1]["Sub-Group 2"],
                                                     i[1]["Sub-Group 1 Rate"], i[1]["Sub-Group 2 Rate"]))
 
         data.enemyMapGroups = enemyMapGroups

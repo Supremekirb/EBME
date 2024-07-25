@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING
 
+from numpy import isin
 from PySide6.QtCore import QEvent, QObject, QPoint, Signal
 from PySide6.QtGui import QBrush, QColor, QIntValidator, QPixmap, Qt
 from PySide6.QtWidgets import (QFormLayout, QGraphicsItem, QGraphicsPixmapItem,
@@ -17,7 +18,7 @@ import src.misc.common as common
 from src.actions.enemy_actions import ActionUpdateEnemyMapGroup
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
-from src.misc.widgets import FlagInput
+from src.misc.widgets import ColourButton, FlagInput
 from src.objects.enemy import EnemyGroup, EnemyMapGroup, EnemyTile
 
 WHITEBRUSH = QBrush(Qt.white)
@@ -56,6 +57,7 @@ class SidebarEnemy(QWidget):
         group = self.projectData.enemyMapGroups[self.state.currentEnemyTile]
         
         self.mapGroupEventFlag.blockSignals(True)
+        self.mapGroupColour.blockSignals(True)
         self.mapGroupSubGroup1Rate.blockSignals(True)
         self.mapGroupSubGroup1Table.blockSignals(True)
         self.mapGroupSubGroup2Rate.blockSignals(True)
@@ -64,6 +66,8 @@ class SidebarEnemy(QWidget):
         self.mapGroupEventFlag.setValue(group.flag)
         self.mapGroupSubGroup1Rate.setValue(group.subGroup1Rate)
         self.mapGroupSubGroup2Rate.setValue(group.subGroup2Rate)
+        
+        self.mapGroupColour.setColour(QColor(*group.colour))
         
         for row in range(0, 7):
             try:
@@ -84,6 +88,7 @@ class SidebarEnemy(QWidget):
                 self.mapGroupSubGroup2Table.setItem(row, 1, QTableWidgetItem("0"))
         
         self.mapGroupEventFlag.blockSignals(False)
+        self.mapGroupColour.blockSignals(False)
         self.mapGroupSubGroup1Rate.blockSignals(False)
         self.mapGroupSubGroup1Table.blockSignals(False)
         self.mapGroupSubGroup2Rate.blockSignals(False)
@@ -117,6 +122,7 @@ class SidebarEnemy(QWidget):
             
         action = ActionUpdateEnemyMapGroup(group,
                                            int(self.mapGroupEventFlag.text()),
+                                           self.mapGroupColour.chosenColour.toTuple(),
                                            subGroup1,
                                            subGroup2,
                                            self.mapGroupSubGroup1Rate.value(),
@@ -177,6 +183,9 @@ class SidebarEnemy(QWidget):
         self.mapGroupEventFlag = FlagInput()
         self.mapGroupEventFlag.valueChanged.connect(self.toEnemyMapGroup)
         
+        self.mapGroupColour = ColourButton()
+        self.mapGroupColour.colourChanged.connect(self.toEnemyMapGroup)
+        
         self.mapGroupEditorTabs = QTabWidget()
         
         self.mapGroupSubGroup1Widget = QWidget()
@@ -234,6 +243,7 @@ class SidebarEnemy(QWidget):
         self.mapGroupEditorTabs.addTab(self.mapGroupSubGroup2Widget, "Subgroup 2")
              
         self.mapGroupLayout.addRow("Flag", self.mapGroupEventFlag)
+        self.mapGroupLayout.addRow("Colour", self.mapGroupColour)
         self.mapGroupLayout.addRow(self.mapGroupEditorTabs)
         
         self.layoutLeft.addWidget(self.mapGroupLabel)
@@ -303,7 +313,7 @@ class SidebarEnemyCanvas(QGraphicsView):
 
         for i in self.projectData.enemyMapGroups:
             placement = MiniEnemyTile(i.groupID,
-                                      QBrush(QColor(*EnemyMapGroup.colourGen(i.groupID))),
+                                      QBrush(QColor(*i.colour)),
                                       common.tileToPix(i.groupID%self.tileWidth),
                                       common.tileToPix(i.groupID//self.tileWidth))
             self.scene().addItem(placement)
@@ -315,6 +325,13 @@ class SidebarEnemyCanvas(QGraphicsView):
         
         self.scene().setSceneRect(0, 0, (SidebarEnemyCanvas.tileWidth*32), (32*203)//SidebarEnemyCanvas.tileWidth)
         self.scene().installEventFilter(self)
+        
+    def ensureCorrectColour(self, groupID):
+        items = self.scene().items(QPoint(common.tileToPix(groupID%self.tileWidth)+1, # little leeway since they do overlap
+                                          common.tileToPix(groupID//self.tileWidth)+1)) # isn't this nice and slightly cursed?
+        for i in items:
+            if isinstance(i, MiniEnemyTile):
+                i.setBrush(QBrush(QColor(*self.projectData.enemyMapGroups[groupID].colour)))
         
     def eventFilter(self, object: QObject, event: QEvent):
         if event.type() == QEvent.Type(QEvent.GraphicsSceneMousePress):
