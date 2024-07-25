@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 import sys
@@ -44,6 +45,7 @@ from src.actions.warp_actions import (ActionMoveTeleport, ActionMoveWarp,
                                       ActionUpdateTeleport, ActionUpdateWarp)
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
+from src.misc.dialogues import ClearDialog
 from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
@@ -322,6 +324,7 @@ class MapEditorScene(QGraphicsScene):
         # oh well, it's more memory-efficient anyway.
         # we can just look at the command and see what it's up to.
         # why is there no signal for these?
+        
         actionType = None
         commands = []
 
@@ -337,10 +340,19 @@ class MapEditorScene(QGraphicsScene):
         else: # otherwise we are just a standalone
             commands.append(command)
         
+        progressDialog = QProgressDialog(f'Executing "{command.text()}"...', "NONCANCELLABLE", 0, len(commands))
+        progressDialog.setCancelButton(None) # no cancel button
+        progressDialog.setWindowFlag(Qt.WindowCloseButtonHint, False) # no system close button, either
+        progressDialog.setWindowModality(Qt.WindowModal)
+        
         for c in commands:
             if isinstance(c, ActionPlaceTile):
                 actionType = "tile"
-                self.refreshTile(c.maptile.coords)
+                if len(commands) < 1000:
+                    self.refreshTile(c.maptile.coords)
+                else:
+                    # more performant, but requires re-render
+                    self.projectData.getTile(c.maptile.coords).isPlaced = False
 
             if isinstance(c, ActionMoveNPCInstance) or isinstance(c, ActionChangeNPCInstance) or isinstance(c, ActionAddNPCInstance):
                 actionType = "npc"
@@ -383,6 +395,10 @@ class MapEditorScene(QGraphicsScene):
             if isinstance(c, ActionMoveTeleport) or isinstance(c, ActionUpdateTeleport):
                 actionType = "warp"
                 self.refreshTeleport(c.teleport.id)
+            
+            progressDialog.setValue(progressDialog.value()+1)
+        
+        progressDialog.setValue(progressDialog.maximum())
 
         match actionType:
             case "tile":
@@ -1437,6 +1453,116 @@ class MapEditorScene(QGraphicsScene):
         self.doorDestLine.hide()
         self.parent().sidebarTrigger.setDoorDest(coords)
         self.setTemporaryMode(common.TEMPMODEINDEX.NONE)
+        
+    def onClear(self):
+        result = ClearDialog.clearMap(self.parent())
+        if result:
+            self.undoStack.beginMacro("Clear map")
+            try:
+                if result["tiles"]:
+                    self.clearTiles()
+                if result["sectors"]:
+                    self.clearSectors()
+                if result["npcs"]:
+                    self.clearNPCs()
+                if result["triggers"]:
+                    self.clearTriggers()
+                if result["enemies"]:
+                    self.clearEnemies()
+            except Exception:
+                self.undoStack.endMacro()
+                raise
+            else:
+                self.undoStack.endMacro()
+    
+    def clearTiles(self):
+        progressDialog = QProgressDialog("Clearing tiles...", "NONCANELLABLE", 0,
+                                         (common.EBMAPWIDTH//32)*(common.EBMAPHEIGHT//32),
+                                         self.parent())
+        progressDialog.setCancelButton(None)
+        progressDialog.setWindowFlag(Qt.WindowCloseButtonHint, False)
+        progressDialog.setWindowModality(Qt.WindowModal)
+        progressDialog.setMinimumDuration(0)
+        
+        for r in range(common.EBMAPWIDTH//32):
+            for c in range(common.EBMAPHEIGHT//32):
+                tile = self.projectData.getTile(EBCoords.fromTile(r, c))
+                action = ActionPlaceTile(tile, 0)
+                tile.isPlaced = False
+                self.undoStack.push(action)
+                progressDialog.setValue(progressDialog.value()+1)
+        
+        progressDialog.setValue(progressDialog.maximum())
+    
+    def clearSectors(self):
+        progressDialog = QProgressDialog("Clearing sectors...", "NONCANELLABLE", 0,
+                                         (common.EBMAPWIDTH//32//8)*(common.EBMAPHEIGHT//32//4),
+                                         self.parent())
+        progressDialog.setCancelButton(None)
+        progressDialog.setWindowFlag(Qt.WindowCloseButtonHint, False)
+        progressDialog.setWindowModality(Qt.WindowModal)
+        progressDialog.setMinimumDuration(0)
+        for r in range(common.EBMAPWIDTH//32//8):
+            for c in range(common.EBMAPHEIGHT//32//4):
+                sector = self.projectData.getSector(EBCoords.fromSector(r, c))
+                action = ActionChangeSectorAttributes(sector, 0, 0, 0,
+                                                      0, 0, "none", "disabled",
+                                                      "none", "none", "none",
+                                                      0, 0)
+                self.undoStack.push(action)
+                self.refreshSector(EBCoords.fromSector(r, c))
+                progressDialog.setValue(progressDialog.value()+1)
+        
+        progressDialog.setValue(progressDialog.maximum())
+    
+    def clearNPCs(self):
+        progressDialog = QProgressDialog("Clearing NPCs...", "NONCANELLABLE", 0,
+                                         len(self.projectData.npcinstances),
+                                         self.parent())
+        progressDialog.setCancelButton(None)
+        progressDialog.setWindowFlag(Qt.WindowCloseButtonHint, False)
+        progressDialog.setWindowModality(Qt.WindowModal)
+        progressDialog.setMinimumDuration(0)
+        npcinstances = copy.copy(self.projectData.npcinstances) # local copy as it changes size during iteration
+        for i in npcinstances:
+            self.deleteNPC(i)
+            progressDialog.setValue(progressDialog.value()+1)
+    
+        progressDialog.setValue(progressDialog.maximum())
+            
+    def clearTriggers(self):
+        progressDialog = QProgressDialog("Clearing triggers...", "NONCANELLABLE", 0,
+                                         len(self.projectData.triggers),
+                                         self.parent())
+        progressDialog.setCancelButton(None)
+        progressDialog.setWindowFlag(Qt.WindowCloseButtonHint, False)
+        progressDialog.setWindowModality(Qt.WindowModal)
+        progressDialog.setMinimumDuration(0)
+        triggers = copy.copy(self.projectData.triggers) # ditto
+        for i in triggers:
+            self.deleteTrigger(i)
+            progressDialog.setValue(progressDialog.value()+1)
+        
+        progressDialog.setValue(progressDialog.maximum())
+    
+    def clearEnemies(self):
+        progressDialog = QProgressDialog("Clearing enemies...", "NONCANELLABLE", 0,
+                                         (common.EBMAPWIDTH//64)*(common.EBMAPHEIGHT//64),
+                                         self.parent())
+        progressDialog.setCancelButton(None)
+        progressDialog.setWindowFlag(Qt.WindowCloseButtonHint, False)
+        progressDialog.setWindowModality(Qt.WindowModal)
+        progressDialog.setMinimumDuration(0)
+        for r in range(common.EBMAPWIDTH//64):
+            for c in range(common.EBMAPHEIGHT//64):
+                tile = self.projectData.getEnemyTile(EBCoords.fromEnemy(r, c))
+                action = ActionPlaceEnemyTile(tile, 0)
+                self.undoStack.push(action)
+                self.refreshEnemyTile(EBCoords.fromEnemy(r, c))
+                progressDialog.setValue(progressDialog.value()+1)
+        
+        progressDialog.setValue(progressDialog.maximum())
+                
 
     def toggleGrid(self):
         settings = QSettings()
@@ -1617,7 +1743,7 @@ class MapEditorScene(QGraphicsScene):
             teleport.setText("TP`"+str(i.id).zfill(2))
             self.addItem(teleport)
             self.placedTeleports.append(teleport)
-        
+            
     def parent(self) -> "MapEditor": # for typing
         return super().parent()
     

@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QRectF, QSettings, Qt
 from PySide6.QtGui import QImage, QPainter, QPixmap
@@ -13,9 +14,11 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
 import src.misc.common as common
 import src.misc.quotes as quotes
 from src.coilsnake.project_data import ProjectData
-from src.mapeditor.map.map_scene import MapEditorScene
 from src.misc.coords import EBCoords
 from src.misc.widgets import CoordsInput, HSeparator
+
+if TYPE_CHECKING:
+    from src.mapeditor.map.map_scene import MapEditorScene
 
 
 class FindDialog(QDialog):
@@ -401,7 +404,7 @@ class SettingsDialog(QDialog):
         settings.exec_()
         
 class RenderDialog(QDialog):
-    def __init__(self, parent, scene: MapEditorScene, x1=0, y1=0, x2=0, y2=0, immediate=False):
+    def __init__(self, parent, scene: "MapEditorScene", x1=0, y1=0, x2=0, y2=0, immediate=False):
         super().__init__(parent)
         
         self.setWindowTitle("Render Map")
@@ -519,3 +522,48 @@ class RenderDialog(QDialog):
     def renderMap(parent=None, scene=QGraphicsScene, x1=0, y1=0, x2=0, y2=0, immediate=False):
         dialog = RenderDialog(parent, scene, x1, y1, x2, y2, immediate)
         dialog.exec_()
+        
+class ClearDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        layout = QVBoxLayout()
+        
+        self.setWindowTitle("Clear map")
+        
+        self.clearTiles = QCheckBox("Clear tiles")
+        self.clearSectors = QCheckBox("Clear sector properties")
+        self.clearNPCs = QCheckBox("Clear NPCs")
+        self.clearTriggers = QCheckBox("Clear triggers")
+        self.clearEnemies = QCheckBox("Clear enemies")
+        
+        self.buttons = QDialogButtonBox(Qt.Orientation.Horizontal)
+        self.buttons.addButton("Apply", QDialogButtonBox.ButtonRole.AcceptRole)
+        self.buttons.addButton("Cancel", QDialogButtonBox.ButtonRole.RejectRole)
+        
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        
+        layout.addWidget(self.clearTiles)
+        layout.addWidget(self.clearSectors)
+        layout.addWidget(self.clearNPCs)
+        layout.addWidget(self.clearTriggers)
+        layout.addWidget(self.clearEnemies)
+        layout.addWidget(self.buttons)
+        
+        self.setLayout(layout)
+        
+    @staticmethod
+    def clearMap(parent=None):
+        dialog = ClearDialog(parent)
+        result = dialog.exec()
+        
+        if result == QDialog.DialogCode.Accepted:
+            return {"tiles": dialog.clearTiles.isChecked(),
+                    "sectors": dialog.clearSectors.isChecked(),
+                    "npcs": dialog.clearNPCs.isChecked(),
+                    "triggers": dialog.clearTriggers.isChecked(),
+                    "enemies": dialog.clearEnemies.isChecked()}
+            
+        else:
+            return False
