@@ -295,6 +295,8 @@ class MapEditorScene(QGraphicsScene):
                     menu.addAction("New &rope", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
                                                                        trigger.TriggerRope())))
                     menu.addAction("Paste", self.onPaste)
+                case common.MODEINDEX.HOTSPOT:
+                    menu.addAction("&Move hotspot here...", lambda: self.moveHotspot(EBCoords(x, y)))
                 case common.MODEINDEX.WARP:
                     menu.addAction("Move &warp here...", lambda: self.moveWarp(EBCoords(x, y)))
                     menu.addAction("Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
@@ -1228,6 +1230,28 @@ class MapEditorScene(QGraphicsScene):
         
         placement.setRect(hotspot.start.x, hotspot.start.y, hotspot.end.x-hotspot.start.x, hotspot.end.y-hotspot.start.y)
         placement.setBrush(QBrush(QColor.fromRgb(*hotspot.colour, 128)))
+    
+    def moveHotspot(self, coords: EBCoords):
+        coords.restrictToMap()
+        coords = EBCoords(*coords.roundToWarp())
+        id = QInputDialog().getInt(self.parent(),
+                                   "Move hotspot here",
+                                   "Hotspot ID",
+                                   0, 0, len(self.projectData.hotspots)-1)
+        if id[1]:
+            hotspot = self.projectData.hotspots[id[0]]
+            # get the width and height
+            width = hotspot.end.x - hotspot.start.x
+            height = hotspot.end.y - hotspot.start.y
+            # new endpoint based on this
+            end = coords+EBCoords(width, height)
+            end.restrictToMap()
+            end = EBCoords(*end.roundToWarp())
+            if end >= coords: # may happen at edge of map
+                coords = end - EBCoords(8, 8)
+            action = ActionChangeHotspotLocation(hotspot, coords, end)
+            self.undoStack.push(action)
+            self.refreshHotspot(id[0])
         
     def refreshWarp(self, id: int):
         warp = self.projectData.warps[id]
@@ -1240,6 +1264,8 @@ class MapEditorScene(QGraphicsScene):
         placement.setPos(teleport.dest.x, teleport.dest.y)
         
     def moveWarp(self, coords: EBCoords):
+        coords.restrictToMap()
+        coords = EBCoords(*coords.roundToWarp())
         id = QInputDialog().getInt(self.parent(),
                                    "Move warp here",
                                    "Warp ID",
@@ -1251,6 +1277,8 @@ class MapEditorScene(QGraphicsScene):
             self.refreshWarp(id[0])
     
     def moveTeleport(self, coords: EBCoords):
+        coords.restrictToMap()
+        coords = EBCoords(*coords.roundToWarp())
         id = QInputDialog().getInt(self.parent(),
                                    "Move teleport here",
                                    "Teleport ID",

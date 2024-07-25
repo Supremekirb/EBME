@@ -18,6 +18,7 @@ class EBCoords():
         - Division (divides x and y)
         - Floor division (divides x and y and rounds down)
         - Equality (checks if both x and y are the same)
+        - Comparison (checks if both x and y are >, <, >=, or <=)
     
     You can also convert it to a string, which returns "(x, y)".
         
@@ -39,6 +40,14 @@ class EBCoords():
         return EBCoords(self.x // other.x, self.y // other.y)
     def __eq__(self, other: "EBCoords"):
         return self.x == other.x and self.y == other.y
+    def __gt__(self, other: "EBCoords"):
+        return self.x > other.x and self.y > other.y
+    def __ge__(self, other: "EBCoords"):
+        return self.x >= other.x and self.y >= other.y
+    def __lt__(self, other: "EBCoords"):
+        return self.x < other.x and self.y < other.y
+    def __le__(self, other: "EBCoords"):
+        return self.x <= other.x and self.y <= other.y
     def __str__(self):
         return f"({self.x}, {self.y})"
     
