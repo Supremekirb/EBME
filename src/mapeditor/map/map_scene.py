@@ -958,7 +958,8 @@ class MapEditorScene(QGraphicsScene):
         sector = self.projectData.getSector(coords)
         if add:
             if sector in self.state.currentSectors:
-                self.state.currentSectors.remove(sector)
+                if len(self.state.currentSectors) > 1:
+                    self.state.currentSectors.remove(sector)
             else:
                 self.state.currentSectors.append(sector)
         else:
