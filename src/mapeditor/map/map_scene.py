@@ -165,6 +165,8 @@ class MapEditorScene(QGraphicsScene):
                     if event.buttons() == Qt.MouseButton.LeftButton:
                         if event.modifiers() == Qt.KeyboardModifier.NoModifier:
                             self.selectSector(coords)
+                        elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                            self.selectSector(coords, True, True)
                 case common.MODEINDEX.ENEMY:
                     if event.buttons() == Qt.MouseButton.LeftButton:
                         if event.modifiers() == Qt.KeyboardModifier.NoModifier:
@@ -947,18 +949,20 @@ class MapEditorScene(QGraphicsScene):
             
         self.sectorSelect.setBrush(QColor(current[0], current[1], current[2], alpha))
         
-    def selectSector(self, coords: EBCoords, add: bool = False):
+    def selectSector(self, coords: EBCoords, add: bool = False, onlyAdd: bool = False):
         """Select a sector at this location (load sidebar data, etc)
 
         Args:
             coords (EBCoords): location of the sector
+            add (bool): if this is multi-select (default False)
+            onlyAdd (bool): if this is multi-select drag (default False)
         """
         coords.restrictToMap()
 
         sector = self.projectData.getSector(coords)
         if add:
             if sector in self.state.currentSectors:
-                if len(self.state.currentSectors) > 1:
+                if len(self.state.currentSectors) > 1 and not onlyAdd:
                     self.state.currentSectors.remove(sector)
             else:
                 self.state.currentSectors.append(sector)
