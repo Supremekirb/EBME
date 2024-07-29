@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 import numpy
 from PIL import ImageQt
-from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, Qt
+from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, Qt, QTimer
 from PySide6.QtGui import (QBrush, QColor, QKeySequence, QPainter,
                            QPainterPath, QPen, QPixmap, QPolygon, QUndoCommand,
                            QUndoStack)
@@ -74,8 +74,13 @@ class MapEditorScene(QGraphicsScene):
         path.addRect(QRect(0, 0, 256, 128))
         self.sectorSelect = QGraphicsPathItem(path)
         self.sectorSelect.setPen(QPen(Qt.yellow, 2))
+        self.sectorSelect.setBrush(QBrush(QColor(255, 255, 0, 0)))
         self.sectorSelect.setZValue(common.MAPZVALUES.SECTORSELECT)
         self.addItem(self.sectorSelect)
+        self.sectorBrushChangeTimer = QTimer(self)
+        self.sectorBrushChangeTimer.setInterval(50)
+        self.sectorBrushChangeTimer.timeout.connect(self.changeSectorBrush)
+        self.sectorBrushChangeTimer.start()
         
         self.previewNPC = MapEditorNPC(EBCoords(), -1, UUID(int=0))
         self.previewNPC.setDummy()
@@ -925,6 +930,23 @@ class MapEditorScene(QGraphicsScene):
         except KeyError:
             pass # haven't been placed (rendered) yet, or there are none
 
+    def changeSectorBrush(self):
+        current = self.sectorSelect.brush().color().toTuple()
+        alpha = current[3]
+        
+        if alpha % 2 == 0: # going up
+            alpha += 2
+                    
+        elif alpha % 2 == 1: # going down
+            alpha -= 2
+        
+        if alpha > 64:
+            alpha = 63
+        elif alpha < 0:
+            alpha = 0
+            
+        self.sectorSelect.setBrush(QColor(current[0], current[1], current[2], alpha))
+        
     def selectSector(self, coords: EBCoords, add: bool = False):
         """Select a sector at this location (load sidebar data, etc)
 
