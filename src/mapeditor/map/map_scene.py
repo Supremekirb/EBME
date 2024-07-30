@@ -958,19 +958,23 @@ class MapEditorScene(QGraphicsScene):
             onlyAdd (bool): if this is multi-select drag (default False)
         """
         coords.restrictToMap()
+        sectors = []
+        sectors.extend(self.state.currentSectors)
 
         sector = self.projectData.getSector(coords)
         if add:
-            if sector in self.state.currentSectors:
-                if len(self.state.currentSectors) > 1 and not onlyAdd:
-                    self.state.currentSectors.remove(sector)
+            if sector in sectors:
+                if len(sectors) > 1 and not onlyAdd:
+                    sectors.remove(sector)
             else:
-                self.state.currentSectors.append(sector)
+                sectors.append(sector)
         else:
-            self.state.currentSectors = [sector,]
-            
-        self.parent().sidebarTile.fromSector(sector)
-        self.parent().sidebarSector.fromSectors()
+            sectors = [sector,]
+        
+        if sectors != self.state.currentSectors:
+            self.state.currentSectors = sectors
+            self.parent().sidebarTile.fromSector(sector)
+            self.parent().sidebarSector.fromSectors()
 
         rects = []
         for i in self.state.currentSectors:
