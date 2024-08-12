@@ -405,7 +405,8 @@ def saveWarps(data: ProjectData):
                 "Unknown": i.unknown,
                 "Warp Style": i.style,
                 "X": i.dest.coordsWarp()[0],
-                "Y": i.dest.coordsWarp()[1]
+                "Y": i.dest.coordsWarp()[1],
+                "EBME_Comment": i.comment,
             }
     except Exception as e:
         raise Exception("Could not convert warps to .yml format") from e
