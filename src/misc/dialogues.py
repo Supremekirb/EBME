@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 
 class FindDialog(QDialog):
+    LAST_TYPE = 0
     """Input dialog for finding various map objects"""
 
     def __init__(self, parent, projectData: ProjectData):
@@ -34,6 +35,7 @@ class FindDialog(QDialog):
 
         self.findType = QComboBox()
         self.findType.addItems(["NPC", "Enemy tile", "Hotspot", "Warp", "Teleport"])
+        self.findType.setCurrentIndex(FindDialog.LAST_TYPE)
 
         self.input = QSpinBox()
         self.input.setRange(0, common.WORDLIMIT)
@@ -69,6 +71,8 @@ class FindDialog(QDialog):
         objType = self.findType.currentText()
         objID = self.input.value()
         self.resultsList.clear()
+        
+        FindDialog.LAST_TYPE = self.findType.currentIndex()
 
         match objType:
             case "NPC":
@@ -137,6 +141,7 @@ class FindDialogListItem(QListWidgetItem):
 
 
 class CoordsDialog(QDialog):
+    LAST_TYPE = 0
     """Input dialog for EB map coordinates"""
 
     def __init__(self, *args, **kwargs):
@@ -165,6 +170,7 @@ class CoordsDialog(QDialog):
                                   "Enemy tiles (1:64)",
                                   "Sectors (1:256 / 1:128)",
                                   "Double sectors (1:256)"])
+        self.coordsType.setCurrentIndex(CoordsDialog.LAST_TYPE)
         
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
                                    Qt.Horizontal, self)
@@ -184,6 +190,7 @@ class CoordsDialog(QDialog):
             result = dialog.exec()
 
             if result == QDialog.Accepted:
+                CoordsDialog.LAST_TYPE = dialog.coordsType.currentIndex()
                 match dialog.coordsType.currentText():
                     case "Pixels (1:1)":
                         return EBCoords(dialog.inputX.value(), dialog.inputY.value())
