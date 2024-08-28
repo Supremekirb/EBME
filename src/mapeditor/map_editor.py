@@ -26,6 +26,7 @@ from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.dialogues import (AboutDialog, CoordsDialog, FindDialog,
                                 RenderDialog, SettingsDialog)
+from src.misc.map_music_editor import MapMusicEditor
 from src.misc.widgets import BaseChangerSpinbox
 from src.objects.enemy import EnemyTile
 from src.objects.hotspot import Hotspot
@@ -419,13 +420,15 @@ class MapEditor(QWidget):
 
 
         self.menuTools = QMenu("&Tools")
-        self.renderMapAction = QAction("&Render image of map")
+        self.renderMapAction = QAction("&Render image of map...")
         self.renderMapAction.triggered.connect(self.renderMap)
-        self.png2ftsAction = QAction("&Import PNG with png2fts")
+        self.png2ftsAction = QAction("&Import PNG with png2fts...")
         self.png2ftsAction.triggered.connect(self.dopng2fts)
-        self.clearAction = QAction("Clear map...")
+        self.clearAction = QAction("&Clear map...")
         self.clearAction.triggered.connect(self.scene.onClear)
-        self.menuTools.addActions([self.renderMapAction, self.png2ftsAction, self.clearAction])
+        self.mapMusicAction = QAction("&Map music editor...")
+        self.mapMusicAction.triggered.connect(lambda: MapMusicEditor.openMapMusicEditor(self, self.projectData))
+        self.menuTools.addActions([self.renderMapAction, self.png2ftsAction, self.clearAction, self.mapMusicAction])
 
         self.menuHelp = QMenu("&Help")
         self.aboutAction = QAction("&About EBME...")

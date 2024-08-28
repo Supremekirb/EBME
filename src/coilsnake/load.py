@@ -6,6 +6,7 @@ import numpy
 import yaml
 from PIL import Image, ImageQt
 
+from src.objects.music import MapMusicHierarchy, MapMusicEntry
 import src.misc.common as common
 from src.coilsnake.fts_interpreter import FullTileset
 from src.coilsnake.project_data import ProjectData
@@ -167,6 +168,15 @@ def readDirectory(parent, dir):
         except Exception as e:
             parent.returns.emit({"title": "Failed to load teleports",
                                     "text": "Could not load teleport data.",
+                                    "info": str(e)})
+            raise
+        
+        parent.updates.emit("Loading map music...")
+        try:
+            readMapMusic(projectData)
+        except Exception as e:
+            parent.returns.emit({"title": "Failed to load map music",
+                                    "text": "Could not load map music data.",
                                     "info": str(e)})
             raise
         
@@ -708,3 +718,24 @@ def readTeleports(data: ProjectData):
             raise KeyError("Could not find path to psi_teleport_dest_table in Project.snake.") from e
         else:
             raise KeyError(f"Could not read data of teleport {i[0]}") from e
+        
+def readMapMusic(data: ProjectData):
+    try:
+        hasLoadedYml = False
+        hiearchies = []
+        path = data.getResourcePath("eb.MapMusicModule", "map_music")
+        with open(path) as map_music:
+            map_music = yaml.load(map_music, Loader=yaml.CSafeLoader)
+            hasLoadedYml = True
+            for i in map_music.items():
+                current = MapMusicHierarchy(i[0])
+                hiearchies.append(current)
+                for j in i[1]:
+                    current.addEntry(MapMusicEntry(j["Event Flag"], j["Music"]))
+            
+            data.mapMusic = hiearchies
+    except KeyError as e:
+        if not hasLoadedYml:
+            raise KeyError("Could not find path to map_music in Project.snake") from e
+        else:
+            raise KeyError(f"Could not read data of music hiearchy {i[0]}") from e

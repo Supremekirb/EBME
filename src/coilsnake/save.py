@@ -107,6 +107,14 @@ def writeDirectory(parent, data):
                                  "text": "Could not save teleports.",
                                  "info": str(e)})
 
+        parent.updates.emit("Saving music...")
+        try:
+            saveMapMusic(data)
+        except Exception as e:
+            parent.returns.emit({"title": "Failed to save map music",
+                                 "text": "Could not save map music.",
+                                 "info": str(e)})
+
         logging.info(f"Successfully saved project at {data.dir}")
         parent.returns.emit(True)
 
@@ -435,3 +443,22 @@ def saveTeleports(data: ProjectData):
             yaml.dump(teleports_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write teleports to {os.path.normpath(data.getResourcePath('eb.MiscTablesModule', 'psi_teleport_dest_table'))}.") from e
+
+def saveMapMusic(data: ProjectData):
+    try:
+        music_yml = {}
+        for i in data.mapMusic:
+            entries = []
+            for j in i.entries:
+                entries.append({"Event Flag": j.flag,
+                                "Music": j.music})
+            music_yml[i.id] = entries
+            
+    except Exception as e:
+        raise Exception("Could not convert map music to .yml format") from e
+    
+    try:
+        with open(data.getResourcePath('eb.MapMusicModule', 'map_music'), "w") as file:
+            yaml.dump(music_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
+    except Exception as e:
+        raise Exception(f"Could not write map music to {os.path.normpath(data.getResourcePath('eb.MapMusicModule', 'map_music'))}.") from e

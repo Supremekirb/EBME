@@ -10,12 +10,13 @@ from src.coilsnake.fts_interpreter import FullTileset
 from src.misc.coords import EBCoords
 from src.objects.enemy import EnemyGroup, EnemyMapGroup, EnemyTile
 from src.objects.hotspot import Hotspot
+from src.objects.music import MapMusicHierarchy
 from src.objects.npc import NPC, NPCInstance
 from src.objects.sector import Sector
 from src.objects.sprite import BattleSprite, Sprite
 from src.objects.tile import MapTile, MapTileGraphic
 from src.objects.trigger import Trigger
-from src.objects.warp import Warp, Teleport
+from src.objects.warp import Teleport, Warp
 
 
 class ProjectData():
@@ -38,6 +39,7 @@ class ProjectData():
         self.hotspots: list[Hotspot] = []
         self.warps: list[Warp] = []
         self.teleports: list[Teleport] = []
+        self.mapMusic: list[MapMusicHierarchy] = []
     
     def loadProjectSnake(self):
         try:

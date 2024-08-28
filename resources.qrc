@@ -63,4 +63,7 @@
     <qresource prefix="styles">
         <file alias="eb.qss">assets/styles/eb.qss</file>
     </qresource>
+    <qresource prefix="misc">
+        <file alias="songs.txt">assets/misc/songs.txt</file>
+    </qresource>
 </RCC>

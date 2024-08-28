@@ -114,6 +114,10 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "TELEPORTMOVE", # drag on the map, cannot merge with itself
                                       "TELEPORTMOVESIDEBAR", # coords change in sidebar, can merge with itself
                                       "TELEPORTUPDATE", # can merge with itself
+                                      "MAPMUSICCHANGE", # can merge with itself
+                                      "MAPMUSICMOVE", # cannot merge with itself
+                                      "MAPMUSICADD", # cannot merge wiht itself
+                                      "MAPMUSICDELETE", # cannot merge with itself
                                       ])
 
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18

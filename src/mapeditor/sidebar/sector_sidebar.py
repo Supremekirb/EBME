@@ -1,11 +1,13 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QLabel,
-                               QSizePolicy, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHBoxLayout,
+                               QLabel, QPushButton, QSizePolicy, QVBoxLayout,
+                               QWidget)
 
 import src.misc.common as common
 from src.actions.sector_actions import ActionChangeSectorAttributes
 from src.coilsnake.project_data import ProjectData
+from src.misc.map_music_editor import MapMusicEditor
 from src.misc.widgets import BaseChangerSpinbox, CoordsInput, HSeparator
 from src.objects.sector import Sector
 
@@ -215,10 +217,18 @@ class SidebarSector(QWidget):
         self.itemSelect.setToolTip("Items of type 58 can only be used in a sector with their ID here.")
         self.itemSelect.editingFinished.connect(self.toSectors)
 
+        musicLayout = QHBoxLayout()
         self.musicSelect = BaseChangerSpinbox(self.miscData)
         self.musicSelect.setMaximum(common.BYTELIMIT)
-        self.musicSelect.setToolTip("Music area table entry. This is not a song ID. See map_music.yml.")
+        self.musicSelect.setToolTip("Music area table entry. This is not a song ID.")
         self.musicSelect.editingFinished.connect(self.toSectors)
+        
+        self.musicEdit = QPushButton("Edit")
+        self.musicEdit.clicked.connect(lambda: MapMusicEditor.openMapMusicEditor(self, self.projectData,
+                                                                                 self.musicSelect.value()))
+        
+        musicLayout.addWidget(self.musicSelect)
+        musicLayout.addWidget(self.musicEdit)
 
         self.propertySelect = QComboBox(self.miscData)
         self.propertySelect.addItems(["None", 
@@ -239,7 +249,7 @@ class SidebarSector(QWidget):
         self.teleportSelect.currentIndexChanged.connect(self.toSectors)
 
         self.miscDataLayout.addRow("Item", self.itemSelect)
-        self.miscDataLayout.addRow("Music", self.musicSelect)
+        self.miscDataLayout.addRow("Music", musicLayout)
         self.miscDataLayout.addRow("Properties", self.propertySelect)
         self.miscDataLayout.addRow("PSI Teleport", self.teleportSelect)
 
