@@ -312,8 +312,9 @@ class MapMusicEditor(QDialog):
         self.musicTrack.currentIndexChanged.connect(self.toCurrentItem)
         editorLayout.addRow("Song", self.musicTrack)
         
-        self.musicFlag = FlagInput()
+        self.musicFlag = FlagInput(True)
         self.musicFlag.valueChanged.connect(self.toCurrentItem)
+        self.musicFlag.inverted.connect(self.toCurrentItem)
         editorLayout.addRow("Flag", self.musicFlag)
         
         trackEditLayout = QHBoxLayout()

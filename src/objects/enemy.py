@@ -194,8 +194,16 @@ class MapEditorEnemyTile(QGraphicsRectItem):
 
 
     def setFlag(self, flag: int):
-        self.flagShadow.setText(str(flag))
-        self.flag.setText(str(flag))
+        if flag >= 0x8000:
+            self.flag.setX(29)
+            self.flagShadow.setX(30)
+            self.flag.setText(f"!{flag-0x8000}")
+            self.flagShadow.setText(f"!{flag-0x8000}")
+        else:
+            self.flag.setX(32)
+            self.flagShadow.setX(33)
+            self.flagShadow.setText(str(flag))
+            self.flag.setText(str(flag))
 
 
     def setProbability1(self, probability: int):

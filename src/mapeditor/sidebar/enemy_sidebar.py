@@ -121,7 +121,7 @@ class SidebarEnemy(QWidget):
                 }
             
         action = ActionUpdateEnemyMapGroup(group,
-                                           int(self.mapGroupEventFlag.text()),
+                                           self.mapGroupEventFlag.value(),
                                            self.mapGroupColour.chosenColour.toTuple(),
                                            subGroup1,
                                            subGroup2,
@@ -180,8 +180,9 @@ class SidebarEnemy(QWidget):
         
         self.mapGroupBox = QGroupBox("Map Enemy Group Data")
         self.mapGroupLayout = QFormLayout(self.mapGroupBox)
-        self.mapGroupEventFlag = FlagInput()
+        self.mapGroupEventFlag = FlagInput(True)
         self.mapGroupEventFlag.valueChanged.connect(self.toEnemyMapGroup)
+        self.mapGroupEventFlag.inverted.connect(self.toEnemyMapGroup)
         
         self.mapGroupColour = ColourButton()
         self.mapGroupColour.colourChanged.connect(self.toEnemyMapGroup)

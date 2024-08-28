@@ -1,7 +1,7 @@
 from PySide6.QtCore import QSettings, Qt, Signal
 from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPalette
 from PySide6.QtWidgets import (QColorDialog, QFrame, QHBoxLayout, QLabel,
-                               QPushButton, QSpinBox, QWidget)
+                               QPushButton, QSpinBox, QWidget, QCheckBox)
 
 import src.misc.common as common
 
@@ -59,28 +59,56 @@ class FlagInput(QHBoxLayout):
     editingFinished = Signal()
     valueChanged = Signal(int)
     inverted = Signal()
-    def __init__(self, *args, **kwargs):
-        QHBoxLayout.__init__(self, *args, **kwargs)
+    def __init__(self, invertable: bool=True, parent=None):
+        super().__init__(parent)
+        
+        self.invertable = invertable
+        
         self.spinbox = BaseChangerSpinbox()
-        self.spinbox.setMaximum(common.WORDLIMIT)
+        self.spinbox.setMaximum(common.WORDLIMIT if not self.invertable else common.WORDLIMIT//2)
+        
         self.spinbox.editingFinished.connect(self.editingFinished.emit)
         self.spinbox.valueChanged.connect(lambda new: self.valueChanged.emit(new))
         self.addWidget(self.spinbox)
 
-        self.button = QPushButton("Invert")
-        self.button.clicked.connect(lambda: self.spinbox.setValue(common.invertFlag(self.spinbox.value())))
-        self.button.clicked.connect(self.inverted.emit)
-        self.button.setToolTip("Flags above 0x8000 (32,678) are the inversion of the same flags below 0x8000.")
-        self.addWidget(self.button)
+        self.invert = QCheckBox("Invert")
+        self.invert.toggled.connect(lambda: self.inverted.emit())
+        self.invert.setToolTip("Adds 0x8000 to the flag, which is interpreted as inverting the flag's state in some scenarios.")
+        
+        if invertable:
+            self.addWidget(self.invert)
 
     def value(self) -> int:
+        if self.invertable and self.invert.isChecked():
+            return self.spinbox.value() + 0x8000
         return self.spinbox.value()
     
     def setValue(self, val: int) -> None:
+        self.invert.blockSignals(True)
+        self.spinbox.blockSignals(True)
+        
+        if self.invertable:
+            if val >= 0x8000:
+                self.invert.setChecked(True)
+                val -= 0x8000
+            else: self.invert.setChecked(False)
         self.spinbox.setValue(val)
         
+        self.invert.blockSignals(False)
+        self.spinbox.blockSignals(False)
+        
     def clear(self) -> None:
+        self.invert.blockSignals(True)
+        self.spinbox.blockSignals(True)
+        
         self.spinbox.clear()
+        
+        if self.invertable:
+            self.invert.setChecked(False)
+        
+        self.invert.blockSignals(False)
+        self.spinbox.blockSignals(False)
+        
         
     def text(self) -> str:
         return self.spinbox.text()

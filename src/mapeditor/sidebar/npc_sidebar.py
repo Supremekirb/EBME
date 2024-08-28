@@ -292,8 +292,8 @@ Common values include:
 0x025D (605): Stand in place, turn to face when spoken to, turn back.
 0x025E (606): Walk in place, turn to face when spoken to, turn back.""")
 
-        self.NPCFlag = FlagInput()
-        self.NPCFlag.spinbox.setToolTip("""Flag to use for the NPC. Use 0x0 if you don't need it.
+        self.NPCFlag = FlagInput(False)
+        self.NPCFlag.spinbox.setToolTip("""Flag to use for the NPC. Use 0 if you don't need it.
 This can control more than just when it appears.
 Item-type NPCs use this to determine if they are open or closed.""")
         

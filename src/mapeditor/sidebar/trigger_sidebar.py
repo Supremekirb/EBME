@@ -386,7 +386,7 @@ Switch: Automatically triggers some text when walked over, if the flag is set.""
                                      "Left"])
         self.doorDirection.setToolTip("Direction the player will face after warping.")
         
-        self.doorFlag = FlagInput()
+        self.doorFlag = FlagInput(True)
         self.doorFlag.spinbox.setToolTip("The door will only work if this flag is set.")
 
         self.doorStyle = BaseChangerSpinbox(self.doorData)
@@ -523,7 +523,7 @@ Do this and set the position to one warp tile below the door to only display tex
                                                                                         "ccscript")))
         self.switchText.setToolTip("Text to display when the player steps on the trigger.")
 
-        self.switchFlag = FlagInput()
+        self.switchFlag = FlagInput(True)
         self.switchFlag.spinbox.setToolTip("The switch will only work if this flag is set.")
 
         self.switchDataLayout.addRow("Flag", self.switchFlag)

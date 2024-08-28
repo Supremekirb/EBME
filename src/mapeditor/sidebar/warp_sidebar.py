@@ -193,7 +193,7 @@ class SidebarWarp(QWidget):
         self.teleportCoords.x.valueChanged.connect(self.toWarp)
         self.teleportCoords.y.valueChanged.connect(self.toWarp)
         
-        self.teleportFlag = FlagInput()
+        self.teleportFlag = FlagInput(True) # TODO verify this?
         self.teleportFlag.spinbox.setToolTip("Flag that unlocks this teleport location.")
         self.teleportFlag.inverted.connect(self.toWarp)
         self.teleportFlag.editingFinished.connect(self.toWarp)
