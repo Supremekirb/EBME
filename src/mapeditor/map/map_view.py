@@ -100,12 +100,15 @@ class MapEditorView(QGraphicsView):
         self._lastMousePos = event.pos()
     
     def wheelEvent(self, event: QWheelEvent):
-        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+        if (Qt.KeyboardModifier.ControlModifier in event.modifiers()) ^ QSettings().value("main/noCtrlZoom", False, type=bool):
             if event.angleDelta().y() > 0:
                 self.zoomIn(True)
             else:
                 self.zoomOut(True)
-        else: super().wheelEvent(event)
+        else: 
+            if QSettings().value("main/noCtrlZoom", False, type=bool):
+                event.setModifiers(event.modifiers() & ~Qt.KeyboardModifier.ControlModifier) # otherwise it only does fast scroll
+            super().wheelEvent(event)
 
     def renderShown(self):
         """Get the shown area of the viewport and render it"""
