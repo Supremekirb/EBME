@@ -1454,19 +1454,26 @@ class MapEditorScene(QGraphicsScene):
             sectorEndX -= 1
         if (self.importedTiles.shape[0] + coords.coordsTile()[1]) % 4 == 0:
             sectorEndY -= 1
+            
+        self.undoStack.beginMacro("Import map")
         
         # a) update sectors
         for r in range(sectorPosX, sectorEndX+1):
             for c in range(sectorPosY, sectorEndY+1):
                 sector = self.projectData.getSector(EBCoords.fromSector(r, c))
-                sector.tileset = self.importedTileset
-                sector.palettegroup = self.projectData.getTileset(self.importedTileset).palettes[0].groupID
-                sector.palette = self.projectData.getTileset(self.importedTileset).palettes[0].paletteID
-                self.refreshSector(EBCoords.fromSector(r, c))
+                action = ActionChangeSectorAttributes(sector,
+                                                      self.importedTileset,
+                                                      self.projectData.getTileset(self.importedTileset).palettes[0].groupID,
+                                                      self.projectData.getTileset(self.importedTileset).palettes[0].paletteID,
+                                                      sector.item, sector.music, sector.setting, sector.townmapimage,
+                                                      sector.townmap, sector.townmaparrow, sector.townmapimage,
+                                                      sector.townmapx, sector.townmapy)
+                self.undoStack.push(action)
+                
+                self.refreshSector(sector.coords)
 
                 progressDialog.setValue(progressDialog.value()+1)
 
-        self.undoStack.beginMacro("Import map")
         
         # b) update tiles in sectors (the end effect is to not have junk tiles around the edges)
         for r in range(common.secXToTile(sectorPosX), common.secXToTile(sectorEndX+1)):
