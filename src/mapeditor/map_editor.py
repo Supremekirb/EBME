@@ -263,9 +263,13 @@ class MapEditor(QWidget):
         self.redoAction = QAction("&Redo")
         self.redoAction.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
         self.redoAction.triggered.connect(self.scene.onRedo)
+        self.cancelAction = QAction("C&ancel", shortcut=QKeySequence("Esc"))
+        self.cancelAction.triggered.connect(self.scene.onCancel)
         self.menuEdit.addActions([self.deleteAction, self.cutAction, self.copyAction, self.pasteAction])
         self.menuEdit.addSeparator()
         self.menuEdit.addActions([self.undoAction, self.redoAction])
+        self.menuEdit.addSeparator()
+        self.menuEdit.addAction(self.cancelAction)
         
         # hidden actions for sectors
         self.copyShiftAction = QAction("Copy", shortcut=QKeySequence("Ctrl+Shift+C"))

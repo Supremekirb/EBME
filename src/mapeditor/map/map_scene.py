@@ -565,7 +565,19 @@ class MapEditorScene(QGraphicsScene):
             case common.MODEINDEX.NPC:
                 self.deleteSelectedNPCs()
             case common.MODEINDEX.TRIGGER:
-                self.deleteSelectedTriggers()        
+                self.deleteSelectedTriggers()       
+                
+    def onCancel(self):
+        grabber = self.mouseGrabberItem()
+        if grabber: grabber.mouseReleaseEvent(QGraphicsSceneMouseEvent(QGraphicsSceneMouseEvent.Type.GraphicsSceneMouseRelease))
+        
+        self.mouseReleaseEvent(QGraphicsSceneMouseEvent(QGraphicsSceneMouseEvent.Type.GraphicsSceneMouseRelease))
+        self.clearSelection()
+        match self.state.tempMode:
+            case common.TEMPMODEINDEX.IMPORTMAP:
+                self.cancelImportMap()
+            case common.TEMPMODEINDEX.SETDOORDEST:
+                self.cancelDoorDest()
         
     def setTemporaryMode(self, index: int):
         """Initialise a temporary mode (eg. for door target placement).
@@ -1477,6 +1489,10 @@ class MapEditorScene(QGraphicsScene):
         self.removeItem(self.importedMap)
         self.setTemporaryMode(common.TEMPMODEINDEX.NONE)
         self.undoStack.endMacro()
+        
+    def cancelImportMap(self):
+        self.removeItem(self.importedMap)
+        self.setTemporaryMode(common.TEMPMODEINDEX.NONE)
 
     def startSetDoorDest(self, coords: EBCoords):
         self.setTemporaryMode(common.TEMPMODEINDEX.SETDOORDEST)
@@ -1512,6 +1528,11 @@ class MapEditorScene(QGraphicsScene):
         self.doorDestPlacer.hide()
         self.doorDestLine.hide()
         self.parent().sidebarTrigger.setDoorDest(coords)
+        self.setTemporaryMode(common.TEMPMODEINDEX.NONE)
+        
+    def cancelDoorDest(self):
+        self.doorDestPlacer.hide()
+        self.doorDestLine.hide()
         self.setTemporaryMode(common.TEMPMODEINDEX.NONE)
         
     def onClear(self):
