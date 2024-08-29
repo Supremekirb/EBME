@@ -261,7 +261,7 @@ def openCCSFromLabel(label: str, dir: str):
     if label[0] == "$": # hex value, not a path
         return showErrorMsg("Error",
                      "Invalid CCS file",
-                     "This is an address, not a CCScript label",
+                     "This is an address, not a CCScript label. You may need to decompile the script with CoilSnake first to edit this text.",
                      icon=QMessageBox.Icon.Warning)
     
     if "." not in label:
