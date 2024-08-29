@@ -28,6 +28,11 @@ class MapEditorView(QGraphicsView):
         self.projectData = data
         self.setScene(scene)
         self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        
+        # default is true, set to false
+        # we arrange the scene with the RightToLeft property in MapEditor, because it lets us
+        # put the vertical scrollbar on the left side, which fits better
+        self.horizontalScrollBar().setInvertedControls(False)
 
         self.scaleFactor = 100
         
