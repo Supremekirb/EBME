@@ -198,7 +198,7 @@ class CoordsDialog(QDialog):
                         return EBCoords.fromWarp(dialog.inputX.value(), dialog.inputY.value())
                     case "Tiles (1:32)":
                         return EBCoords.fromTile(dialog.inputX.value(), dialog.inputY.value())
-                    case "Enemy plates (1:64)":
+                    case "Enemy tiles (1:64)":
                         return EBCoords.fromEnemy(dialog.inputX.value(), dialog.inputY.value())
                     case "Sectors (1:256 / 1:128)":
                         return EBCoords.fromSector(dialog.inputX.value(), dialog.inputY.value())
