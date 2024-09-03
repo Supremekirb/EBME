@@ -27,7 +27,7 @@ def parseMetadata(path: str) -> dict:
     """
     
     substitutions = {}
-    with open(path) as metadata:
+    with open(path, encoding="utf-8", errors='replace') as metadata:
         for i in metadata.readlines():
             try:
                 # format is "T [ID] [NAME]"
