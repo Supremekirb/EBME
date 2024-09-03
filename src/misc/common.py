@@ -14,17 +14,25 @@ from PySide6.QtWidgets import QMessageBox
 from ebme import ROOT_DIR
 
 # Current version number/ID
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 
 # Pretty much just for posterity's sake
 VERSIONHISTORY = IntEnum("VERSIONHISTORY", ["pre-alpha",
                                             "0.1.0",
-                                            "0.2.0"],
+                                            "0.2.0",
+                                            "0.2.1"],
                                             start = 0)
 
 # Add new versions here. Add the new one at the top.
 # Don't forget a linebreak between versions!
 CHANGELOG = """\
+=== 0.2.1 ===
+(03/08/2024)
+This release adds a small menu to edit map music, \
+makes some minor tweaks to the interface and controls, \
+and fixes a few bugs.
+Full changelog: Help -> About EBME -> Visit the repository on GitHub.
+
 === 0.2.0 ===
 (25/07/2024)
 This release adds a new mode to edit warps and PSI teleports, \
