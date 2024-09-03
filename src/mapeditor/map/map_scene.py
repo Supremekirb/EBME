@@ -363,9 +363,16 @@ class MapEditorScene(QGraphicsScene):
                     # more performant, but requires re-render
                     self.projectData.getTile(c.maptile.coords).isPlaced = False
 
-            if isinstance(c, ActionMoveNPCInstance) or isinstance(c, ActionChangeNPCInstance) or isinstance(c, ActionAddNPCInstance):
+            if isinstance(c, ActionMoveNPCInstance) or isinstance(c, ActionChangeNPCInstance):
                 actionType = "npc"
                 self.refreshInstance(c.instance.uuid)
+            
+            if isinstance(c, ActionAddNPCInstance):
+                actionType = "npc"
+                try:
+                    self.refreshInstance(c.instance.uuid)
+                except KeyError:
+                    pass # happens on undo due to NPC being not present
             
             if isinstance(c, ActionUpdateNPC):
                 actionType = "npc"
@@ -374,9 +381,16 @@ class MapEditorScene(QGraphicsScene):
             if isinstance(c, ActionDeleteNPCInstance):
                 actionType = "npc"
                 
-            if isinstance(c, ActionMoveTrigger) or isinstance(c, ActionUpdateTrigger) or isinstance(c, ActionAddTrigger):
+            if isinstance(c, ActionMoveTrigger) or isinstance(c, ActionUpdateTrigger):
                 actionType = "trigger"
                 self.refreshTrigger(c.trigger.uuid)
+                
+            if isinstance(c, ActionAddTrigger):
+                actionType = "trigger"
+                try:
+                    self.refreshTrigger(c.trigger.uuid)
+                except KeyError:
+                    pass # happens on undo due to trigger being not present
             
             if isinstance(c, ActionDeleteTrigger):
                 actionType = "trigger"
@@ -505,16 +519,53 @@ class MapEditorScene(QGraphicsScene):
                     self.parent().sidebarSector.fromSectors()
                     
                 case "NPC":
+                    absolute = QSettings().value("main/absolutePaste", False, type=bool)
+                    if not absolute:
+                        
+                        #1. get top-left-most NPC
+                        root = EBCoords(text["Data"][0]["coords"][0], text["Data"][0]["coords"][1])
+                        for i in text["Data"]:
+                            coords = EBCoords(i["coords"][0], i["coords"][1])
+                            if coords <= root:
+                                root = coords
+                                
+                        #2. calculate relative offsets
+                        for i in text["Data"]:
+                            i["coords"][0] -= root.x
+                            i["coords"][1] -= root.y
+                    
                     self.clearSelection()
                     self.undoStack.beginMacro("Paste NPCs")
+                    
                     inMacro = True
                     for i in text["Data"]:
                         inst = NPCInstance(i["id"], EBCoords(i["coords"][0], i["coords"][1]))
+                        
+                        if not absolute: # then add the mouse pos
+                            inst.coords += EBCoords(*self.parent().view.mapToScene(
+                                self.parent().view._lastMousePos).toTuple())
+                            
                         self.addNPC(inst)
                     self.undoStack.endMacro()
                     inMacro = False
                     self.parent().sidebar.setCurrentIndex(common.MODEINDEX.NPC)
+                    
                 case "Trigger":
+                    absolute = QSettings().value("main/absolutePaste", False, type=bool)
+                    if not absolute:
+                        
+                        #1. get top-left-most trigger
+                        root = EBCoords(text["Data"][0]["coords"][0], text["Data"][0]["coords"][1])
+                        for i in text["Data"]:
+                            coords = EBCoords(i["coords"][0], i["coords"][1])
+                            if coords <= root:
+                                root = coords
+                                
+                        #2. calculate relative offsets
+                        for i in text["Data"]:
+                            i["coords"][0] -= root.x
+                            i["coords"][1] -= root.y
+                            
                     self.clearSelection()
                     self.undoStack.beginMacro("Paste triggers")
                     inMacro = True
@@ -545,6 +596,10 @@ class MapEditorScene(QGraphicsScene):
                                 logging.warn(f"Unknown trigger type {i['data']['type']}")
                                 continue
                         trigger_ = trigger.Trigger(EBCoords(i["coords"][0], i["coords"][1]), typeData)
+                        
+                        if not absolute:
+                            trigger_.coords += EBCoords(*self.parent().view.mapToScene(
+                                self.parent().view._lastMousePos).toTuple())
                         
                         self.addTrigger(trigger_)
                     self.undoStack.endMacro()
@@ -1039,7 +1094,11 @@ class MapEditorScene(QGraphicsScene):
 
     def copySelectedSectors(self):
         copied = []
+        
         rootCoords = self.state.currentSectors[0].coords
+        for i in self.state.currentSectors:
+            if i.coords <= rootCoords:
+                rootCoords = i.coords
         
         for i in self.state.currentSectors:
             # get tile IDs from the map
@@ -1064,7 +1123,12 @@ class MapEditorScene(QGraphicsScene):
             return
         
         copied = []
+        
         rootCoords = self.state.currentSectors[0].coords
+        for i in self.state.currentSectors:
+            if i.coords <= rootCoords:
+                rootCoords = i.coords
+                
         for i in self.state.currentSectors:
             copied.append({"Offset" : (i.coords.coordsSector()[0] - rootCoords.coordsSector()[0], i.coords.coordsSector()[1] - rootCoords.coordsSector()[1]),
                            "Attributes" : i.attributesToDataDict(),
@@ -1079,7 +1143,12 @@ class MapEditorScene(QGraphicsScene):
             return
         
         copied = []
+        
         rootCoords = self.state.currentSectors[0].coords
+        for i in self.state.currentSectors:
+            if i.coords <= rootCoords:
+                rootCoords = i.coords
+        
         for i in self.state.currentSectors:
             copied.append({"Offset" : (i.coords.coordsSector()[0] - rootCoords.coordsSector()[0], i.coords.coordsSector()[1] - rootCoords.coordsSector()[1]),
                            "Palette" : i.paletteToDataDict()})

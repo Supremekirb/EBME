@@ -291,9 +291,10 @@ class SettingsDialog(QDialog):
         
         self.loadLastProject = QCheckBox("")
         self.noCtrlZoom = QCheckBox("")
+        self.absolutePaste = QCheckBox("")
         self.generalLayout.addRow("Load most recent project on startup:", self.loadLastProject)
-        self.generalLayout.addWidget(QLabel("Passing a path via the command line will override this."))
         self.generalLayout.addRow("Zoom without holding Ctrl:", self.noCtrlZoom)
+        self.generalLayout.addRow("Paste NPCs and triggers at original locations:", self.absolutePaste)
         
         self.personalisationBox = QGroupBox("Personalisation")
         self.personalisationLayout = QFormLayout()
@@ -376,6 +377,7 @@ class SettingsDialog(QDialog):
     def fromSettings(self):
         self.loadLastProject.setChecked(not(self.settings.value("main/disableLoadLast", False, type=bool)))
         self.noCtrlZoom.setChecked(self.settings.value("main/noCtrlZoom", False, type=bool))
+        self.absolutePaste.setChecked(self.settings.value("main/absolutePaste", False, type=bool))
         self.applicationTheme.setCurrentText(self.settings.value("personalisation/applicationTheme", QApplication.style().objectName(), type=str))
         self.smoothGoto.setCurrentText(self.settings.value("personalisation/smoothGoto", "Always enabled", type=str))
         self.textEditorCommand.setText(self.settings.value("programs/textEditorCommand", ""))
@@ -385,6 +387,7 @@ class SettingsDialog(QDialog):
     def toSettings(self):
         self.settings.setValue("main/disableLoadLast", not(self.loadLastProject.isChecked()))
         self.settings.setValue("main/noCtrlZoom", self.noCtrlZoom.isChecked())
+        self.settings.setValue("main/absolutePaste", self.absolutePaste.isChecked())
         
         self.settings.setValue("personalisation/applicationTheme", self.applicationTheme.currentText())
         self.settings.setValue("personalisation/smoothGoto", self.smoothGoto.currentText())
