@@ -1,7 +1,9 @@
 from PySide6.QtCore import QSettings, Qt, Signal
-from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPalette
-from PySide6.QtWidgets import (QColorDialog, QFrame, QHBoxLayout, QLabel,
-                               QPushButton, QSpinBox, QWidget, QCheckBox)
+from PySide6.QtGui import (QColor, QGuiApplication, QMouseEvent, QPainter,
+                           QPalette, QPen, QResizeEvent)
+from PySide6.QtWidgets import (QBoxLayout, QCheckBox, QColorDialog, QFrame,
+                               QHBoxLayout, QLabel, QPushButton, QSpacerItem,
+                               QSpinBox, QWidget)
 
 import src.misc.common as common
 
@@ -164,10 +166,15 @@ class ColourButton(QPushButton):
     
     def __init__(self, parent: QWidget | None = None, initialColour: QColor = QColor(255, 255, 255)):
         super().__init__(parent)
+        
         if QGuiApplication.palette().color(QPalette.ColorGroup.Normal, QPalette.ColorRole.Base).lightness() < 128:
             self._border = "#FFFFFF"
         else:
             self._border = "#000000"
+            
+        self._thickPen = QPen()
+        self._thickPen.setWidth(3)
+        self._thickPen.setColor(self._border)
     
         self.chosenColour = None
         self.clicked.connect(self.openColourDialog)
@@ -181,13 +188,62 @@ class ColourButton(QPushButton):
             self.setColour(colour)
             
     def setColour(self, colour: QColor):
+        colour.setAlpha(255)
         self.chosenColour = colour
         self.colourChanged.emit()
+        if self.chosenColour.lightness() < 100:
+            self._thickPen.setColor("#FFFFFF")
+        else:
+            self._thickPen.setColor("#000000")
         self.repaint()
+        
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.openColourDialog()
+        return super().mouseDoubleClickEvent(event)
     
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setPen(self._border)
+        if not self.isCheckable():
+            painter.setPen(self._border)
+            
+        else:
+            if self.isChecked():
+                painter.setPen(self._thickPen)
+            else:
+                painter.setPen(Qt.PenStyle.NoPen)
+            
         painter.setBrush(self.chosenColour)
         painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
         painter.end()
+
+# https://stackoverflow.com/a/49851646
+class AspectRatioWidget(QWidget):
+    def __init__(self, widget: QWidget, parent: QWidget = None):
+        super().__init__(parent)
+        self.aspect_ratio = widget.size().width() / widget.size().height()
+        self.setLayout(QBoxLayout(QBoxLayout.Direction.LeftToRight, self))
+        #  add spacer, then widget, then spacer
+        self.layout().addItem(QSpacerItem(0, 0))
+        self.layout().addWidget(widget)
+        self.layout().addItem(QSpacerItem(0, 0))
+        
+        self.setContentsMargins(0, 0, 0, 0)
+        # self.layout().setAlignment(widget, Qt.AlignmentFlag.AlignCenter)
+
+    def resizeEvent(self, event: QResizeEvent):
+        w = event.size().width()
+        h = event.size().height()
+
+        if w / h > self.aspect_ratio:  # too wide
+            self.layout().setDirection(QBoxLayout.Direction.LeftToRight)
+            widget_stretch = h * self.aspect_ratio
+            outer_stretch = (w - widget_stretch) / 2 + 0.5
+        else:  # too tall
+            self.layout().setDirection(QBoxLayout.Direction.TopToBottom)
+            widget_stretch = w / self.aspect_ratio
+            outer_stretch = (h - widget_stretch) / 2 + 0.5
+
+        self.layout().setStretch(0, outer_stretch)
+        self.layout().setStretch(1, widget_stretch)
+        self.layout().setStretch(2, outer_stretch)

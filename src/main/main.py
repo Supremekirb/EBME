@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (QMainWindow, QMenuBar, QMessageBox, QTabWidget,
 import src.misc.common as common
 import src.project.project as project
 from src.mapeditor.map_editor import MapEditor
+from src.tileeditor.tile_editor import TileEditor
 
 
 class MainApplication(QMainWindow):
@@ -106,11 +107,11 @@ class MainApplication(QMainWindow):
         self.mainTabWin = QTabWidget(self)
         self.projectWin = project.Project(self)
         self.mapWin: MapEditor = QWidget() # replaced by MapEditor
-        # self.tileWin = QWidget()
+        self.tileWin: TileEditor = QWidget() # replaced by TileEditor
 
         self.mainTabWin.addTab(self.projectWin, "Project")
         self.mainTabWin.addTab(self.mapWin, "Map Editor")
-        # self.mainTabWin.addTab(self.tileWin, "Tile Editor")
+        self.mainTabWin.addTab(self.tileWin, "Tile Editor")
 
         self.mainTabWin.setTabEnabled(1, False)
         self.mainTabWin.setTabEnabled(2, False)

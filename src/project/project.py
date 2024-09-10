@@ -1,6 +1,7 @@
 import logging
 import os
 import traceback
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSettings, QThread, QTimer
 from PySide6.QtGui import QAction, QKeySequence, QPixmap
@@ -15,13 +16,17 @@ import src.coilsnake.save as save
 import src.mapeditor.map_editor as map_editor
 import src.misc.common as common
 import src.misc.debug as debug
+import src.tileeditor.tile_editor as tile_editor
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import AboutDialog, SettingsDialog
 from src.misc.worker import Worker
 
+if TYPE_CHECKING:
+    from src.main.main import MainApplication
+
 
 class Project(QWidget):
-    def __init__(self, mainWin, *args, **kwargs):
+    def __init__(self, mainWin: "MainApplication", *args, **kwargs):
         QWidget.__init__(self, *args, **kwargs)
 
         self.mainWin = mainWin
@@ -29,7 +34,7 @@ class Project(QWidget):
         self.setupUI()
         self.disableSave()
         self.disableReload()
-        self.disableMapEditor()
+        self.disableEditors()
         self.projectInfo.setDisabled(True)
 
     def enableOpen(self):
@@ -56,11 +61,11 @@ class Project(QWidget):
         self.reloadProjectButton.setEnabled(False)
         self.reloadAction.setEnabled(False)
 
-    def enableMapEditor(self):
+    def enableEditors(self):
         self.mainWin.mainTabWin.setTabEnabled(1, True)
         self.mainWin.mainTabWin.setTabEnabled(2, True)
 
-    def disableMapEditor(self):
+    def disableEditors(self):
         self.mainWin.mainTabWin.setTabEnabled(1, False)
         self.mainWin.mainTabWin.setTabEnabled(2, False)
 
@@ -100,7 +105,7 @@ class Project(QWidget):
             self.currentDirectory = dir
             self.disableSave()
             self.disableReload()
-            self.disableMapEditor()
+            self.disableEditors()
             self.projectInfo.setDisabled(True)
             self.disableOpen()
 
@@ -132,29 +137,42 @@ class Project(QWidget):
         if isinstance(data, ProjectData):
             try:
                 self.projectData = data
-                
-                self.updateStatusLabel("Loading map editor...")
-                self.statusLabel.repaint() # otherwise it may not show before we actually process the next bit
-
                 settings = QSettings()
                 settings.setValue("main/LastProjectPath", self.projectData.dir)
 
                 self.addRecent(self.projectData.getProjectName(), self.projectData.dir)
                 
                 try:
-                    self.mainWin.mapWin = map_editor.MapEditor(self, self.projectData)
-                except Exception as e:
-                    common.showErrorMsg(title="Error loading map editor", text="An error occurred while loading the map editor.", info=str(e))
-                    self.updateStatusLabel("Error loading map editor.")
-                    logging.warn(f"Error loading map editor: {traceback.format_exc()}")
+                    self.updateStatusLabel("Loading map editor...")
+                    self.statusLabel.repaint() # otherwise it may not show before we actually process the next bit
+                    try:
+                        self.mainWin.mapWin = map_editor.MapEditor(self, self.projectData)
+                    except Exception as e:
+                        common.showErrorMsg(title="Error loading map editor", text="An error occurred while loading the map editor.", info=str(e))
+                        self.updateStatusLabel("Error loading map editor.")
+                        logging.warn(f"Error loading map editor: {traceback.format_exc()}")
+                        raise
+                    
+                    self.updateStatusLabel("Loading tile editor...")
+                    self.statusLabel.repaint()
+                    try:
+                        self.mainWin.tileWin = tile_editor.TileEditor(self, self.projectData)
+                    except Exception as e:
+                        common.showErrorMsg(title="Error loading tile editor", text="An error occurred while loading the tile editor.", info=str(e))
+                        self.updateStatusLabel("Error loading tile editor.")
+                        logging.warn(f"Error loading tile editor: {traceback.format_exc()}")
+                        raise
+                
+                except: pass # we've already shown an error message and logged it, so just continue
                 
                 else:
                     self.mainWin.mainTabWin.removeTab(2)
                     self.mainWin.mainTabWin.removeTab(1)
                     self.mainWin.mainTabWin.addTab(self.mainWin.mapWin, "Map Editor")
+                    self.mainWin.mainTabWin.addTab(self.mainWin.tileWin, "Tile Editor")
                     
                     self.updateStatusLabel(f"Project: {self.projectData.getProjectName()}")
-                    self.enableMapEditor()
+                    self.enableEditors()
                     self.enableSave()
                     
                 self.loadProjectInfo()
@@ -169,7 +187,7 @@ class Project(QWidget):
         else: # returns error data if failed
             self.disableSave()
             self.disableReload()
-            self.disableMapEditor()
+            self.disableEditors()
             self.projectInfo.setDisabled(True)
             common.showErrorMsg(title=data["title"], text=data["text"], info=data["info"])
             self.updateStatusLabel("Error loading project.")
@@ -185,7 +203,7 @@ class Project(QWidget):
         self.disableOpen()
         self.disableSave()
         self.disableReload()
-        self.disableMapEditor()
+        self.disableEditors()
         self.projectInfo.setDisabled(True)
 
         self.updateStatusLabel("Saving project...")
@@ -223,7 +241,7 @@ class Project(QWidget):
         self.enableOpen()
         self.enableSave()
         self.enableReload()
-        self.enableMapEditor()
+        self.enableEditors()
         self.projectInfo.setDisabled(False)
 
         self.loadProjectInfo()

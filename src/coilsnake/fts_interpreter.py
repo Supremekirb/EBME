@@ -52,7 +52,7 @@ class FullTileset:
         """From an .fts file, read the data of all 512 minitiles.
         ### Returns
         `minitiles` - a list of Minitile objects"""
-        minitiles = []
+        minitiles: list[Minitile] = []
         for t in range(0, 512*3, 3): # 512 minitiles per tileset, three lines per minitile
             bg = []
             fg = []
@@ -72,7 +72,7 @@ class FullTileset:
         """From an .fts file, read the data of the various palettes.
         ### Returns
         `palettes` - a list of Palette objects"""
-        palettes = []
+        palettes: list[Palette] = []
 
         offset = 1537 # all .fts files start palettes here
         while fts[offset] != "\n": # palette listing is of variable length, so check it until we hit a whitespace gap
@@ -91,7 +91,7 @@ class FullTileset:
 
         oldID = self.palettes[0].groupID
         groupBuilder = []
-        groupList = []
+        groupList: list[PaletteGroup] = []
         for i in self.palettes:
             if i.groupID == oldID:
                 groupBuilder.append(i)
@@ -109,7 +109,7 @@ class FullTileset:
         """From an .fts file, read the data of all <=960 tiles.
         ### Returns
            `tiles` - a list of Tile ob6jects"""
-        tiles = []
+        tiles: list[Tile] = []
         # verify tiles
         for i in range(self.tileOffset, self.tileOffset+960):
             self.verify_hex(fts[i])
@@ -130,7 +130,7 @@ class PaletteGroup:
     ### Parameters
         `palettes` - a list of Palette objects (of the same ID)"""
     def __init__(self, palettes):
-        self.palettes = palettes
+        self.palettes: list[Palette] = palettes
         self.groupID = palettes[0].groupID
     
 
@@ -141,7 +141,7 @@ class Palette:
     def __init__(self, palette):
         self.groupID = int(palette[0], 32) # base 32 number, convert to int
         self.paletteID = int(palette[1], 32) # same
-        self.subpalettes = []
+        self.subpalettes: list[Subpalette] = []
 
         # build subpalette list on init (we'll use it all the time anyway)
         for subpalette in range(6):
@@ -163,7 +163,7 @@ class Subpalette:
         `subpalette` - raw subpalette from an .fts file palette"""
     def __init__(self, subpalette):
         self.subpalette = subpalette
-        self.subpaletteRGBA = []
+        self.subpaletteRGBA: list[tuple[int, int, int, int]] = []
 
         for entry in range(16):  # create RGBA list too
             if entry == 0: self.subpaletteRGBA.append((int(str(self.subpalette[entry][0]), 32)*8, int(str(self.subpalette[entry][1]), 32)*8, int(str(self.subpalette[entry][2]), 32)*8, 0)) # alpha channel = 0 for first colour
@@ -278,8 +278,13 @@ class Minitile:
     def mapIndexToRGBABackground(self, subpalette):
         RGBAbuild = []
         for i in self.background:
-            RGBAbuild.append(subpalette.getSubpaletteColourRGBA(i))
-
+            value = subpalette.getSubpaletteColourRGBA(i)
+            if value[3] == 0: # bg tiles cannot have alpha
+                # TODO verify this behavior. Does it do something weird like make it subpalette 0's first colour?
+                value = (value[0], value[1], value[2], 255)
+                
+            RGBAbuild.append(value)
+        
         return RGBAbuild
     
     @functools.lru_cache(maxsize=5000)

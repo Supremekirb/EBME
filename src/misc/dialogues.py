@@ -581,3 +581,45 @@ class ClearDialog(QDialog):
             
         else:
             return False
+        
+        
+class TileEditorAboutDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowTitle("About the tile editor")
+        
+        layout = QVBoxLayout()
+        text = QLabel("""\
+<h1>About the Tile Editor</h1>
+The tile editor is where you edit the graphics of the map.
+It's split into four main quadrants. Let's go over them in order.
+
+<h2>Minitiles</h2>
+The minitile quadrant is where you will select the tileset, palette group, and palette in the three comboboxes.
+The list of minitiles will be shown. Most things are on a per-tileset basis, with the palette group and palette only defining colour sets.
+Select a minitile by left clicking to load it for editing. You can also drag minitiles around to rearrange them.
+
+<h2>Graphics</h2>
+This is where you can edit a minitile's graphics and the palette. Select a palette entry on the right side, and use the left mouse button to draw on the minitile.
+You can double-click to fill. The upper graphic is the foreground layer, and the lower graphic is the background layer. Not all minitiles have a foreground layer.
+You can also copy one layer to the other. If the relevant attributes are set, the foreground layer will display in front of sprites in-game. More on that later.
+
+<h2>Tiles</h2>
+This is where you can view and edit tiles. Left click on a tile in the list to load it for arrangement and attribute editing.
+Once it's loaded, you'll see it in the larger box on the right. Left click on this to place the currently-selected minitile, and right click to mirror the minitile.
+
+<h2>Attributes</h2>
+The attribute editor lets you configure tile attributes (commonly referred to as collision, though it can do more than that). The list on the left has a few presets of attribute configurations.
+You can use the buttons to add your own, which will open the menu. You can double click to edit the preset or custom entry.
+On the right side, you can place these attributes onto the currently selected tile.
+""")
+        
+        text.setWordWrap(True)
+        layout.addWidget(text)
+        
+        self.setLayout(layout)
+        
+    @staticmethod
+    def showAbout(parent):
+        dialog = TileEditorAboutDialog(parent)
+        dialog.exec()
