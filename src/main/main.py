@@ -70,7 +70,7 @@ class MainApplication(QMainWindow):
 
     def closeEvent(self, event):
         if isinstance(self.mapWin, MapEditor):
-            if not self.projectWin.saveAction.isEnabled():
+            if self.projectWin.isSaving:
                 msg = QMessageBox(self)
                 msg.setText("The program shouldn't be closed while it's saving.")
                 msg.setInformativeText("Please wait and try again, or close the program anyway (may be unsafe).")

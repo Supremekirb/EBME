@@ -31,6 +31,8 @@ class Project(QWidget):
         self.disableReload()
         self.disableMapEditor()
         self.projectInfo.setDisabled(True)
+        
+        self.isSaving = False
 
     def enableOpen(self):
         self.openProjectButton.setEnabled(True)
@@ -181,6 +183,7 @@ class Project(QWidget):
         self.loadingProgress.setValue(-1)
     
     def saveProject(self):
+        self.isSaving = True
         logging.info(f"Saving project to {self.projectData.dir}")
         self.disableOpen()
         self.disableSave()
@@ -207,6 +210,7 @@ class Project(QWidget):
 
     def finishedProjectSave(self, result):
         self.workerThread.quit()
+        self.isSaving = False
 
         if isinstance(result, bool) and result == True:
             self.updateStatusLabel("Project saved.")
