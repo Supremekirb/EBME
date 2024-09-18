@@ -6,6 +6,7 @@ from io import StringIO
 
 import yaml
 
+import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
 from src.objects import trigger
 
@@ -150,7 +151,7 @@ def saveTilesets(data: ProjectData):
             for t in i.tiles:
                 fts_file.write(t.tile)
 
-            for _ in range(960, 1024):
+            for _ in range(common.MAXTILES, 1024):
                 # bunch of empty tiles needed
                 fts_file.write("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\n")
         except Exception as e:

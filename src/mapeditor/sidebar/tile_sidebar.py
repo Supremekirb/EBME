@@ -1,10 +1,10 @@
-from PIL import ImageQt
 from PySide6.QtCore import QEvent, QObject, QPoint, Qt
 from PySide6.QtGui import QBrush, QPixmap
 from PySide6.QtWidgets import (QComboBox, QFormLayout, QGraphicsPixmapItem,
                                QGraphicsScene, QGraphicsView, QGridLayout,
                                QGroupBox, QPushButton, QWidget)
 
+import src.misc.common as common
 from src.actions.sector_actions import ActionChangeSectorAttributes
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
@@ -112,7 +112,7 @@ class SidebarTile(QWidget):
         #####
 
         self.scene = QGraphicsScene()
-        self.scene.setSceneRect(0, 0, 32*SidebarTileCanvas.tileWidth, 32*960//SidebarTileCanvas.tileWidth)
+        self.scene.setSceneRect(0, 0, 32*SidebarTileCanvas.tileWidth, 32*common.MAXTILES//SidebarTileCanvas.tileWidth)
         self.view = SidebarTileCanvas(self, self.state, self.projectData, self.scene)
 
         self.contentLayout = QGridLayout(self)
@@ -139,7 +139,7 @@ class SidebarTile(QWidget):
 
 class SidebarTileCanvas(QGraphicsView):
     tileWidth = 6
-    """How many tiles across the selector should be. Should be a factor of 960"""
+    """How many tiles across the selector should be. Should be a factor of common.MAXTILES"""
     def __init__(self, parent, state, projectData: ProjectData, scene: QGraphicsScene):
         super().__init__(parent)
         self.state = state
@@ -150,7 +150,7 @@ class SidebarTileCanvas(QGraphicsView):
 
         x = 0
         y = 0
-        for i in range(0, 960):
+        for i in range(0, common.MAXTILES):
             item = MapEditorTile(EBCoords.fromTile(x, y))
             item.setText(str(i).zfill(3))
 
@@ -168,7 +168,7 @@ class SidebarTileCanvas(QGraphicsView):
         self.scene().addItem(self.selectedIndicator)
 
         # kinda weird to do it backwards like this but it makes more sense to have the width kept here...
-        self.scene().setSceneRect(0, 0, (SidebarTileCanvas.tileWidth*32), (32*960)//SidebarTileCanvas.tileWidth)
+        self.scene().setSceneRect(0, 0, (SidebarTileCanvas.tileWidth*32), (32*common.MAXTILES)//SidebarTileCanvas.tileWidth)
         self.scene().installEventFilter(self) # me when i subclass the wrong thing probably
 
         self.setBackgroundBrush(

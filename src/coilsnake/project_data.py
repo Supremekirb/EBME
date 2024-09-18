@@ -109,7 +109,7 @@ class ProjectData():
 
     def resolveTileGraphic(self, tileset: int, palettegroup: int, palette: int, tile: int) -> MapTileGraphic:
         """Find the closest valid tile graphic if the requested one is invalid."""
-        tile = common.cap(tile, 0, 960)
+        tile = common.cap(tile, 0, common.MAXTILES)
 
         for i in self.tilegfx.items():
             if i[0] == tileset:

@@ -2,6 +2,7 @@ import functools
 
 from PIL import Image, ImageOps
 
+import src.misc.common as common
 from src.misc.exceptions import NotBase32Error, NotHexError
 
 
@@ -32,21 +33,21 @@ class FullTileset:
         for i in self.paletteGroups:
             if i.groupID == groupID:
                 return i
-        return -1
+        raise ValueError(f"No palette group found with ID {groupID}")
 
     def getPalette(self, groupID, paletteID):
         """From a palette group ID and palette ID, get a Palette object\n\nReturns -1 if no match was found"""
         for i in self.palettes:
             if (i.groupID == groupID) and (i.paletteID == paletteID):
                 return i
-        return -1
+        raise ValueError(f"No palette found with group ID {groupID} and palette ID {paletteID}")
             
     def getTilesetFromPaletteGroup(self, groupID):
         """From a palette group ID, get a Tileset ID\n\nReturns -1 if no match was found"""
         for i in self.paletteGroups:
             if i.groupID == groupID:
                 return self.id
-        return -1
+        raise ValueError(f"No tileset found with palette group ID {groupID}")
 
     def interpretMinitiles(self, fts):
         """From an .fts file, read the data of all 512 minitiles.
@@ -111,7 +112,7 @@ class FullTileset:
            `tiles` - a list of Tile ob6jects"""
         tiles = []
         # verify tiles
-        for i in range(self.tileOffset, self.tileOffset+960):
+        for i in range(self.tileOffset, self.tileOffset+common.MAXTILES):
             self.verify_hex(fts[i])
             tiles.append(Tile(fts[i]))
 

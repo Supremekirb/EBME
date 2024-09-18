@@ -13,8 +13,8 @@ BLACKBRUSH = QBrush(Qt.black)
 
 class MapTile:
     """Instance of a tile on the map. Contains coords, palette palette group and tileset IDs, and a tile ID for a Tile object. Created alongside the map editor itself. Use its data to reference and render a MapTileGraphic"""
-    def __init__(self, tile: str, coords: EBCoords, tileset: int, palettegroup: int, palette: int):
-        self.tile = int(tile, 16)
+    def __init__(self, tile: int, coords: EBCoords, tileset: int, palettegroup: int, palette: int):
+        self.tile = tile
         self.coords = coords
         self.palette = palette
         self.palettegroup = palettegroup
