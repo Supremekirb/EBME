@@ -6,7 +6,7 @@ from PySide6.QtGui import (QAction, QActionGroup, QGuiApplication, QImage,
                            QKeySequence, QPalette, QPixmap)
 from PySide6.QtWidgets import (QGraphicsPixmapItem, QGridLayout, QInputDialog,
                                QMenu, QProgressDialog, QSizePolicy, QTabWidget,
-                               QUndoView, QWidget)
+                               QWidget)
 
 import src.mapeditor.map.map_scene as map_scene
 import src.mapeditor.map.map_view as map_view

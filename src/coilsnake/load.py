@@ -6,14 +6,13 @@ import numpy
 import yaml
 from PIL import Image, ImageQt
 
-from src.objects.music import MapMusicHierarchy, MapMusicEntry
-import src.misc.common as common
 from src.coilsnake.fts_interpreter import FullTileset
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.exceptions import NotBase32Error, NotHexError
 from src.objects.enemy import EnemyGroup, EnemyMapGroup, EnemyTile
 from src.objects.hotspot import Hotspot
+from src.objects.music import MapMusicEntry, MapMusicHierarchy
 from src.objects.npc import NPC, NPCInstance
 from src.objects.sector import Sector
 from src.objects.sprite import BattleSprite, Sprite

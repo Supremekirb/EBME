@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QMessageBox
 
 from ebme import ROOT_DIR
 
+
 # Current version number/ID
 VERSION = "0.2.1"
 

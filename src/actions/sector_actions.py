@@ -3,6 +3,7 @@ from PySide6.QtGui import QUndoCommand
 import src.misc.common as common
 from src.objects.sector import Sector
 
+
 class ActionChangeSectorAttributes(QUndoCommand):
     def __init__(self, sector: Sector, tileset: int, palettegroup: int, palette: int,
                  item: int, music: int, settings: str, teleport: str, townMap: str,

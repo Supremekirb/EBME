@@ -6,11 +6,6 @@ from math import ceil
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from src.objects.warp import MapEditorWarp
-
-if TYPE_CHECKING:
-    from src.mapeditor.map_editor import MapEditor, MapEditorState
-
 import numpy
 from PIL import ImageQt
 from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, Qt, QTimer
@@ -50,6 +45,10 @@ from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
 from src.objects.tile import MapEditorTile
+from src.objects.warp import MapEditorWarp
+
+if TYPE_CHECKING:
+    from src.mapeditor.map_editor import MapEditor, MapEditorState
 
 
 class MapEditorScene(QGraphicsScene):

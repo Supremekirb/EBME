@@ -1,7 +1,7 @@
 from PySide6.QtCore import QSettings, Qt, Signal
 from PySide6.QtGui import QColor, QGuiApplication, QPainter, QPalette
-from PySide6.QtWidgets import (QColorDialog, QFrame, QHBoxLayout, QLabel,
-                               QPushButton, QSpinBox, QWidget, QCheckBox)
+from PySide6.QtWidgets import (QCheckBox, QColorDialog, QFrame, QHBoxLayout,
+                               QLabel, QPushButton, QSpinBox, QWidget)
 
 import src.misc.common as common
 

@@ -6,9 +6,9 @@ from PySide6.QtWidgets import (QComboBox, QFormLayout, QGraphicsPixmapItem,
                                QGroupBox, QPushButton, QWidget)
 
 from src.actions.sector_actions import ActionChangeSectorAttributes
-from src.objects.sector import Sector
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
+from src.objects.sector import Sector
 from src.objects.tile import MapEditorTile
 
 

@@ -1,9 +1,5 @@
-import logging
 import uuid
 from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from src.mapeditor.map.map_scene import MapEditorScene
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import (QBrush, QImage, QKeySequence, QPainterPath, QPen,
@@ -17,6 +13,10 @@ from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
 import src.misc.common as common
 from src.actions.npc_actions import ActionMoveNPCInstance
 from src.misc.coords import EBCoords
+
+if TYPE_CHECKING:
+    from src.mapeditor.map.map_scene import MapEditorScene
+    
 
 WHITEBRUSH = QBrush(Qt.GlobalColor.white)
 BLACKBRUSH = QBrush(Qt.GlobalColor.black)

@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (QGraphicsLineItem, QGraphicsPixmapItem,
 import src.misc.common as common
 from src.misc.coords import EBCoords
 
+
 WHITEBRUSH = QBrush(Qt.white)
 BLACKBRUSH = QBrush(Qt.black)
 WHITEPEN = QPen(Qt.white)

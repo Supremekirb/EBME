@@ -6,13 +6,14 @@ from PySide6.QtGui import (QBrush, QMouseEvent, QPaintEvent, QPen,
 from PySide6.QtWidgets import (QGraphicsLineItem, QGraphicsPixmapItem,
                                QGraphicsView)
 
-if TYPE_CHECKING:
-    from src.mapeditor.map_editor import MapEditorState, MapEditor
-
 import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
 from src.mapeditor.map.map_scene import MapEditorScene
 from src.misc.coords import EBCoords
+
+if TYPE_CHECKING:
+    from src.mapeditor.map_editor import MapEditor, MapEditorState
+   
 
 WHITEBRUSH = QBrush(Qt.white)
 BLACKBRUSH = QBrush(Qt.black)

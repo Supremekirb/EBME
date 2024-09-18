@@ -8,10 +8,7 @@ from src.misc.coords import EBCoords
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
-    from src.objects.trigger import (Trigger, TriggerDoor, TriggerEscalator,
-                                     TriggerLadder, TriggerObject,
-                                     TriggerPerson, TriggerRope,
-                                     TriggerStairway, TriggerSwitch)
+    from src.objects.trigger import Trigger
 
 
 class ActionMoveTrigger(QUndoCommand):

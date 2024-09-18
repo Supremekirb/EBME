@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QTreeWidgetItem
 
+
 class MapMusicEntry:
     """Flag + Music ID combo for MapMusicHierarchy"""
     def __init__(self, flag: int, music: int):

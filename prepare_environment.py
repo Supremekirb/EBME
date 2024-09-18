@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import sys
 
+
 def update_pip():
     subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
 

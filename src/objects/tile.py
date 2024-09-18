@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
 import src.misc.common as common
 from src.misc.coords import EBCoords
 
+
 WHITEBRUSH = QBrush(Qt.white)
 BLACKBRUSH = QBrush(Qt.black)
 

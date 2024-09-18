@@ -1,5 +1,6 @@
-from PySide6.QtGui import QUndoCommand
 from typing import TYPE_CHECKING
+
+from PySide6.QtGui import QUndoCommand
 
 import src.misc.common as common
 from src.misc.coords import EBCoords

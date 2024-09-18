@@ -1,12 +1,12 @@
+from typing import TYPE_CHECKING
+
 from PySide6.QtGui import QUndoCommand
 
 import src.misc.common as common
 from src.misc.coords import EBCoords
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from src.objects.warp import Warp
-    from src.objects.warp import Teleport
+    from src.objects.warp import Teleport, Warp
 
 class ActionMoveWarp(QUndoCommand):
     def __init__(self, warp: "Warp", coords: EBCoords):

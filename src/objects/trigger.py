@@ -1,19 +1,18 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from src.actions.trigger_actions import ActionMoveTrigger
-
-if TYPE_CHECKING:
-    from src.mapeditor.map.map_scene import MapEditorScene
-
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
                                QGraphicsSceneContextMenuEvent,
                                QGraphicsSceneMouseEvent, QMenu)
 
 import src.misc.common as common
+from src.actions.trigger_actions import ActionMoveTrigger
 from src.misc.coords import EBCoords
+
+if TYPE_CHECKING:
+    from src.mapeditor.map.map_scene import MapEditorScene
 
 
 class TriggerDoor:

@@ -1,13 +1,10 @@
-import logging
 import os
-import uuid
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Signal
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHBoxLayout,
-                               QLabel, QLineEdit, QPushButton, QSizePolicy,
-                               QSpinBox, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QLabel,
+                               QLineEdit, QPushButton, QSizePolicy,
+                               QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.objects.trigger as trigger
@@ -20,6 +17,7 @@ from src.misc.widgets import (BaseChangerSpinbox, CoordsInput, FlagInput,
 
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState
+    
 
 class SidebarTrigger(QWidget):
     """Sidebar for trigger mode"""
