@@ -120,10 +120,10 @@ class FullTileset:
 
     def interpretFTS(self):
         """Collection of functions to initialise fts content - minitiles, palettes, and tiles."""
-        self.minitiles = self.interpretMinitiles(self.contents)
-        self.palettes = self.interpretPalettes(self.contents)
-        self.paletteGroups = self.buildPaletteGroups()
-        self.tiles = self.interpretTiles(self.contents)
+        self.minitiles: list[Minitile] = self.interpretMinitiles(self.contents)
+        self.palettes: list[Palette] = self.interpretPalettes(self.contents)
+        self.paletteGroups: list[PaletteGroup] = self.buildPaletteGroups()
+        self.tiles: list[Tile] = self.interpretTiles(self.contents)
 
 
 class PaletteGroup:
@@ -241,26 +241,29 @@ class Tile:
             build.append(subbuild)
         return build
     
-    def toImage(self, palette, fts):
+    def toImage(self, palette: Palette, fts: FullTileset, fgOnly=False, bgOnly=False):
         """Convert to a PIL Image"""
         # seems a little weird to pass the entire fts file, but it means we can cache it, which is significantly better for performance..!
-        img = Image.new("RGB", (32, 32))
+        if fgOnly:
+            img = Image.new("RGBA", (32, 32))
+        else: img = Image.new("RGB", (32, 32))
         x = 0
         y = 0
-        for i in self.getMinitileDataList():
-            minitile = fts.minitiles[i[0]].BothToImage(palette.subpalettes[i[1]])
-            
-            # debugging: check if the image contains (0, 248, 0)
-            if (0, 248, 0, 255) in list(minitile.getdata()):
-                pass
+        for id, subpalette, hflip, vflip, collision in self.getMinitileDataList():
+            if fgOnly:
+                minitile = fts.minitiles[id].ForegroundToImage(palette.subpalettes[subpalette])
+            elif bgOnly:
+                minitile = fts.minitiles[id].BackgroundToImage(palette.subpalettes[subpalette])
+            else:
+                minitile = fts.minitiles[id].BothToImage(palette.subpalettes[subpalette])
             
             if x == 32:
                 x = 0
                 y += 8
 
-            if i[2] == True:
+            if hflip:
                 minitile = ImageOps.mirror(minitile)
-            if i[3] == True:
+            if vflip:
                 minitile = ImageOps.flip(minitile)
             img.paste(minitile, (x, y))
 

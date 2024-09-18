@@ -1,9 +1,9 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import (QBrush, QImage, QKeySequence, QPainterPath, QPen,
-                           QPixmap)
+from PySide6.QtCore import QSettings, Qt
+from PySide6.QtGui import (QBitmap, QBrush, QImage, QKeySequence, QPainter,
+                           QPainterPath, QPen, QPixmap, QRegion)
 from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
                                QGraphicsRectItem,
                                QGraphicsSceneContextMenuEvent,
@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
 import src.misc.common as common
 from src.actions.npc_actions import ActionMoveNPCInstance
 from src.misc.coords import EBCoords
+from src.objects.tile import MapTile
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
@@ -225,15 +226,53 @@ class MapEditorNPC(QGraphicsPixmapItem):
         self.collisionBounds.setY(offsetY)
     
     # reimplementing function to highlight the border as that obscures the vanilla Qt selection border
-    def paint(self, painter, option, a):
+    def paint(self, painter: QPainter, option, a):
+        
+        if self.id == 1254:
+            pass
+        
         if QStyle.StateFlag.State_Selected in option.state:
             self.visualBounds.setPen(YELLOWPEN)
             self.collisionBounds.setPen(BLUEPEN)
         else:
             self.visualBounds.setPen(REDPEN)
             self.collisionBounds.setPen(CYANPEN)
+            
+        super().paint(painter, option, a)
         
-        return super().paint(painter, option, a)
+        # if QSettings().value("mapeditor/maskForeground"):
+        # get the mask based on tiles we intersect with
+        # what we actually do is just kinda paint on top
+        # TODO issues with what happens when other stuff is already there
+        # (subtract pixmaps...?)
+        topLeft = self.boundingRect().topLeft()
+        bottomRight = self.boundingRect().bottomRight()
+        topLeft = self.mapToScene(topLeft)
+        bottomRight = self.mapToScene(bottomRight)
+        
+        # get the tiles we intersect with
+        x0, y0 = EBCoords(int(topLeft.x()), int(topLeft.y())).coordsTile()
+        x1, y1 = EBCoords(int(bottomRight.x()), int(bottomRight.y())).coordsTile()
+        tiles: list[MapTile] = []
+        for y in range(y0, y1+1):
+            for x in range(x0, x1+1):
+                tiles.append(self.scene().projectData.getTile(EBCoords.fromTile(x, y)))
+
+        for tile in tiles:
+            graphic = self.scene().projectData.getTileGraphic(tile.tileset,
+                                                              tile.palettegroup,
+                                                              tile.palette,
+                                                              tile.tile)
+            
+            if not graphic.hasRenderedFg:
+                graphic.renderFg(self.scene().projectData.getTileset(tile.tileset))
+            
+            target = (tile.coords.x - int(topLeft.x()) + self.offset().x() - 1,
+                      tile.coords.y - int(topLeft.y()) + self.offset().y() - 1)
+            
+            painter.drawPixmap(*target, graphic.renderedFg)
+            
+
         
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
         if (not self.isDummy) and self.scene().state.mode == common.MODEINDEX.NPC:

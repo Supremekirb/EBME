@@ -5,8 +5,8 @@ from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
                                QGraphicsRectItem, QGraphicsSimpleTextItem)
 
 import src.misc.common as common
+from src.coilsnake.fts_interpreter import FullTileset
 from src.misc.coords import EBCoords
-
 
 WHITEBRUSH = QBrush(Qt.white)
 BLACKBRUSH = QBrush(Qt.black)
@@ -31,13 +31,22 @@ class MapTileGraphic:
         self.palette = palette
 
         self.hasRendered = False
+        self.hasRenderedFg = False
         self.rendered: QPixmap = None
+        self.renderedFg: QPixmap = None
     
-    def render(self, tileset) -> None: 
+    def render(self, tileset: FullTileset): 
         """Create the image of this tile graphic and save it to this instance. Also sets `hasRendered` to True"""
         palette = tileset.getPalette(self.palettegroup, self.palette)
         self.rendered = QPixmap.fromImage(ImageQt.ImageQt(tileset.tiles[self.tile].toImage(palette, tileset)))
         self.hasRendered = True
+    
+    def renderFg(self, tileset: FullTileset):
+        """Create the foreground image of this tile graphic and save it to this instance. Also sets `hasRenderedFg` to True"""
+        palette = tileset.getPalette(self.palettegroup, self.palette)
+        self.renderedFg = QPixmap.fromImage(ImageQt.ImageQt(tileset.tiles[self.tile].toImage(palette, tileset, fgOnly=True)))
+        self.hasRenderedFg = True
+
 
 class MapEditorTile(QGraphicsPixmapItem):
     instances = []
