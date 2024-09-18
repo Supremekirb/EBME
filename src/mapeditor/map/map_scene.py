@@ -112,7 +112,7 @@ class MapEditorScene(QGraphicsScene):
         self.populateTriggers()
         self.populateHotspots()
         self.populateWarps()
-        self.populateTiles()
+        # self.populateTiles()
     
     def updateSelected(self):
         match self.state.mode:
@@ -777,9 +777,9 @@ class MapEditorScene(QGraphicsScene):
                         if not graphic.hasRendered:
                             graphic.render(self.projectData.getTileset(tile.tileset))
                         try: 
-                            item = self.tileAt(EBCoords.fromTile(r, c))
-                            item.setPixmap(graphic.rendered)
-                            item.setText(str(tile.tile).zfill(3))
+                            # item = self.tileAt(EBCoords.fromTile(r, c))
+                            # item.setPixmap(graphic.rendered)
+                            # item.setText(str(tile.tile).zfill(3))
                             tile.isPlaced = True
                         except AttributeError:
                             pass # probably just scrolled past the edge of the map
@@ -815,19 +815,19 @@ class MapEditorScene(QGraphicsScene):
                 except IndexError:
                     pass
 
-    def tileAt(self, coords: EBCoords) -> MapEditorTile | None:
-        """Get a MapEditorTile at coords
+    # def tileAt(self, coords: EBCoords) -> MapEditorTile | None:
+    #     """Get a MapEditorTile at coords
 
-        Args:
-            coords (EBCoords): location of the tile
+    #     Args:
+    #         coords (EBCoords): location of the tile
 
-        Returns:
-            MapEditorTile | None: the tile. None if no tile found.
-        """
-        items = self.items(QPoint(coords.roundToTile()[0], coords.roundToTile()[1]))
-        for item in items:
-            if isinstance(item, MapEditorTile):
-                return item
+    #     Returns:
+    #         MapEditorTile | None: the tile. None if no tile found.
+    #     """
+    #     items = self.items(QPoint(coords.roundToTile()[0], coords.roundToTile()[1]))
+    #     for item in items:
+    #         if isinstance(item, MapEditorTile):
+    #             return item
             
     def enemyTileAt(self, coords: EBCoords) -> MapEditorEnemyTile | None:
         """Get a MapEditorEnemyTile at coords
@@ -850,28 +850,29 @@ class MapEditorScene(QGraphicsScene):
             coords (EBCoords): location to place the tile
         """
 
-        item = self.tileAt(coords)
-        if item:
-            toPlace = self.state.currentTile 
-            tile = self.projectData.getTile(coords)
-            if tile.tile != toPlace:
-                if not self.state.placingTiles:
-                    self.state.placingTiles = True
-                    self.undoStack.beginMacro("Place tiles")
+        # item = self.tileAt(coords)
+        # if item:
+        toPlace = self.state.currentTile 
+        tile = self.projectData.getTile(coords)
+        if tile.tile != toPlace:
+            if not self.state.placingTiles:
+                self.state.placingTiles = True
+                self.undoStack.beginMacro("Place tiles")
 
-                tilesetID = tile.tileset
-                paletteGroupID = tile.palettegroup
-                paletteID = tile.palette
-                tileGraphic = self.projectData.getTileGraphic(tilesetID, paletteGroupID, paletteID, toPlace)
+            tilesetID = tile.tileset
+            paletteGroupID = tile.palettegroup
+            paletteID = tile.palette
+            tileGraphic = self.projectData.getTileGraphic(tilesetID, paletteGroupID, paletteID, toPlace)
 
-                if not tileGraphic.hasRendered:
-                    tileGraphic.render(self.projectData.getTileset(tilesetID))
+            if not tileGraphic.hasRendered:
+                tileGraphic.render(self.projectData.getTileset(tilesetID))
 
-                item.setPixmap(tileGraphic.rendered)
-                item.setText(str(toPlace).zfill(3))
+            # item.setPixmap(tileGraphic.rendered)
+            # item.setText(str(toPlace).zfill(3))
 
-                action = ActionPlaceTile(tile, toPlace)
-                self.undoStack.push(action)
+            action = ActionPlaceTile(tile, toPlace)
+            self.undoStack.push(action)
+            self.update(*tile.coords.coords(), 32, 32)
     
     def endPlacingTiles(self):
         if self.state.placingTiles:
@@ -887,11 +888,11 @@ class MapEditorScene(QGraphicsScene):
         """
         coords.restrictToMap()
 
-        placement = self.tileAt(coords)
-        if placement:
-            tile = self.projectData.getTile(coords)
-            self.state.currentTile = tile.tile
-            self.parent().sidebarTile.selectTile(tile.tile)
+        # placement = self.tileAt(coords)
+        # if placement:
+        tile = self.projectData.getTile(coords)
+        self.state.currentTile = tile.tile
+        self.parent().sidebarTile.selectTile(tile.tile)
 
         sector = self.projectData.getSector(coords)
         self.parent().sidebarTile.fromSector(sector)
@@ -908,16 +909,18 @@ class MapEditorScene(QGraphicsScene):
         tile.palettegroup = sector.palettegroup
         tile.palette = sector.palette
 
-        item = self.tileAt(coords)
-        if item:
-            try:
-                tileGraphic = self.projectData.getTileGraphic(tile.tileset, tile.palettegroup, tile.palette, tile.tile)
-            except KeyError as e:
-                raise KeyError(f"No such tile with tileset {tile.tileset}, palette group {tile.palettegroup}, palette {tile.palette}, tile {tile.tile}.") from e
-            if not tileGraphic.hasRendered:
-                tileGraphic.render(self.projectData.getTileset(tile.tileset))
-            item.setPixmap(tileGraphic.rendered)
-            item.setText(str(tile.tile).zfill(3))
+        # item = self.tileAt(coords)
+        # if item:
+        try:
+            tileGraphic = self.projectData.getTileGraphic(tile.tileset, tile.palettegroup, tile.palette, tile.tile)
+        except KeyError as e:
+            raise KeyError(f"No such tile with tileset {tile.tileset}, palette group {tile.palettegroup}, palette {tile.palette}, tile {tile.tile}.") from e
+        if not tileGraphic.hasRendered:
+            tileGraphic.render(self.projectData.getTileset(tile.tileset))
+        
+        self.update(*tile.coords.coords(), 32, 32)
+            # item.setPixmap(tileGraphic.rendered)
+            # item.setText(str(tile.tile).zfill(3))
             
     def placeEnemyTile(self, coords: EBCoords):
         item = self.enemyTileAt(coords)
@@ -1401,6 +1404,30 @@ class MapEditorScene(QGraphicsScene):
             action = ActionMoveTeleport(teleport, coords)
             self.undoStack.push(action)
             self.refreshTeleport(id[0])
+            
+    def drawBackground(self, painter: QPainter, rect: QRectF):
+        super().drawBackground(painter, rect)
+        start = EBCoords(*rect.topLeft().toTuple())
+        end = EBCoords(*rect.bottomRight().toTuple())
+        
+        start.restrictToMap()
+        end.restrictToMap()
+        x0, y0 = start.coordsTile()
+        x1, y1 = end.coordsTile()
+        
+        for y in range(y0, y1+1):
+            for x in range(x0, x1+1):
+                coords = EBCoords.fromTile(x, y)
+                tile = self.projectData.getTile(coords)
+                graphic = self.projectData.getTileGraphic(tile.tileset,
+                                                          tile.palettegroup,
+                                                          tile.palette,
+                                                          tile.tile)
+                if not graphic.hasRendered:
+                    graphic.render(self.projectData.getTileset(tile.tileset))
+                    graphic.hasRendered = True
+                    
+                painter.drawPixmap(QPoint(x*32, y*32), graphic.rendered)
         
     def drawForeground(self, painter: QPainter, rect: QRectF):
         if self.state.mode == common.MODEINDEX.GAME:
@@ -1805,15 +1832,15 @@ class MapEditorScene(QGraphicsScene):
         settings.setValue("mapeditor/GridStyle", id)
         self._currentGrid = id
             
-    def populateTiles(self):
-        # create tiles, but - and this is the trick for performance - don't render them
-        size = EBCoords(common.EBMAPWIDTH, common.EBMAPHEIGHT)
-        for r in range(size.coordsTile()[0]):
-            for c in range(size.coordsTile()[1]):
-                item = MapEditorTile(EBCoords.fromTile(r, c))
-                self.addItem(item)
+    # def populateTiles(self):
+    #     # create tiles, but - and this is the trick for performance - don't render them
+    #     size = EBCoords(common.EBMAPWIDTH, common.EBMAPHEIGHT)
+    #     for r in range(size.coordsTile()[0]):
+    #         for c in range(size.coordsTile()[1]):
+    #             item = MapEditorTile(EBCoords.fromTile(r, c))
+    #             self.addItem(item)
 
-            QApplication.processEvents()
+    #         QApplication.processEvents()
         
     def populateNPCs(self):
         for i in self.projectData.npcinstances:
