@@ -1,8 +1,8 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QColor, QKeySequence
 from PySide6.QtWidgets import (QComboBox, QGraphicsView, QGroupBox,
-                               QHBoxLayout, QListWidget, QMenu, QPushButton,
-                               QSizePolicy, QToolButton, QVBoxLayout, QWidget)
+                               QHBoxLayout, QMenu, QPushButton, QSizePolicy,
+                               QToolButton, QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.debug as debug
@@ -11,7 +11,7 @@ from src.misc.dialogues import (AboutDialog, SettingsDialog,
                                 TileEditorAboutDialog)
 from src.misc.widgets import AspectRatioWidget
 from src.tileeditor.arrangement_editor import ArrangementScene
-from src.tileeditor.collision_editor import CollisionScene
+from src.tileeditor.collision_editor import CollisionPresetList, CollisionScene
 from src.tileeditor.graphics_editor import (MinitileGraphicsWidget,
                                             PaletteSelector)
 from src.tileeditor.minitile_selector import MinitileScene, MinitileView
@@ -28,6 +28,11 @@ class TileEditorState():
         self.currentPalette = 0
         self.currentSubpalette = 0
         self.currentMinitile = 0
+        
+        self.currentColour: QColor = None
+        self.currentColourIndex = 0
+        
+        self.currentCollision = 0
         
 
 class TileEditor(QWidget):
@@ -82,6 +87,8 @@ class TileEditor(QWidget):
                 self.state.currentTileset).getPalette(
                     self.state.currentPaletteGroup, self.state.currentPalette
                 ).subpalettes[self.state.currentSubpalette].subpaletteRGBA[i]))
+            
+        self.selectMinitile(self.state.currentMinitile)
         
     def selectMinitile(self, minitile: int):
         self.state.currentMinitile = minitile
@@ -98,6 +105,9 @@ class TileEditor(QWidget):
         self.bgScene.currentSubpalette = subpaletteObj
         self.bgScene.update()
         
+    def selectColour(self, index: int):
+        self.state.currentColourIndex = index
+        self.paletteView.setColourIndex(index)
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -141,20 +151,19 @@ class TileEditor(QWidget):
         self.collisionView = QGraphicsView(self.collisionScene)
         self.collisionView.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         
-        self.presetList = QListWidget()
-        self.presetList.addItem("Foobar")
-        self.presetList.addItem("Boofar")
-        self.presetList.setMinimumWidth(self.presetList.sizeHint().width()-100) # it is a little too smol
+        self.presetList = CollisionPresetList(self.state)
         
-        self.fgScene = MinitileGraphicsWidget(self.projectData)
+        self.fgScene = MinitileGraphicsWidget(self.projectData, self.state)
+        self.fgScene.colourPicked.connect(self.selectColour)
         self.fgAspectRatioContainer = AspectRatioWidget(self.fgScene)
         
-        self.bgScene = MinitileGraphicsWidget(self.projectData)
+        self.bgScene = MinitileGraphicsWidget(self.projectData, self.state)
         self.bgScene.isForeground = False
+        self.bgScene.colourPicked.connect(self.selectColour)
         self.bgAspectRatioContainer = AspectRatioWidget(self.bgScene)
         
         self.paletteView = PaletteSelector(self)
-        
+        self.paletteView.colourChanged.connect(self.selectColour)
                 
         self.tilesetSelect = QComboBox()
         self.tilesetSelect.addItems(str(i.id) for i in self.projectData.tilesets)
@@ -194,7 +203,7 @@ class TileEditor(QWidget):
         tileLayout.addWidget(self.tileView)
         tileLayout.addWidget(self.arrangementView)
         
-        collisionLayout.addWidget(self.presetList)
+        collisionLayout.addLayout(self.presetList)
         collisionLayout.addWidget(self.collisionView)
         
         topLayout.addWidget(minitileBox)

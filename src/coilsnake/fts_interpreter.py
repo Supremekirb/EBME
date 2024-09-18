@@ -274,7 +274,7 @@ class Minitile:
         self.background = background
         self.foreground = foreground
 
-    @functools.lru_cache(maxsize=5000)
+    # @functools.lru_cache(maxsize=5000)
     def mapIndexToRGBABackground(self, subpalette):
         RGBAbuild = []
         for i in self.background:
@@ -287,7 +287,7 @@ class Minitile:
         
         return RGBAbuild
     
-    @functools.lru_cache(maxsize=5000)
+    # @functools.lru_cache(maxsize=5000)
     def mapIndexToRGBAForeground(self, subpalette):
         RGBAbuild = []
         for i in self.foreground:
