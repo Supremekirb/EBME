@@ -183,7 +183,7 @@ def readDirectory(parent, dir):
         parent.returns.emit(projectData)
 
     except Exception:
-        logging.warn(traceback.format_exc())
+        logging.warning(traceback.format_exc())
         raise
 
 

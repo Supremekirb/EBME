@@ -130,7 +130,7 @@ class ActionAddNPCInstance(QUndoCommand):
             self.scene.projectData.npcinstances.append(self.instance)
         
         else:
-            logging.warn(f"Can't add an instance multiple times! (UUID: {self.instance.uuid}, NPC ID: {self.instance.npcID})")
+            logging.warning(f"Can't add an instance multiple times! (UUID: {self.instance.uuid}, NPC ID: {self.instance.npcID})")
             self.setObsolete(True)
             return
             
@@ -144,7 +144,7 @@ class ActionAddNPCInstance(QUndoCommand):
             inst.setSelected(True)
             self.scene.addItem(inst)
         else:
-            logging.warn(f"Can't add an instance multiple times! (ID: {self.instance.uuid}, NPC ID: {self.instance.npcID})")
+            logging.warning(f"Can't add an instance multiple times! (ID: {self.instance.uuid}, NPC ID: {self.instance.npcID})")
             self.setObsolete(True)
 
     def undo(self):

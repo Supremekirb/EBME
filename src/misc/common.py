@@ -13,7 +13,6 @@ from PySide6.QtWidgets import QMessageBox
 
 from ebme import ROOT_DIR
 
-
 # Current version number/ID
 VERSION = "0.2.1"
 
@@ -299,7 +298,7 @@ def openCCSFromLabel(label: str, dir: str):
                 break
         else:
             num = 0
-            logging.warn("Label not found in file, defaulting to start of file.")
+            logging.warning("Label not found in file, defaulting to start of file.")
     
     # start setting up the command
     process = QProcess()
@@ -328,7 +327,7 @@ def openCCSFromLabel(label: str, dir: str):
                     case "notepad.exe":
                         process.setArguments([path[0]]) # no goto-line support
                     case _:
-                        logging.warn(f'Unknown default editor "{editorName}", file name will be passed.')
+                        logging.warning(f'Unknown default editor "{editorName}", file name will be passed.')
                         process.setArguments([path[0]])
             case _:
                 return showErrorMsg("Error opening CCScript file",

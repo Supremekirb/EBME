@@ -129,7 +129,7 @@ class FindDialog(QDialog):
                 return False
 
         except Exception as e:
-            logging.warn(f"Error finding object: {str(e)}")
+            logging.warning(f"Error finding object: {str(e)}")
             return False
             
 class FindDialogListItem(QListWidgetItem):
@@ -207,7 +207,7 @@ class CoordsDialog(QDialog):
             else: return False
 
         except Exception as e:
-            logging.warn(f"Error getting coordinates: {str(e)}")
+            logging.warning(f"Error getting coordinates: {str(e)}")
             return False
         
 class AboutDialog(QDialog):
@@ -269,7 +269,7 @@ class AboutDialog(QDialog):
             dialog = AboutDialog(parent)
             dialog.exec()
         except Exception as e:
-            logging.warn(f"Error showing about dialog: {str(e)}")
+            logging.warning(f"Error showing about dialog: {str(e)}")
             return False
 
 

@@ -146,7 +146,7 @@ class Project(QWidget):
                 except Exception as e:
                     common.showErrorMsg(title="Error loading map editor", text="An error occurred while loading the map editor.", info=str(e))
                     self.updateStatusLabel("Error loading map editor.")
-                    logging.warn(f"Error loading map editor: {traceback.format_exc()}")
+                    logging.warning(f"Error loading map editor: {traceback.format_exc()}")
                 
                 else:
                     self.mainWin.mainTabWin.removeTab(2)
@@ -164,7 +164,7 @@ class Project(QWidget):
             except Exception as e:
                 common.showErrorMsg(title="Error loading project", text="An error occurred while loading the project.", info=str(e))
                 self.updateStatusLabel("Error loading project.")
-                logging.warn(f"Error loading project: {traceback.format_exc()}")
+                logging.warning(f"Error loading project: {traceback.format_exc()}")
             
         else: # returns error data if failed
             self.disableSave()

@@ -592,7 +592,7 @@ class MapEditorScene(QGraphicsScene):
                                 typeData = trigger.TriggerSwitch(i["data"]["text"],
                                                                  i["data"]["flag"])
                             case _:
-                                logging.warn(f"Unknown trigger type {i['data']['type']}")
+                                logging.warning(f"Unknown trigger type {i['data']['type']}")
                                 continue
                         trigger_ = trigger.Trigger(EBCoords(i["coords"][0], i["coords"][1]), typeData)
                         
@@ -607,11 +607,11 @@ class MapEditorScene(QGraphicsScene):
         except json.decoder.JSONDecodeError:
             if inMacro:
                 self.undoStack.endMacro()
-            logging.warn("Clipboard data is not valid for pasting.")
+            logging.warning("Clipboard data is not valid for pasting.")
         except Exception as e:
             if inMacro:
                 self.undoStack.endMacro()
-            logging.warn(f"Failed to paste possibly valid data: {e}")
+            logging.warning(f"Failed to paste possibly valid data: {e}")
             raise
         
     def onDelete(self):
@@ -760,7 +760,7 @@ class MapEditorScene(QGraphicsScene):
                         try:
                             graphic = self.projectData.getTileGraphic(tile.tileset, tile.palettegroup, tile.palette, tile.tile)
                         except KeyError:
-                            logging.warn(f"Tile at {r, c} has invalid palette data. Resolving...")
+                            logging.warning(f"Tile at {r, c} has invalid palette data. Resolving...")
                             try: # resolve the graphic and update the sector
                                 curcoords = EBCoords.fromTile(r, c)
                                 graphic = self.projectData.resolveTileGraphic(tile.tileset, tile.palettegroup, tile.palette, tile.tile)
@@ -771,7 +771,7 @@ class MapEditorScene(QGraphicsScene):
                                 self.refreshSector(curcoords)
 
                             except Exception:
-                                logging.warn(f"Failed to resolve tile graphic for tile {tile.tile} at {r, c} in tileset {tile.tileset} with palette group {tile.palettegroup} and palette {tile.palette}.")
+                                logging.warning(f"Failed to resolve tile graphic for tile {tile.tile} at {r, c} in tileset {tile.tileset} with palette group {tile.palettegroup} and palette {tile.palette}.")
                                 continue
                         if not graphic.hasRendered:
                             graphic.render(self.projectData.getTileset(tile.tileset))
@@ -1337,7 +1337,7 @@ class MapEditorScene(QGraphicsScene):
             case trigger.TriggerSwitch:
                 placement.setPixmap(self.imgTriggerSwitch)
             case _: # should never happen
-                logging.warn(f"Unknown trigger type {trigger_.typeData}")
+                logging.warning(f"Unknown trigger type {trigger_.typeData}")
     
     def refreshHotspot(self, id: int):
         hotspot = self.projectData.hotspots[id]
@@ -1863,7 +1863,7 @@ class MapEditorScene(QGraphicsScene):
                 self.placedNPCsByUUID[i.uuid] = inst
                 self.addItem(inst)
             else:
-                logging.warn(f"Can't add an NPC twice! id: {i.uuid}")
+                logging.warning(f"Can't add an NPC twice! id: {i.uuid}")
             
             QApplication.processEvents()
 
@@ -1899,7 +1899,7 @@ class MapEditorScene(QGraphicsScene):
                 case trigger.TriggerSwitch:
                     trigger_.setPixmap(self.imgTriggerSwitch)
                 case _: # should never happen
-                    logging.warn(f"Unknown trigger type {i.typeData}")
+                    logging.warning(f"Unknown trigger type {i.typeData}")
 
             self.addItem(trigger_)
             self.placedTriggersByUUID[i.uuid] = trigger_

@@ -119,7 +119,7 @@ def writeDirectory(parent, data):
         parent.returns.emit(True)
 
     except Exception:
-        logging.warn(traceback.format_exc())
+        logging.warning(traceback.format_exc())
         raise
 
 def saveProject(data: ProjectData):

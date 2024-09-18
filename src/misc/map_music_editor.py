@@ -38,7 +38,7 @@ def parseMetadata(path: str) -> dict:
                 name = (" ".join(i.split(" ")[2:])).strip()
                 substitutions[id] = name
             except Exception:
-                logging.warn(f"Invalid metadata line: {i}")
+                logging.warning(f"Invalid metadata line: {i}")
     return substitutions  
 
 
