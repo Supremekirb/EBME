@@ -728,13 +728,13 @@ class MapEditorScene(QGraphicsScene):
                 pass # this happens on init
                 
             self.previewNPC.hide()
-            if QSettings().value("mapeditor/ShowNPCVisualBounds") == "true":
+            if QSettings().value("mapeditor/ShowNPCVisualBounds", type=bool):
                 MapEditorNPC.showVisualBounds()
             else: MapEditorNPC.hideVisualBounds()
-            if QSettings().value("mapeditor/ShowNPCCollisionBounds") == "true":
+            if QSettings().value("mapeditor/ShowNPCCollisionBounds", type=bool):
                 MapEditorNPC.showCollisionBounds()
             else: MapEditorNPC.hideCollisionBounds
-            if QSettings().value("mapeditor/ShowNPCIDs") == "true":
+            if QSettings().value("mapeditor/ShowNPCIDs", type=bool):
                 MapEditorNPC.showNPCIDs()
             else: MapEditorNPC.hideNPCIDs()
             
@@ -1799,7 +1799,16 @@ class MapEditorScene(QGraphicsScene):
             if self.state.mode != common.MODEINDEX.GAME:
                 MapEditorNPC.showCollisionBounds()
             settings.setValue("mapeditor/ShowNPCCollisionBounds", True)
+    
+    def toggleNPCForegroundMask(self):
+        settings = QSettings()
+        if self.parent().npcForegroundMaskAction.isChecked():
+            settings.setValue("mapeditor/MaskNPCsWithForeground", True)
+        else:
+            settings.setValue("mapeditor/MaskNPCsWithForeground", False)
             
+        self.update()
+    
     def toggleWarpIDs(self):
         settings = QSettings()
         if MapEditorWarp.warpIDsEnabled:

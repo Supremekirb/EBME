@@ -247,6 +247,7 @@ class Tile:
         if fgOnly:
             img = Image.new("RGBA", (32, 32))
         else: img = Image.new("RGB", (32, 32))
+        
         x = 0
         y = 0
         for id, subpalette, hflip, vflip, collision in self.getMinitileDataList():

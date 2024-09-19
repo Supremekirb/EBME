@@ -303,7 +303,7 @@ class MapEditor(QWidget):
         self.gridAction = QAction("Show &grid", shortcut=QKeySequence("Ctrl+G"))
         self.gridAction.setCheckable(True)
         self.gridAction.changed.connect(self.scene.toggleGrid) # ehhh... could this go somewhere else?
-        if settings.value("ShowGrid") == "true":
+        if settings.value("ShowGrid", type=bool):
             self.gridAction.setChecked(True)
             self.scene.grid.show()
 
@@ -343,31 +343,37 @@ class MapEditor(QWidget):
         self.tileIDAction = QAction("Show &tile IDs", shortcut=QKeySequence("Ctrl+T"))
         self.tileIDAction.setCheckable(True)
         self.tileIDAction.changed.connect(self.scene.toggleTileIDs)
-        if settings.value("ShowTileIDs") == "true":
+        if settings.value("ShowTileIDs", type=bool):
             self.tileIDAction.trigger()
 
         self.npcIDAction = QAction("Show &NPC IDs", shortcut=QKeySequence("Ctrl+N"))
         self.npcIDAction.setCheckable(True)
-        if settings.value("ShowNPCIDs") == "true":
+        if settings.value("ShowNPCIDs", type=bool):
             self.npcIDAction.setChecked(True)
             MapEditorNPC.showNPCIDs()
         self.npcIDAction.changed.connect(self.scene.toggleNPCIDs)
 
         self.npcVisualBoundsAction = QAction("Show NPC &visual bounds")
         self.npcVisualBoundsAction.setCheckable(True)
-        if settings.value("ShowNPCVisualBounds") == "true":
+        if settings.value("ShowNPCVisualBounds", type=bool):
             self.npcVisualBoundsAction.setChecked(True)
             MapEditorNPC.showVisualBounds()
         self.npcVisualBoundsAction.changed.connect(self.scene.toggleNPCVisualBounds)
 
         self.npcCollisionBoundsAction = QAction("Show NPC &collision bounds")
         self.npcCollisionBoundsAction.setCheckable(True)
-        if settings.value("ShowNPCCollisionBounds") == "true":
+        if settings.value("ShowNPCCollisionBounds", type=bool):
             self.npcCollisionBoundsAction.setChecked(True)
             MapEditorNPC.showCollisionBounds()
         self.npcCollisionBoundsAction.changed.connect(self.scene.toggleNPCCollisionBounds)
+        
+        self.npcForegroundMaskAction = QAction("Show &foreground in front of NPCs")
+        self.npcForegroundMaskAction.setCheckable(True)
+        if settings.value("MaskNPCsWithForeground", type=bool):
+            self.npcForegroundMaskAction.setChecked(True)
+        self.npcForegroundMaskAction.changed.connect(self.scene.toggleNPCForegroundMask)
 
-        self.warpIDAction = QAction("Show &warp && teleport  IDs")
+        self.warpIDAction = QAction("Show &warp && teleport IDs")
         self.warpIDAction.setCheckable(True)
         if settings.value("ShowWarpIDs") == "true":
             self.warpIDAction.setChecked(True)
@@ -385,7 +391,8 @@ class MapEditor(QWidget):
         self.menuView.addSeparator()
         self.menuView.addActions([self.tileIDAction])
         self.menuView.addSeparator()
-        self.menuView.addActions([self.npcIDAction, self.npcVisualBoundsAction, self.npcCollisionBoundsAction])
+        self.menuView.addActions([self.npcIDAction, self.npcVisualBoundsAction,
+                                  self.npcCollisionBoundsAction, self.npcForegroundMaskAction])
         self.menuView.addSeparator()
         self.menuView.addActions([self.warpIDAction])
         

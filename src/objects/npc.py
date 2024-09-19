@@ -226,11 +226,7 @@ class MapEditorNPC(QGraphicsPixmapItem):
         self.collisionBounds.setY(offsetY)
     
     # reimplementing function to highlight the border as that obscures the vanilla Qt selection border
-    def paint(self, painter: QPainter, option, a):
-        
-        if self.id == 1254:
-            pass
-        
+    def paint(self, painter: QPainter, option, a):        
         if QStyle.StateFlag.State_Selected in option.state:
             self.visualBounds.setPen(YELLOWPEN)
             self.collisionBounds.setPen(BLUEPEN)
@@ -240,39 +236,53 @@ class MapEditorNPC(QGraphicsPixmapItem):
             
         super().paint(painter, option, a)
         
-        # if QSettings().value("mapeditor/maskForeground"):
+        if QSettings().value("mapeditor/MaskNPCsWithForeground", type=bool):
         # get the mask based on tiles we intersect with
-        # what we actually do is just kinda paint on top
-        # TODO issues with what happens when other stuff is already there
-        # (subtract pixmaps...?)
-        topLeft = self.boundingRect().topLeft()
-        bottomRight = self.boundingRect().bottomRight()
-        topLeft = self.mapToScene(topLeft)
-        bottomRight = self.mapToScene(bottomRight)
+        # what we actually do is just kinda paint on top. a real mask would be nice...
+        # BUG masks can overlap with other NPCs, looks weird
+        # QRegion mask?
         
-        # get the tiles we intersect with
-        x0, y0 = EBCoords(int(topLeft.x()), int(topLeft.y())).coordsTile()
-        x1, y1 = EBCoords(int(bottomRight.x()), int(bottomRight.y())).coordsTile()
-        tiles: list[MapTile] = []
-        for y in range(y0, y1+1):
-            for x in range(x0, x1+1):
-                tiles.append(self.scene().projectData.getTile(EBCoords.fromTile(x, y)))
+            topLeft = self.boundingRect().topLeft()
+            bottomRight = self.boundingRect().bottomRight()
+            topLeft = self.mapToScene(topLeft)
+            bottomRight = self.mapToScene(bottomRight)
+            
+            # get the tiles we intersect with
+            x0, y0 = EBCoords(int(topLeft.x()), int(topLeft.y())).coordsTile()
+            x1, y1 = EBCoords(int(bottomRight.x()), int(bottomRight.y())).coordsTile()
+            tiles: list[MapTile] = []
+            for y in range(y0, y1+1):
+                for x in range(x0, x1+1):
+                    tiles.append(self.scene().projectData.getTile(EBCoords.fromTile(x, y)))
 
-        for tile in tiles:
-            graphic = self.scene().projectData.getTileGraphic(tile.tileset,
-                                                              tile.palettegroup,
-                                                              tile.palette,
-                                                              tile.tile)
-            
-            if not graphic.hasRenderedFg:
-                graphic.renderFg(self.scene().projectData.getTileset(tile.tileset))
-            
-            target = (tile.coords.x - int(topLeft.x()) + self.offset().x() - 1,
-                      tile.coords.y - int(topLeft.y()) + self.offset().y() - 1)
-            
-            painter.drawPixmap(*target, graphic.renderedFg)
-            
+            grid = self.scene().grid
+            if grid.isVisible():
+                brush = grid.brush()
+            else:
+                brush = None
+                    
+            for tile in tiles:
+                graphic = self.scene().projectData.getTileGraphic(tile.tileset,
+                                                                tile.palettegroup,
+                                                                tile.palette,
+                                                                tile.tile)
+                
+                if not graphic.hasRenderedFg:
+                    graphic.renderFg(self.scene().projectData.getTileset(tile.tileset))
+                
+                target = (tile.coords.x - int(topLeft.x()) + self.offset().x() - 1,
+                        tile.coords.y - int(topLeft.y()) + self.offset().y() - 1)
 
+                pixmap = graphic.renderedFg.copy() # seems inefficient but doesn't appear to have an actual impact?
+                if brush:
+                    gridPainter = QPainter(pixmap)
+                    gridPainter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceAtop)
+                    gridPainter.setBrush(brush)
+                    gridPainter.setPen(Qt.GlobalColor.transparent)
+                    gridPainter.drawRect(0, 0, 32, 32)
+                    gridPainter.end()
+                
+                painter.drawPixmap(*target, pixmap)
         
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
         if (not self.isDummy) and self.scene().state.mode == common.MODEINDEX.NPC:
