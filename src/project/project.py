@@ -146,7 +146,7 @@ class Project(QWidget):
                     self.updateStatusLabel("Loading map editor...")
                     self.statusLabel.repaint() # otherwise it may not show before we actually process the next bit
                     try:
-                        self.mainWin.mapWin = map_editor.MapEditor(self, self.projectData)
+                        self.mainWin.mapWin = map_editor.MapEditor(self.mainWin, self.projectData)
                     except Exception as e:
                         common.showErrorMsg(title="Error loading map editor", text="An error occurred while loading the map editor.", info=str(e))
                         self.updateStatusLabel("Error loading map editor.")
@@ -156,7 +156,7 @@ class Project(QWidget):
                     self.updateStatusLabel("Loading tile editor...")
                     self.statusLabel.repaint()
                     try:
-                        self.mainWin.tileWin = tile_editor.TileEditor(self, self.projectData)
+                        self.mainWin.tileWin = tile_editor.TileEditor(self.mainWin, self.projectData)
                     except Exception as e:
                         common.showErrorMsg(title="Error loading tile editor", text="An error occurred while loading the tile editor.", info=str(e))
                         self.updateStatusLabel("Error loading tile editor.")

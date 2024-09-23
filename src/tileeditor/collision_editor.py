@@ -1,26 +1,15 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QBrush, QColor, QPixmap, Qt
-from PySide6.QtWidgets import (QGraphicsScene, QHBoxLayout, QListWidget,
-                               QListWidgetItem, QPushButton, QVBoxLayout)
+from PySide6.QtWidgets import (QApplication, QGraphicsScene, QHBoxLayout,
+                               QListWidget, QListWidgetItem, QPushButton,
+                               QStyle, QToolButton, QVBoxLayout)
 
+import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
 
 if TYPE_CHECKING:
     from tile_editor import TileEditor, TileEditorState
-    
-COLLISIONPRESETS = {          # value, colour
-    "Solid":                  [0b10000000, 0xFF0000],
-    "Trigger":                [0b00010000, 0xFFFF00],
-    "Solid trigger":          [0b10010000, 0xDD00FF],
-    "Water":                  [0b00001000, 0x0000FF],
-    "Deep water":             [0b00001100, 0x00007F],
-    "Sunstroke":              [0b00000100, 0xFF7F00],
-    "Foreground top half":    [0b00000010, 0x50D000],
-    "Foreground bottom half": [0b00000001, 0x30A000],
-    "Foreground full":        [0b00000011, 0xA0F000],
-    "Talk through":           [0b01000010, 0xB000FF],
-}
 
 
 class CollisionScene(QGraphicsScene):
@@ -61,7 +50,7 @@ class CollisionPresetList(QVBoxLayout):
         self.state = state
         
         self.list = QListWidget()
-        for name, value in COLLISIONPRESETS.items():
+        for name, value in common.COLLISIONPRESETS.items():
             item = PresetItem(name, value[0], value[1])
             item.protected = True
             self.list.addItem(item)
@@ -70,13 +59,36 @@ class CollisionPresetList(QVBoxLayout):
         self.list.setMinimumWidth(self.list.sizeHint().width()-75) # it is a little too smol
         
         buttonLayout = QHBoxLayout()
-        self.editButton = QPushButton("Edit")
-        # self.editButton.clicked.connect(self.onEditClicked)
-        self.deleteButton = QPushButton("Delete")
-        # self.deleteButton.clicked.connect(self.onDeleteClicked)
         
+        # TODO better icons
+        # QtAwesome?
+        
+        self.addButton = QToolButton()
+        self.addButton.setIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon))
+        self.addButton.setToolTip("Add")
+        # self.addButton.clicked.connect(self.onAddClicked)
+        self.editButton = QToolButton()
+        self.editButton.setIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView))
+        self.editButton.setToolTip("Edit")
+        # self.editButton.clicked.connect(self.onEditClicked)
+        self.deleteButton = QToolButton()
+        self.deleteButton.setIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon))
+        self.deleteButton.setToolTip("Delete")
+        # self.deleteButton.clicked.connect(self.onDeleteClicked)
+        self.moveUpButton = QToolButton()
+        self.moveUpButton.setArrowType(Qt.ArrowType.UpArrow)
+        self.moveUpButton.setToolTip("Move up")
+        # self.moveUpButton.clicked.connect(self.onMoveUpClicked)
+        self.moveDownButton = QToolButton()
+        self.moveDownButton.setArrowType(Qt.ArrowType.DownArrow)
+        self.moveDownButton.setToolTip("Move down")
+        # self.moveDownButton.clicked.connect(self.onMoveDownClicked)
+        
+        buttonLayout.addWidget(self.addButton)
         buttonLayout.addWidget(self.editButton)
         buttonLayout.addWidget(self.deleteButton)
+        buttonLayout.addWidget(self.moveUpButton)
+        buttonLayout.addWidget(self.moveDownButton)
         self.addLayout(buttonLayout)
         
     def onItemClicked(self, item):

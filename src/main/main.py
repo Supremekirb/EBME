@@ -67,6 +67,16 @@ class MainApplication(QMainWindow):
         if hasattr(new, "menuItems"):
             for i in new.menuItems:
                 self.menu.addMenu(i)
+                
+    def updateTitle(self):
+        # see if all undo stacks are clean
+        title = self.window().windowTitle()
+        if not self.mapWin.scene.undoStack.isClean() or not self.tileWin.undoStack.isClean():
+            if not title.endswith("*"):
+                self.window().setWindowTitle(title + "*")
+        else:
+            if title.endswith("*"):
+                self.window().setWindowTitle(title[:-1])
 
 
     def closeEvent(self, event):

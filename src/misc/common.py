@@ -5,7 +5,7 @@ import logging
 import os
 import platform
 import shlex
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 
 from PySide6.QtCore import QProcess, QSettings, QStandardPaths
 from PySide6.QtGui import QIcon
@@ -126,6 +126,7 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "MAPMUSICMOVE", # cannot merge with itself
                                       "MAPMUSICADD", # cannot merge wiht itself
                                       "MAPMUSICDELETE", # cannot merge with itself
+                                      "MINITILEDRAW", # can merge with itself if contents are identical
                                       ])
 
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18
@@ -159,6 +160,29 @@ DIRECTION4 = IntEnum("DIRECTION4", ["up",
                                     "down",
                                     "left"],
                                     start=0)
+
+COLLISIONBITS = IntFlag("COLLISIONBITS", ["FOREGROUNDBOTTOM",
+                                          "FOREGROUNDTOP",
+                                          "SUNSTROKE",
+                                          "WATER",
+                                          "TRIGGER",
+                                          "UNUSED",
+                                          "VERYSOLID",
+                                          "SOLID"])
+
+COLLISIONPRESETS = {          # value, colour
+    "Solid":                  [0b10000000, 0xFF0000],
+    "Trigger":                [0b00010000, 0xFFFF00],
+    "Solid trigger":          [0b10010000, 0xDD00FF],
+    "Water":                  [0b00001000, 0x0000FF],
+    "Deep water":             [0b00001100, 0x00007F],
+    "Sunstroke":              [0b00000100, 0xFF7F00],
+    "Foreground top half":    [0b00000010, 0x50D000],
+    "Foreground bottom half": [0b00000001, 0x30A000],
+    "Foreground full":        [0b00000011, 0xA0F000],
+    "Talk through":           [0b01000010, 0xB000FF],
+}
+
 
 def getCoilsnakeVersion(id: int) -> str:
     try:

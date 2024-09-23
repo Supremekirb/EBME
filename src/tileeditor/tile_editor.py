@@ -1,11 +1,17 @@
+from typing import TYPE_CHECKING
+
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QColor, QKeySequence
+from PySide6.QtGui import (QAction, QColor, QKeySequence, QUndoCommand,
+                           QUndoStack)
 from PySide6.QtWidgets import (QComboBox, QGraphicsView, QGroupBox,
                                QHBoxLayout, QMenu, QPushButton, QSizePolicy,
-                               QToolButton, QVBoxLayout, QWidget)
+                               QStyle, QToolButton, QUndoView, QVBoxLayout,
+                               QWidget)
 
 import src.misc.common as common
 import src.misc.debug as debug
+from src.actions.minitile_actions import ActionChangeBitmap
+from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, SettingsDialog,
                                 TileEditorAboutDialog)
@@ -16,6 +22,9 @@ from src.tileeditor.graphics_editor import (MinitileGraphicsWidget,
                                             PaletteSelector)
 from src.tileeditor.minitile_selector import MinitileScene, MinitileView
 from src.tileeditor.tile_selector import TileScene
+
+if TYPE_CHECKING:
+    from src.main.main import MainApplication
 
 
 class TileEditorState():
@@ -36,16 +45,55 @@ class TileEditorState():
         
 
 class TileEditor(QWidget):
-    def __init__(self, parent, projectData: ProjectData):
+    def __init__(self, parent: "MainApplication", projectData: ProjectData):
         super().__init__(parent)
         
         self.projectData = projectData
         self.state = TileEditorState(self)
+        self.undoStack = QUndoStack(self)
+        self.undoStack.cleanChanged.connect(self.parent().updateTitle)
         
         self.setupUI()
-        # self.onTilesetSelect()
+        self.tilesetSelect.setCurrentIndex(0)
+        self.tilesetSelect.activated.emit(0)
+    
+    def onUndo(self):
+        command = self.undoStack.command(self.undoStack.index()-1)
+        if command and not self.fgScene._painting and not self.bgScene._painting:
+            self.undoStack.undo()
+            self.onUndoRedoCommon(command)
+            
+    def onRedo(self):
+        command = self.undoStack.command(self.undoStack.index())
 
+        if command and not self.fgScene._painting and not self.bgScene._painting:
+            self.undoStack.redo()
+            self.onUndoRedoCommon(command)
+            
+    def onUndoRedoCommon(self, command: QUndoCommand):
+        commands = []
+        
+        count = command.childCount()
+        if count > 0:
+            for c in range(count):
+                commands.append(command.child(c))
+        
+        elif isinstance(command, MultiActionWrapper):
+            for c in command.commands:
+                commands.append(c)
+        
+        else:
+            commands.append(command)
+        
+        for c in commands:
+            if isinstance(c, ActionChangeBitmap):
+                self.fgScene.copyToScratch()
+                self.bgScene.copyToScratch()
+                self.fgScene.update()
+                self.bgScene.update()
+                
     def onTilesetSelect(self):
+        
         value = int(self.tilesetSelect.currentText())
         self.state.currentTileset = value
         self.paletteGroupSelect.blockSignals(True)
@@ -97,11 +145,11 @@ class TileEditor(QWidget):
             self.state.currentPaletteGroup, self.state.currentPalette
             ).subpalettes[self.state.currentSubpalette]
         
-        self.fgScene.currentMinitile = minitileObj
+        self.fgScene.loadMinitile(minitileObj, minitile)
         self.fgScene.currentSubpalette = subpaletteObj
         self.fgScene.update()
         
-        self.bgScene.currentMinitile = minitileObj
+        self.bgScene.loadMinitile(minitileObj, minitile)
         self.bgScene.currentSubpalette = subpaletteObj
         self.bgScene.update()
         
@@ -186,9 +234,15 @@ class TileEditor(QWidget):
         drawingLayout.addWidget(self.fgAspectRatioContainer)
         self.bgToFgButton = QToolButton()
         self.bgToFgButton.setArrowType(Qt.ArrowType.UpArrow)
+        self.bgToFgButton.setToolTip("Copy background to foreground")
+        self.swapBgAndFgButton = QToolButton()
+        self.swapBgAndFgButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
+        self.swapBgAndFgButton.setToolTip("Swap foreground and background")
         self.fgToBgButton = QToolButton()
         self.fgToBgButton.setArrowType(Qt.ArrowType.DownArrow)
+        self.fgToBgButton.setToolTip("Copy foreground to background")
         swapperButtonLayout.addWidget(self.bgToFgButton)
+        swapperButtonLayout.addWidget(self.swapBgAndFgButton)
         swapperButtonLayout.addWidget(self.fgToBgButton)
         drawingLayout.addLayout(swapperButtonLayout)
         drawingLayout.addWidget(self.bgAspectRatioContainer)
@@ -219,16 +273,24 @@ class TileEditor(QWidget):
         
         self.menuFile = QMenu("&File")
         self.saveAction = QAction("&Save", shortcut=QKeySequence("Ctrl+S"))
-        self.saveAction.triggered.connect(self.parent().saveAction.trigger)
+        self.saveAction.triggered.connect(self.parent().projectWin.saveAction.trigger)
         self.openAction = QAction("&Open", shortcut=QKeySequence("Ctrl+O"))
-        self.openAction.triggered.connect(self.parent().openAction.trigger)
+        self.openAction.triggered.connect(self.parent().projectWin.openAction.trigger)
         self.reloadAction = QAction("&Reload", shortcut=QKeySequence("Ctrl+R"))
-        self.reloadAction.triggered.connect(self.parent().reloadAction.trigger)
+        self.reloadAction.triggered.connect(self.parent().projectWin.reloadAction.trigger)
         self.openSettingsAction = QAction("Settings...")
         self.openSettingsAction.triggered.connect(lambda: SettingsDialog.openSettings(self))
         self.menuFile.addActions([self.saveAction, self.openAction, self.reloadAction])
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.openSettingsAction)
+        
+        self.menuEdit = QMenu("&Edit")
+        self.undoAction = QAction("&Undo", shortcut=QKeySequence("Ctrl+Z"))
+        self.undoAction.triggered.connect(self.onUndo)
+        self.redoAction = QAction("&Redo")
+        self.redoAction.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
+        self.redoAction.triggered.connect(self.onRedo)
+        self.menuEdit.addActions([self.undoAction, self.redoAction])
         
         self.menuHelp = QMenu("&Help")
         self.aboutTileEditorAction = QAction("About the &tile editor...")
@@ -244,4 +306,7 @@ class TileEditor(QWidget):
             self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
             self.menuHelp.addAction(self.openDebugAction)
         
-        self.menuItems = (self.menuFile, self.menuHelp)
+        self.menuItems = (self.menuFile, self.menuEdit, self.menuHelp)
+    
+    def parent(self) -> "MainApplication": # for typing
+        return super().parent()

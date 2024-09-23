@@ -1,3 +1,4 @@
+from copy import copy
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QPoint, QSize, Qt, Signal
@@ -5,6 +6,7 @@ from PySide6.QtGui import (QBrush, QColor, QMouseEvent, QPainter, QPaintEvent,
                            QPixmap)
 from PySide6.QtWidgets import QGridLayout, QSizePolicy, QWidget
 
+from src.actions.minitile_actions import ActionChangeBitmap
 from src.coilsnake.fts_interpreter import Minitile, Subpalette
 from src.coilsnake.project_data import ProjectData
 from src.misc.widgets import ColourButton
@@ -84,39 +86,63 @@ class MinitileGraphicsWidget(QWidget):
         self.setSizePolicy(policy)
         
         self._painting = False
-        self._lastOldIndex = None
+        self._lastOldIndex: int = None
+        self._scratchBitmap: list[str] = []
+    
+    def copyToScratch(self):
+        """For better undo/redo support, we copy the bitmap to this scratch space to modify it.
+        
+        Then undo/redo actions apply it to the model."""
+        if self.isForeground:
+            self._scratchBitmap = copy(self.currentMinitile.foreground)
+        else:
+            self._scratchBitmap = copy(self.currentMinitile.background)
+        
+    def loadMinitile(self, minitile: Minitile, id: int=0):
+        self.currentMinitile = minitile
+        if id >= 384 and self.isForeground:
+            self.setDisabled(True)
+        else: self.setEnabled(True)
+        self.copyToScratch()
         
     def mousePressEvent(self, event: QMouseEvent):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._painting = True
-            self.paintPixel(event.pos())
-        
-        if event.button() == Qt.MouseButton.RightButton:
-            self.pickPixel(event.pos())
+        if self.isEnabled():
+            if event.button() == Qt.MouseButton.LeftButton:
+                self._painting = True
+                self.copyToScratch()
+                self.paintPixel(event.pos())
+            
+            if event.button() == Qt.MouseButton.RightButton:
+                self.pickPixel(event.pos())
         
         return super().mousePressEvent(event)
         
     def mouseMoveEvent(self, event: QMouseEvent):
-        if self._painting:
-            self.paintPixel(event.pos())     
-        
+        if self.isEnabled():
+            if self._painting:
+                self.paintPixel(event.pos())     
+            
         return super().mouseMoveEvent(event)
     
     def mouseReleaseEvent(self, event: QMouseEvent):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._painting = False
+        if self.isEnabled():
+            if event.button() == Qt.MouseButton.LeftButton:
+                self._painting = False
+                action = ActionChangeBitmap(self.currentMinitile, self._scratchBitmap, self.isForeground)
+                self.state.tileEditor.undoStack.push(action)
             
         return super().mouseReleaseEvent(event)
     
     def mouseDoubleClickEvent(self, event: QMouseEvent):
-        # fill bucket
-        if event.button() == Qt.MouseButton.LeftButton:
-            if self._lastOldIndex == None:
-                return super().mouseDoubleClickEvent(event)
+        if self.isEnabled():
+            # fill bucket
+            if event.button() == Qt.MouseButton.LeftButton:
+                if self._lastOldIndex == None:
+                    return super().mouseDoubleClickEvent(event)
+                
+                self.fill(event.pos())
             
-            self.fill(event.pos())
-        
-        self.update()
+            self.update()
         return super().mouseDoubleClickEvent(event)
     
     def paintPixel(self, pos: QPoint):
@@ -127,10 +153,10 @@ class MinitileGraphicsWidget(QWidget):
         
         if self.isForeground:
             self._lastOldIndex = int(self.currentMinitile.foreground[index], 16)
-            self.currentMinitile.foreground[index] = colour
+            self._scratchBitmap[index] = colour
         else:
             self._lastOldIndex = int(self.currentMinitile.background[index], 16)
-            self.currentMinitile.background[index] = colour
+            self._scratchBitmap[index] = colour
         
         self.update()
         
@@ -147,6 +173,9 @@ class MinitileGraphicsWidget(QWidget):
         self.colourPicked.emit(colourIndex)
         
     def fill(self, pos: QPoint):
+        
+        self.copyToScratch()
+            
         index = self.indexAtPos(pos)
         if index == None:
             return
@@ -156,9 +185,12 @@ class MinitileGraphicsWidget(QWidget):
         
         for i in toFill:
             if self.isForeground:
-                self.currentMinitile.foreground[i] = colour
+                self._scratchBitmap[i] = colour
             else:
-                self.currentMinitile.background[i] = colour
+                self._scratchBitmap[i] = colour
+        
+        action = ActionChangeBitmap(self.currentMinitile, self._scratchBitmap, self.isForeground)
+        self.state.tileEditor.undoStack.push(action)
         
         self.update()
                 
@@ -238,11 +270,13 @@ class MinitileGraphicsWidget(QWidget):
         for i in range(64):
             x = i % 8
             y = i // 8
-            if self.isForeground:
-                color = self.currentMinitile.mapIndexToRGBAForeground(self.currentSubpalette)[i]
-            else:
-                color = self.currentMinitile.mapIndexToRGBABackground(self.currentSubpalette)[i]
-            painter.fillRect(x, y, 1, 1, QColor.fromRgb(*color))
+            colour = self.currentSubpalette.getSubpaletteColourRGBA(self._scratchBitmap[i])
+            painter.fillRect(x, y, 1, 1, QColor.fromRgb(*colour))
+        
+        if not self.isEnabled():
+            painter.setBrush(QColor(0, 0, 0, 128))
+            painter.drawRect(0, 0, 8, 8)
+            # painter.setBrush(Qt.BrushStyle.NoBrush)
             
         return super().paintEvent(event)
     
