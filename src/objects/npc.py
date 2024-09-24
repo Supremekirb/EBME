@@ -1,3 +1,4 @@
+import math
 import uuid
 from typing import TYPE_CHECKING
 
@@ -270,8 +271,8 @@ class MapEditorNPC(QGraphicsPixmapItem):
                 if not graphic.hasRenderedFg:
                     graphic.renderFg(self.scene().projectData.getTileset(tile.tileset))
                 
-                target = (tile.coords.x - int(topLeft.x()) + self.offset().x() - 1,
-                        tile.coords.y - int(topLeft.y()) + self.offset().y() - 1)
+                target = (tile.coords.x - math.ceil(topLeft.x()) + self.offset().x(),
+                        tile.coords.y - math.ceil(topLeft.y()) + self.offset().y())
 
                 pixmap = graphic.renderedFg.copy() # seems inefficient but doesn't appear to have an actual impact?
                 if brush:

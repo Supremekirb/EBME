@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import math
 import sys
 from math import ceil
 from typing import TYPE_CHECKING
@@ -52,6 +53,8 @@ if TYPE_CHECKING:
 
 
 class MapEditorScene(QGraphicsScene):
+    PREVIEWNPCMAXSAMPLES = 5
+    PREVIEWNPCMAXANIMTIMER = 7
     def __init__(self, parent: "MapEditor", state: "MapEditorState", data: ProjectData):
         super().__init__(parent)
 
@@ -85,6 +88,13 @@ class MapEditorScene(QGraphicsScene):
         self.previewNPC.setDummy()
         self.previewNPC.setZValue(common.MAPZVALUES.SCREENMASK)
         self.previewNPC.setCursor(Qt.CursorShape.BlankCursor)
+        self.previewNPCPositionSamples: list[EBCoords] = []
+        self.previewNPCAnimTimer = self.PREVIEWNPCMAXANIMTIMER
+        self.previewNPCAnimState = 0
+        self.previewNPCCurrentDir = 0
+        self.previewNPCStillTimer = QTimer()
+        self.previewNPCStillTimer.setInterval(500)
+        self.previewNPCStillTimer.timeout.connect(self.resetPreviewNPCAnim)
         
         spr = self.projectData.getSprite(1)
         self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(
@@ -173,8 +183,11 @@ class MapEditorScene(QGraphicsScene):
                         if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                             self.pickEnemyTile(coords)
                 case common.MODEINDEX.GAME:
-                    if not self.state.previewLocked:
-                        self.moveGameModeMask(coords)
+                    if not self.state.previewLocked: # only move if we're not panning - messes with anim
+                        if not (Qt.KeyboardModifier.ShiftModifier in event.modifiers() and \
+                        Qt.MouseButton.LeftButton in event.buttons()) and \
+                            Qt.MouseButton.MiddleButton not in event.buttons():
+                            self.moveGameModeMask(coords)
         else:
             match self.state.tempMode:
                 case common.TEMPMODEINDEX.IMPORTMAP:
@@ -1463,13 +1476,66 @@ class MapEditorScene(QGraphicsScene):
                 painter.drawPolygon(QPolygon(rect.toRect()).subtracted(QRect(self._lastCoords.x, self._lastCoords.y, 256, 224).adjusted(-128, -112, -128, -112)))
                 
             # draw preview npc
-            if self.state.showPreviewNPC:
-                painter.drawPixmap(self.previewNPC.x()+self.previewNPC.offset().x(), self.previewNPC.y()+self.previewNPC.offset().y(), self.previewNPC.pixmap())
+            # if self.state.showPreviewNPC:
+            #     painter.drawPixmap(self.previewNPC.x()+self.previewNPC.offset().x(), self.previewNPC.y()+self.previewNPC.offset().y(), self.previewNPC.pixmap())
             
+    def resetPreviewNPCAnim(self):
+        self.previewNPCAnimTimer = self.PREVIEWNPCMAXANIMTIMER
+        self.previewNPCAnimState = 0
+        sprite = self.projectData.getSprite(1).renderFacingImg(self.previewNPCCurrentDir, 0)
+        self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(sprite)))
         
     def moveGameModeMask(self, coords: EBCoords, forceRefreshSector: bool=False):
         coords.restrictToMap()
+        
+        # janky little fun thing to do direction and animation
+        if coords == EBCoords(self.previewNPC.x(), self.previewNPC.y()):
+            return
+        
+        self.previewNPCPositionSamples.insert(0, coords)
+        if len(self.previewNPCPositionSamples) > self.PREVIEWNPCMAXSAMPLES:
+            last = self.previewNPCPositionSamples.pop()
+            delta = coords - last 
+        else:
+            while len(self.previewNPCPositionSamples) < self.PREVIEWNPCMAXSAMPLES:
+                self.previewNPCPositionSamples.append(coords)
+                delta = EBCoords(0, 0)
+        
+        self.previewNPCStillTimer.start()
+        self.previewNPCAnimTimer -= 1
+        if self.previewNPCAnimTimer < 0:
+            self.previewNPCAnimTimer = self.PREVIEWNPCMAXANIMTIMER
+            self.previewNPCAnimState = int(not self.previewNPCAnimState)        
+        
+        angle = math.atan2(delta.y, delta.x)
+        angle = math.degrees(angle)
+        angle += 180
+        if angle >= 360:
+            angle -= 360
+        
+        if angle >= 22.5 and angle < 67.5:
+            facing = common.DIRECTION8['up-left'].value
+        elif angle >= 67.5 and angle < 112.5:
+            facing = common.DIRECTION8['up'].value
+        elif angle >= 112.5 and angle < 157.5:
+            facing = common.DIRECTION8['up-right'].value
+        elif angle >= 157.5 and angle < 202.5:
+            facing = common.DIRECTION8['right'].value
+        elif angle >= 202.5 and angle < 247.5:
+            facing = common.DIRECTION8['down-right'].value
+        elif angle >= 247.5 and angle < 292.5:
+            facing = common.DIRECTION8['down'].value
+        elif angle >= 292.5 and angle < 337.5:
+            facing = common.DIRECTION8['down-left']
+        else:
+            facing = common.DIRECTION8['left'].value
+        
+        self.previewNPCCurrentDir = facing
+        sprite = self.projectData.getSprite(1).renderFacingImg(facing, self.previewNPCAnimState)
+        self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(sprite)))   
+        
         self.previewNPC.setPos(coords.x, coords.y)
+        
         self._lastCoords = coords
         sector = self.projectData.getSector(coords)
         
