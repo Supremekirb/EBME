@@ -1427,6 +1427,24 @@ class MapEditorScene(QGraphicsScene):
                     graphic.hasRendered = True
                     
                 painter.drawPixmap(QPoint(x*32, y*32), graphic.rendered)
+                
+        painter.setFont("EBMain")
+        font = painter.font()
+        font.setPointSize(12)
+        painter.setFont(font)
+        if MapEditorTile.tileIDsEnabled and MapEditorTile.tileIDsShown:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(0, 0, 0, 128))
+            painter.drawRect(rect)
+            
+            for y in range(y0, y1+1):
+                for x in range(x0, x1+1):
+                    coords = EBCoords.fromTile(x, y)
+                    tile = self.projectData.getTile(coords)
+                    painter.setPen(Qt.GlobalColor.black)
+                    painter.drawText((x*32)+8, (y*32)+23, str(tile.tile).zfill(3))
+                    painter.setPen(Qt.GlobalColor.white)
+                    painter.drawText((x*32)+7, (y*32)+22, str(tile.tile).zfill(3))
         
     def drawForeground(self, painter: QPainter, rect: QRectF):
         if self.state.mode == common.MODEINDEX.GAME:
@@ -1766,6 +1784,7 @@ class MapEditorScene(QGraphicsScene):
         else: 
             MapEditorTile.showTileIDs()
             settings.setValue("mapeditor/ShowTileIDs", True)
+        self.update()
 
     def toggleNPCIDs(self):
         settings = QSettings()
