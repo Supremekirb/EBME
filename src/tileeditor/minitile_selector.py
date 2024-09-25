@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsRectItem,
                                QGraphicsView, QLabel, QSizePolicy, QVBoxLayout,
                                QWidget)
 
+import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
 
 if TYPE_CHECKING:
@@ -94,7 +95,7 @@ class MinitileScene(QGraphicsScene):
         
         if self.lastMinitileHovered != index:
             self.hoverInfo.setImage(self.minitiles[index].pixmap().scaled(64, 64))
-            self.hoverInfo.setData(index, True if index < 384 else False)
+            self.hoverInfo.setData(index, True if index < common.MINITILENOFOREGROUND else False)
             self.lastMinitileHovered = index
 
         return super().mouseMoveEvent(event)

@@ -183,6 +183,7 @@ COLLISIONPRESETS = {          # value, colour
     "Talk through":           [0b01000010, 0xB000FF],
 }
 
+MINITILENOFOREGROUND = 384
 
 def getCoilsnakeVersion(id: int) -> str:
     try:

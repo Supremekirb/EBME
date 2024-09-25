@@ -6,6 +6,7 @@ from PySide6.QtGui import (QBrush, QColor, QMouseEvent, QPainter, QPaintEvent,
                            QPixmap)
 from PySide6.QtWidgets import QGridLayout, QSizePolicy, QWidget
 
+import src.misc.common as common
 from src.actions.minitile_actions import ActionChangeBitmap
 from src.coilsnake.fts_interpreter import Minitile, Subpalette
 from src.coilsnake.project_data import ProjectData
@@ -100,7 +101,7 @@ class MinitileGraphicsWidget(QWidget):
         
     def loadMinitile(self, minitile: Minitile, id: int=0):
         self.currentMinitile = minitile
-        if id >= 384 and self.isForeground:
+        if id >= common.MINITILENOFOREGROUND and self.isForeground:
             self.setDisabled(True)
         else: self.setEnabled(True)
         self.copyToScratch()
@@ -146,16 +147,16 @@ class MinitileGraphicsWidget(QWidget):
         return super().mouseDoubleClickEvent(event)
     
     def paintPixel(self, pos: QPoint):
-        colour = hex(self.state.currentColourIndex)[2:]
+        colour = self.state.currentColourIndex
         index = self.indexAtPos(pos)
         if index == None:
             return 
         
         if self.isForeground:
-            self._lastOldIndex = int(self.currentMinitile.foreground[index], 16)
+            self._lastOldIndex = self.currentMinitile.foreground[index]
             self._scratchBitmap[index] = colour
         else:
-            self._lastOldIndex = int(self.currentMinitile.background[index], 16)
+            self._lastOldIndex = self.currentMinitile.background[index]
             self._scratchBitmap[index] = colour
         
         self.update()
@@ -166,9 +167,9 @@ class MinitileGraphicsWidget(QWidget):
             return
         
         if self.isForeground:
-            colourIndex = int(self.currentMinitile.foreground[index], 16)
+            colourIndex = self.currentMinitile.foreground[index]
         else:
-            colourIndex = int(self.currentMinitile.background[index], 16)
+            colourIndex = self.currentMinitile.background[index]
             
         self.colourPicked.emit(colourIndex)
         
@@ -181,7 +182,7 @@ class MinitileGraphicsWidget(QWidget):
             return
         
         toFill = self.adjacentMatchingPixels(index, [])
-        colour = hex(self.state.currentColourIndex)[2:]
+        colour = self.state.currentColourIndex
         
         for i in toFill:
             if self.isForeground:
@@ -202,7 +203,7 @@ class MinitileGraphicsWidget(QWidget):
                   
         above, right, below, left = self.adjacentPixelIndexes(index)
         for i in [above, right, below, left]:
-            if i != None and int(source[i], 16) == self._lastOldIndex and i not in matches:
+            if i != None and source[i] == self._lastOldIndex and i not in matches:
                 matches.append(i)
                 matches = self.adjacentMatchingPixels(i, matches)
 
@@ -271,6 +272,9 @@ class MinitileGraphicsWidget(QWidget):
             x = i % 8
             y = i // 8
             colour = self.currentSubpalette.getSubpaletteColourRGBA(self._scratchBitmap[i])
+            if not self.isForeground and colour[-1] == 0:
+                colour = list(colour)
+                colour[-1] = 255
             painter.fillRect(x, y, 1, 1, QColor.fromRgb(*colour))
         
         if not self.isEnabled():

@@ -61,8 +61,8 @@ class FullTileset:
                 self.verify_hex(fts[t][i])
                 self.verify_hex(fts[t+1][i])
 
-                bg.append(fts[t][i]) # handle background and foreground iteration all at once
-                fg.append(fts[t+1][i])
+                bg.append(int(fts[t][i], 16)) # handle background and foreground iteration all at once
+                fg.append(int(fts[t+1][i], 16))
         
             minitiles.append(Minitile(bg, fg)) # create list of minitiles
             
@@ -171,7 +171,7 @@ class Subpalette:
 
     @functools.lru_cache(maxsize=5000)
     def getSubpaletteColourRGBA(self, index):
-        return self.subpaletteRGBA[int(index, 16)]
+        return self.subpaletteRGBA[index]
 
 
 class Tile:

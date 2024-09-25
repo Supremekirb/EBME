@@ -1,3 +1,4 @@
+from copy import copy
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
@@ -140,6 +141,16 @@ class TileEditor(QWidget):
         
     def selectMinitile(self, minitile: int):
         self.state.currentMinitile = minitile
+        
+        if minitile >= common.MINITILENOFOREGROUND:
+            self.fgToBgButton.setDisabled(True)
+            self.bgToFgButton.setDisabled(True)
+            self.swapBgAndFgButton.setDisabled(True)
+        else:
+            self.fgToBgButton.setEnabled(True)
+            self.bgToFgButton.setEnabled(True)
+            self.swapBgAndFgButton.setEnabled(True)
+        
         minitileObj = self.projectData.getTileset(self.state.currentTileset).minitiles[minitile]
         subpaletteObj = self.projectData.getTileset(self.state.currentTileset).getPalette(
             self.state.currentPaletteGroup, self.state.currentPalette
@@ -156,6 +167,36 @@ class TileEditor(QWidget):
     def selectColour(self, index: int):
         self.state.currentColourIndex = index
         self.paletteView.setColourIndex(index)
+        
+    def copyBgToFg(self):
+        if self.state.currentMinitile >= common.MINITILENOFOREGROUND:
+            return
+        bgBitmap = self.bgScene._scratchBitmap
+        action = ActionChangeBitmap(self.fgScene.currentMinitile, bgBitmap, True)
+        self.undoStack.push(action)
+        self.fgScene.copyToScratch()
+        self.fgScene.update()
+        
+    def copyFgToBg(self):
+        if self.state.currentMinitile >= common.MINITILENOFOREGROUND:
+            return
+        fgBitmap = self.fgScene._scratchBitmap
+        action = ActionChangeBitmap(self.bgScene.currentMinitile, fgBitmap, False)
+        self.undoStack.push(action)
+        self.bgScene.copyToScratch()
+        self.bgScene.update()
+        
+    def swapBgAndFg(self):
+        if self.state.currentMinitile >= common.MINITILENOFOREGROUND:
+            return
+        self.undoStack.beginMacro("Swap BG and FG")
+        bgBitmap = copy(self.bgScene._scratchBitmap)
+        self.copyFgToBg()
+        action = ActionChangeBitmap(self.fgScene.currentMinitile, bgBitmap, True)
+        self.undoStack.push(action)
+        self.undoStack.endMacro()
+        self.fgScene.copyToScratch()
+        self.fgScene.update()
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -235,12 +276,15 @@ class TileEditor(QWidget):
         self.bgToFgButton = QToolButton()
         self.bgToFgButton.setArrowType(Qt.ArrowType.UpArrow)
         self.bgToFgButton.setToolTip("Copy background to foreground")
+        self.bgToFgButton.clicked.connect(self.copyBgToFg)
         self.swapBgAndFgButton = QToolButton()
         self.swapBgAndFgButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
         self.swapBgAndFgButton.setToolTip("Swap foreground and background")
+        self.swapBgAndFgButton.clicked.connect(self.swapBgAndFg)
         self.fgToBgButton = QToolButton()
         self.fgToBgButton.setArrowType(Qt.ArrowType.DownArrow)
         self.fgToBgButton.setToolTip("Copy foreground to background")
+        self.fgToBgButton.clicked.connect(self.copyFgToBg)
         swapperButtonLayout.addWidget(self.bgToFgButton)
         swapperButtonLayout.addWidget(self.swapBgAndFgButton)
         swapperButtonLayout.addWidget(self.fgToBgButton)
