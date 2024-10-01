@@ -53,8 +53,8 @@ if TYPE_CHECKING:
 
 
 class MapEditorScene(QGraphicsScene):
-    PREVIEWNPCMAXSAMPLES = 5
-    PREVIEWNPCMAXANIMTIMER = 7
+    PREVIEWNPCMAXSAMPLES = 4 # higher = less jittering on diagonals, but more delay. 4 seems to work nicely
+    PREVIEWNPCANIMDELAY = 7 # how many mouse-move inputs before switching animation frame
     def __init__(self, parent: "MapEditor", state: "MapEditorState", data: ProjectData):
         super().__init__(parent)
 
@@ -89,7 +89,7 @@ class MapEditorScene(QGraphicsScene):
         self.previewNPC.setZValue(common.MAPZVALUES.SCREENMASK)
         self.previewNPC.setCursor(Qt.CursorShape.BlankCursor)
         self.previewNPCPositionSamples: list[EBCoords] = []
-        self.previewNPCAnimTimer = self.PREVIEWNPCMAXANIMTIMER
+        self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
         self.previewNPCAnimState = 0
         self.previewNPCCurrentDir = 0
         self.previewNPCStillTimer = QTimer()
@@ -319,7 +319,8 @@ class MapEditorScene(QGraphicsScene):
                 case common.MODEINDEX.WARP:
                     menu.addAction("Move &warp here...", lambda: self.moveWarp(EBCoords(x, y)))
                     menu.addAction("Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
-                    
+                case _:
+                    return super().contextMenuEvent(event)
             menu.exec(event.screenPos())          
     
     def onUndo(self):
@@ -1480,7 +1481,7 @@ class MapEditorScene(QGraphicsScene):
             #     painter.drawPixmap(self.previewNPC.x()+self.previewNPC.offset().x(), self.previewNPC.y()+self.previewNPC.offset().y(), self.previewNPC.pixmap())
             
     def resetPreviewNPCAnim(self):
-        self.previewNPCAnimTimer = self.PREVIEWNPCMAXANIMTIMER
+        self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
         self.previewNPCAnimState = 0
         sprite = self.projectData.getSprite(1).renderFacingImg(self.previewNPCCurrentDir, 0)
         self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(sprite)))
@@ -1504,31 +1505,19 @@ class MapEditorScene(QGraphicsScene):
         self.previewNPCStillTimer.start()
         self.previewNPCAnimTimer -= 1
         if self.previewNPCAnimTimer < 0:
-            self.previewNPCAnimTimer = self.PREVIEWNPCMAXANIMTIMER
+            self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
             self.previewNPCAnimState = int(not self.previewNPCAnimState)        
         
         angle = math.atan2(delta.y, delta.x)
         angle = math.degrees(angle)
-        angle += 180
-        if angle >= 360:
+        angle += 90
+        if angle >=  360:
             angle -= 360
-        
-        if angle >= 22.5 and angle < 67.5:
-            facing = common.DIRECTION8['up-left'].value
-        elif angle >= 67.5 and angle < 112.5:
-            facing = common.DIRECTION8['up'].value
-        elif angle >= 112.5 and angle < 157.5:
-            facing = common.DIRECTION8['up-right'].value
-        elif angle >= 157.5 and angle < 202.5:
-            facing = common.DIRECTION8['right'].value
-        elif angle >= 202.5 and angle < 247.5:
-            facing = common.DIRECTION8['down-right'].value
-        elif angle >= 247.5 and angle < 292.5:
-            facing = common.DIRECTION8['down'].value
-        elif angle >= 292.5 and angle < 337.5:
-            facing = common.DIRECTION8['down-left']
-        else:
-            facing = common.DIRECTION8['left'].value
+        if angle < 0:
+            angle += 360
+            
+        facing = round(angle/45)
+        if facing > 7: facing = 0
         
         self.previewNPCCurrentDir = facing
         sprite = self.projectData.getSprite(1).renderFacingImg(facing, self.previewNPCAnimState)

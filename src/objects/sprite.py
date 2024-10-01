@@ -63,7 +63,7 @@ class Sprite:
                 topLeftY = self.size[1]*3
 
             case _:
-                raise ValueError("Invalid direction (must be 0-7)")
+                raise ValueError(f"Invalid direction (must be 0-7, recieved {dir})")
 
         # topLeftX = dir*self.size[0]*2 if dir < 2 else (dir-2)*self.size[0]*2
         # topLeftY = 0 if dir < 2 else self.size[1]
