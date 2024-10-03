@@ -1,9 +1,9 @@
-from PySide6.QtCore import QSettings, Qt, Signal
+from PySide6.QtCore import QPoint, QSettings, Qt, Signal
 from PySide6.QtGui import (QColor, QGuiApplication, QMouseEvent, QPainter,
-                           QPalette, QPen, QResizeEvent)
+                           QPalette, QPen, QResizeEvent, QWheelEvent)
 from PySide6.QtWidgets import (QBoxLayout, QCheckBox, QColorDialog, QFrame,
-                               QHBoxLayout, QLabel, QPushButton, QSpacerItem,
-                               QSpinBox, QWidget)
+                               QGraphicsView, QHBoxLayout, QLabel, QPushButton,
+                               QSpacerItem, QSpinBox, QWidget)
 
 import src.misc.common as common
 
@@ -247,3 +247,7 @@ class AspectRatioWidget(QWidget):
         self.layout().setStretch(0, outer_stretch)
         self.layout().setStretch(1, widget_stretch)
         self.layout().setStretch(2, outer_stretch)
+        
+class HorizontalGraphicsView(QGraphicsView):    
+    def wheelEvent(self, event: QWheelEvent):
+        self.horizontalScrollBar().event(event)

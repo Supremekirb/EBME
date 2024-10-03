@@ -5,9 +5,9 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import (QAction, QColor, QKeySequence, QUndoCommand,
                            QUndoStack)
 from PySide6.QtWidgets import (QComboBox, QGraphicsView, QGroupBox,
-                               QHBoxLayout, QMenu, QPushButton, QSizePolicy,
-                               QStyle, QToolButton, QUndoView, QVBoxLayout,
-                               QWidget)
+                               QHBoxLayout, QLabel, QMenu, QPushButton,
+                               QSizePolicy, QStyle, QToolButton, QUndoView,
+                               QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.debug as debug
@@ -16,7 +16,7 @@ from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, SettingsDialog,
                                 TileEditorAboutDialog)
-from src.misc.widgets import AspectRatioWidget
+from src.misc.widgets import AspectRatioWidget, HorizontalGraphicsView
 from src.tileeditor.arrangement_editor import ArrangementScene
 from src.tileeditor.collision_editor import CollisionPresetList, CollisionScene
 from src.tileeditor.graphics_editor import (MinitileGraphicsWidget,
@@ -37,12 +37,13 @@ class TileEditorState():
         self.currentPaletteGroup = 0
         self.currentPalette = 0
         self.currentSubpalette = 0
+        
         self.currentMinitile = 0
+        self.currentTile = 0
+        self.currentCollision = 0
         
         self.currentColour: QColor = None
         self.currentColourIndex = 0
-        
-        self.currentCollision = 0
         
 
 class TileEditor(QWidget):
@@ -124,6 +125,8 @@ class TileEditor(QWidget):
         self.onSubpaletteSelect()
         self.subpaletteSelect.blockSignals(False)
         
+        self.tileScene.renderTileset(self.state.currentTileset, self.state.currentPaletteGroup, self.state.currentPalette)
+        
     def onSubpaletteSelect(self):
         value = int(self.subpaletteSelect.currentText())
         self.state.currentSubpalette = value
@@ -138,6 +141,9 @@ class TileEditor(QWidget):
                 ).subpalettes[self.state.currentSubpalette].subpaletteRGBA[i]))
             
         self.selectMinitile(self.state.currentMinitile)
+    
+    def onTileSelect(self):
+        self.state.currentTile = self.tileScene.currentTile
         
     def selectMinitile(self, minitile: int):
         self.state.currentMinitile = minitile
@@ -206,6 +212,10 @@ class TileEditor(QWidget):
         minitileBox = QGroupBox("Minitiles")
         minitileLayout = QVBoxLayout()
         tilesetSelectLayout = QHBoxLayout()
+        tilesetSelectTilesetLayout = QVBoxLayout()
+        tilesetSelectPaletteGroupLayout = QVBoxLayout()
+        tilesetSelectPaletteLayout = QVBoxLayout()
+        tilesetSelectSubpaletteLayout = QVBoxLayout()
         minitileBox.setLayout(minitileLayout)
         
         graphicsBox = QGroupBox("Graphics")
@@ -227,10 +237,12 @@ class TileEditor(QWidget):
         self.minitileView = MinitileView(self.minitileScene)
         
         self.tileScene = TileScene(self, self.projectData)
-        self.tileView = QGraphicsView(self.tileScene)
+        self.tileScene.tileSelected.connect(self.onTileSelect)
+        self.tileView = HorizontalGraphicsView(self.tileScene)
         self.tileView.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.tileView.setFixedHeight(32*TileScene.TILE_HEIGHT+1+self.tileView.verticalScrollBar().sizeHint().height())
+        self.tileView.setFixedHeight(32*TileScene.TILE_HEIGHT+1+self.tileView.horizontalScrollBar().sizeHint().height())
         self.tileView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.tileView.centerOn(0, 0)
         
         self.arrangementScene = ArrangementScene(self, self.projectData)
         self.arrangementView = QGraphicsView(self.arrangementScene)
@@ -241,6 +253,7 @@ class TileEditor(QWidget):
         self.collisionView.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         
         self.presetList = CollisionPresetList(self.state)
+        self.presetList.list.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
         self.fgScene = MinitileGraphicsWidget(self.projectData, self.state)
         self.fgScene.colourPicked.connect(self.selectColour)
@@ -256,18 +269,30 @@ class TileEditor(QWidget):
                 
         self.tilesetSelect = QComboBox()
         self.tilesetSelect.addItems(str(i.id) for i in self.projectData.tilesets)
+        tilesetSelectTilesetLayout.addWidget(QLabel("Tileset"))
+        tilesetSelectTilesetLayout.addWidget(self.tilesetSelect)
+        
         self.paletteGroupSelect = QComboBox()
+        tilesetSelectPaletteGroupLayout.addWidget(QLabel("Palette Group"))
+        tilesetSelectPaletteGroupLayout.addWidget(self.paletteGroupSelect)
+        
         self.paletteSelect = QComboBox()
+        tilesetSelectPaletteLayout.addWidget(QLabel("Palette"))
+        tilesetSelectPaletteLayout.addWidget(self.paletteSelect)
+        
         self.subpaletteSelect = QComboBox()
+        tilesetSelectSubpaletteLayout.addWidget(QLabel("Subpalette"))
+        tilesetSelectSubpaletteLayout.addWidget(self.subpaletteSelect)
+        
         self.tilesetSelect.activated.connect(self.onTilesetSelect)
         self.paletteGroupSelect.activated.connect(self.onPaletteGroupSelect)
         self.paletteSelect.activated.connect(self.onPaletteSelect)
         self.subpaletteSelect.activated.connect(self.onSubpaletteSelect)
         
-        tilesetSelectLayout.addWidget(self.tilesetSelect)
-        tilesetSelectLayout.addWidget(self.paletteGroupSelect)
-        tilesetSelectLayout.addWidget(self.paletteSelect)
-        tilesetSelectLayout.addWidget(self.subpaletteSelect)
+        tilesetSelectLayout.addLayout(tilesetSelectTilesetLayout)
+        tilesetSelectLayout.addLayout(tilesetSelectPaletteGroupLayout)
+        tilesetSelectLayout.addLayout(tilesetSelectPaletteLayout)
+        tilesetSelectLayout.addLayout(tilesetSelectSubpaletteLayout)
         
         minitileLayout.addLayout(tilesetSelectLayout)
         minitileLayout.addWidget(self.minitileView)
