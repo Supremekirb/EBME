@@ -3,7 +3,7 @@ from copy import copy
 from PySide6.QtGui import QUndoCommand
 
 import src.misc.common as common
-from src.coilsnake.fts_interpreter import Minitile
+from src.coilsnake.fts_interpreter import Minitile, Tile
 
 
 class ActionChangeBitmap(QUndoCommand):
@@ -54,3 +54,44 @@ class ActionChangeBitmap(QUndoCommand):
     
     def id(self):
         return common.ACTIONINDEX.MINITILEDRAW
+    
+class ActionChangeArrangement(QUndoCommand):
+    def __init__(self, tile: Tile, metadata: int, index: int):
+        super().__init__()
+        self.setText("Change tile arrangement metadata")
+        
+        self.tile = tile
+        self.index = index
+        
+        self.metadata = metadata
+        
+        self._metadata = tile.metadata[index]
+        
+        
+    def redo(self):
+        self.tile.metadata[self.index] = self.metadata
+        
+    def undo(self):
+        self.tile.metadata[self.index] = self._metadata
+    
+    def mergeWith(self, other: QUndoCommand):
+        # wrong action type
+        if other.id() != common.ACTIONINDEX.ARRANGEMENTCHANGE:
+            return False
+        # operates on wrong tile
+        if other.tile != self.tile:
+            return False
+        # operates on wrong index
+        if other.index != self.index:
+            return False
+        # tile metadata isnt the same
+        if self.metadata != other.metadata:
+            return False
+        
+        # success
+        self.metadata = other.metadata
+        return True
+    
+    def id(self):
+        return common.ACTIONINDEX.ARRANGEMENTCHANGE  
+         

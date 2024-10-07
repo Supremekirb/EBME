@@ -1,16 +1,12 @@
-from copy import copy
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QPoint, QSize, Qt, Signal
-from PySide6.QtGui import (QBrush, QColor, QMouseEvent, QPainter, QPaintEvent,
-                           QPixmap)
+from PySide6.QtCore import QPoint, Qt, Signal
+from PySide6.QtGui import QMouseEvent
 from PySide6.QtWidgets import QGridLayout, QSizePolicy, QWidget
 
-import src.misc.common as common
-from src.actions.minitile_actions import ActionChangeBitmap
+from src.actions.fts_actions import ActionChangeBitmap
 from src.coilsnake.fts_interpreter import Minitile, Subpalette
-from src.coilsnake.project_data import ProjectData
-from src.misc.widgets import ColourButton
+from src.misc.widgets import ColourButton, MinitileGraphicsWidget
 
 if TYPE_CHECKING:
     from tile_editor import TileEditorState
@@ -68,43 +64,15 @@ class PaletteSelector(QWidget):
                 button.openColourDialog()
                 break
         
-class MinitileGraphicsWidget(QWidget):
+class MinitileEditorWidget(MinitileGraphicsWidget):
     colourPicked = Signal(int)
     
-    def __init__(self, projectData: ProjectData, state: "TileEditorState"):
-        super().__init__()
-        
-        self.projectData = projectData
+    def __init__(self, state: "TileEditorState"):
+        super().__init__()      
         self.state = state
-        
-        self.currentMinitile: Minitile = None
-        self.currentSubpalette: Subpalette = None
-        self.isForeground = True
-        
-        policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        policy.setHeightForWidth(True)
-        policy.setWidthForHeight(True)
-        self.setSizePolicy(policy)
-        
         self._painting = False
         self._lastOldIndex: int = None
         self._scratchBitmap: list[str] = []
-    
-    def copyToScratch(self):
-        """For better undo/redo support, we copy the bitmap to this scratch space to modify it.
-        
-        Then undo/redo actions apply it to the model."""
-        if self.isForeground:
-            self._scratchBitmap = copy(self.currentMinitile.foreground)
-        else:
-            self._scratchBitmap = copy(self.currentMinitile.background)
-        
-    def loadMinitile(self, minitile: Minitile, id: int=0):
-        self.currentMinitile = minitile
-        if id >= common.MINITILENOFOREGROUND and self.isForeground:
-            self.setDisabled(True)
-        else: self.setEnabled(True)
-        self.copyToScratch()
         
     def mousePressEvent(self, event: QMouseEvent):
         if self.isEnabled():
@@ -216,79 +184,3 @@ class MinitileGraphicsWidget(QWidget):
         left = index - 1 if (index - 1) // 8 == index // 8 else None
         
         return (above, right, below, left)
-        
-    def indexAtPos(self, pos: QPoint):
-        """Get the index (0-63) of the pixel at the given position
-
-        Args:
-            pos (QPoint): Location on the widget, such as from an event
-
-        Returns:
-            int: index
-        """
-        w = self.width()
-        h = self.height()
-        
-        if w > h:       
-            w = h
-        else:
-            h = w
-            
-        x = pos.x() // (w / 8)
-        y = pos.y() // (h / 8)
-        
-        if x < 0 or x > 7 or y < 0 or y > 7:
-            return
-        
-        return int(y * 8 + x)
-        
-        
-    def paintEvent(self, event: QPaintEvent):
-        if self.currentMinitile == None or self.currentSubpalette == None:
-            return super().paintEvent(event)
-        
-        width = self.width()
-        height = self.height()
-        
-        if width > height:
-            width = height
-        else:
-            height = width
-        
-        painter = QPainter(self)
-           
-        scale = width / 8
-              
-        painter.scale(scale, scale)
-        
-        # draw bg at half the size of the minitile pixel 
-        painter.scale(0.5, 0.5)
-        painter.setBrush(QBrush(QPixmap(":/ui/bg.png").scaled(2, 2)))
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.drawRect(0, 0, 16, 16)
-        painter.scale(2, 2)
-        
-        for i in range(64):
-            x = i % 8
-            y = i // 8
-            colour = self.currentSubpalette.getSubpaletteColourRGBA(self._scratchBitmap[i])
-            if not self.isForeground and colour[-1] == 0:
-                colour = list(colour)
-                colour[-1] = 255
-            painter.fillRect(x, y, 1, 1, QColor.fromRgb(*colour))
-        
-        if not self.isEnabled():
-            painter.setBrush(QColor(0, 0, 0, 128))
-            painter.drawRect(0, 0, 8, 8)
-            # painter.setBrush(Qt.BrushStyle.NoBrush)
-            
-        return super().paintEvent(event)
-    
-    def heightForWidth(self, width: int) -> int:
-        return width
-    
-    def hasHeightForWidth(self):
-        return True
-    
-    def minimumSizeHint(self):
-        return QSize(128, 128)

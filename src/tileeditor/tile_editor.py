@@ -4,22 +4,22 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import Qt
 from PySide6.QtGui import (QAction, QColor, QKeySequence, QUndoCommand,
                            QUndoStack)
-from PySide6.QtWidgets import (QComboBox, QGraphicsView, QGroupBox,
-                               QHBoxLayout, QLabel, QMenu, QPushButton,
-                               QSizePolicy, QStyle, QToolButton, QUndoView,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
+                               QMenu, QPushButton, QSizePolicy, QStyle,
+                               QToolButton, QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.debug as debug
-from src.actions.minitile_actions import ActionChangeBitmap
+from src.actions.fts_actions import ActionChangeArrangement, ActionChangeBitmap
 from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, SettingsDialog,
                                 TileEditorAboutDialog)
-from src.misc.widgets import AspectRatioWidget, HorizontalGraphicsView
-from src.tileeditor.arrangement_editor import ArrangementScene
+from src.misc.widgets import (AspectRatioWidget, HorizontalGraphicsView,
+                              TileGraphicsWidget)
+from src.tileeditor.arrangement_editor import TileArrangementWidget
 from src.tileeditor.collision_editor import CollisionPresetList, CollisionScene
-from src.tileeditor.graphics_editor import (MinitileGraphicsWidget,
+from src.tileeditor.graphics_editor import (MinitileEditorWidget,
                                             PaletteSelector)
 from src.tileeditor.minitile_selector import MinitileScene, MinitileView
 from src.tileeditor.tile_selector import TileScene
@@ -27,7 +27,7 @@ from src.tileeditor.tile_selector import TileScene
 if TYPE_CHECKING:
     from src.main.main import MainApplication
 
-
+# TODO refresh graphics stuff
 class TileEditorState():
     def __init__(self, tileeditor: "TileEditor"):
         
@@ -93,6 +93,9 @@ class TileEditor(QWidget):
                 self.bgScene.copyToScratch()
                 self.fgScene.update()
                 self.bgScene.update()
+            elif isinstance(c, ActionChangeArrangement):
+                self.arrangementScene.update()
+                self.collisionScene.update()
                 
     def onTilesetSelect(self):
         
@@ -101,6 +104,13 @@ class TileEditor(QWidget):
         self.paletteGroupSelect.blockSignals(True)
         self.paletteGroupSelect.clear()
         self.paletteGroupSelect.addItems(str(i.groupID) for i in self.projectData.getTileset(value).paletteGroups)
+        
+        tileset = self.projectData.getTileset(self.state.currentTileset)
+        self.arrangementScene.loadTile(tileset.tiles[self.state.currentTile])
+        self.arrangementScene.loadTileset(tileset)
+        self.collisionScene.loadTile(tileset.tiles[self.state.currentTile])
+        self.collisionScene.loadTileset(tileset)
+        
         self.onPaletteGroupSelect()
         self.paletteGroupSelect.blockSignals(False)
         
@@ -125,6 +135,11 @@ class TileEditor(QWidget):
         self.onSubpaletteSelect()
         self.subpaletteSelect.blockSignals(False)
         
+        palette = self.projectData.getTileset(self.state.currentTileset).getPalette(
+            self.state.currentPaletteGroup, self.state.currentPalette)
+        self.arrangementScene.loadPalette(palette)
+        self.collisionScene.loadPalette(palette)
+        
         self.tileScene.renderTileset(self.state.currentTileset, self.state.currentPaletteGroup, self.state.currentPalette)
         
     def onSubpaletteSelect(self):
@@ -144,6 +159,10 @@ class TileEditor(QWidget):
     
     def onTileSelect(self):
         self.state.currentTile = self.tileScene.currentTile
+        tile = self.projectData.getTileset(
+            self.state.currentTileset).tiles[self.state.currentTile]
+        self.arrangementScene.loadTile(tile)
+        self.collisionScene.loadTile(tile)
         
     def selectMinitile(self, minitile: int):
         self.state.currentMinitile = minitile
@@ -169,6 +188,8 @@ class TileEditor(QWidget):
         self.bgScene.loadMinitile(minitileObj, minitile)
         self.bgScene.currentSubpalette = subpaletteObj
         self.bgScene.update()
+        
+        self.minitileScene.moveCursorToMinitile(minitile)
         
     def selectColour(self, index: int):
         self.state.currentColourIndex = index
@@ -244,22 +265,18 @@ class TileEditor(QWidget):
         self.tileView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.tileView.centerOn(0, 0)
         
-        self.arrangementScene = ArrangementScene(self, self.projectData)
-        self.arrangementView = QGraphicsView(self.arrangementScene)
-        self.arrangementView.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.arrangementScene = TileArrangementWidget(self.state)
         
-        self.collisionScene = CollisionScene(self, self.projectData)
-        self.collisionView = QGraphicsView(self.collisionScene)
-        self.collisionView.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.collisionScene = TileGraphicsWidget()
         
         self.presetList = CollisionPresetList(self.state)
         self.presetList.list.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
-        self.fgScene = MinitileGraphicsWidget(self.projectData, self.state)
+        self.fgScene = MinitileEditorWidget(self.state)
         self.fgScene.colourPicked.connect(self.selectColour)
         self.fgAspectRatioContainer = AspectRatioWidget(self.fgScene)
         
-        self.bgScene = MinitileGraphicsWidget(self.projectData, self.state)
+        self.bgScene = MinitileEditorWidget(self.state)
         self.bgScene.isForeground = False
         self.bgScene.colourPicked.connect(self.selectColour)
         self.bgAspectRatioContainer = AspectRatioWidget(self.bgScene)
@@ -324,10 +341,10 @@ class TileEditor(QWidget):
         graphicsLayout.addLayout(paletteLayout)
         
         tileLayout.addWidget(self.tileView)
-        tileLayout.addWidget(self.arrangementView)
+        tileLayout.addWidget(self.arrangementScene)
         
         collisionLayout.addLayout(self.presetList)
-        collisionLayout.addWidget(self.collisionView)
+        collisionLayout.addWidget(self.collisionScene)
         
         topLayout.addWidget(minitileBox)
         topLayout.addWidget(graphicsBox)

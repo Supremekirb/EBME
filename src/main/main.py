@@ -92,7 +92,7 @@ class MainApplication(QMainWindow):
                 else:
                     event.ignore()
                     
-            if not self.mapWin.scene.undoStack.isClean():                    
+            if not self.mapWin.scene.undoStack.isClean() or not self.tileWin.undoStack.isClean():                    
                 msg = QMessageBox(self)
                 msg.setText("Save your changes before closing?")
                 msg.setStandardButtons(QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)

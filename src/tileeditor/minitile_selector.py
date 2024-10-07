@@ -112,6 +112,12 @@ class MinitileScene(QGraphicsScene):
         self.parent().selectMinitile(index)
         
         return super().mousePressEvent(event)
+
+    def moveCursorToMinitile(self, minitile: int):
+        if minitile >= self.MINITILE_COUNT: raise ValueError(f"Minitile must be in range 0-{self.MINITILE_COUNT}! Recieved {minitile}")
+        x = minitile % self.MINITILE_WIDTH
+        y = minitile // self.MINITILE_WIDTH
+        self.selector.setPos(x*8, y*8)
     
     def parent(self) -> "TileEditor": # for typing
         return super().parent()

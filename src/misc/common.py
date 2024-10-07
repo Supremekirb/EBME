@@ -127,6 +127,7 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "MAPMUSICADD", # cannot merge wiht itself
                                       "MAPMUSICDELETE", # cannot merge with itself
                                       "MINITILEDRAW", # can merge with itself if contents are identical
+                                      "ARRANGEMENTCHANGE", # can merge with itself if contents are identical
                                       ])
 
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18

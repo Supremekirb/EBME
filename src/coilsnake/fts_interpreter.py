@@ -184,12 +184,12 @@ class Tile:
         self.collision = []
 
         for i in range(0, 96, 6):
-            self.metadata.append(self.tile[i] + self.tile[i+1] + self.tile[i+2] + self.tile[i+3])
-            self.collision.append(self.tile[i+4] + self.tile[i+5])
+            self.metadata.append(int(self.tile[i] + self.tile[i+1] + self.tile[i+2] + self.tile[i+3], 16))
+            self.collision.append(int(self.tile[i+4] + self.tile[i+5], 16))
     
     def getMetadata(self, id):
         """Return the SNES metadata of a given minitile placement in a tile"""
-        return int(self.metadata[id], 16)
+        return self.metadata[id]
         # We will extract the actual metadata in the other functions - see below
     
     def getMinitileID(self, id):
@@ -267,6 +267,14 @@ class Tile:
         
         return img
 
+    def toRaw(self):
+        raw = ""
+        for i in range(0, 16):
+            raw += hex(self.getMetadata(i))[2:].zfill(4)
+            raw += hex(self.getMinitileCollision(i))[2:].zfill(2)
+        
+        return raw
+
 
 class Minitile:
     """Raw bitmap graphics, 4bpp. No associated palette."""
@@ -334,3 +342,13 @@ class Minitile:
         fg = self.ForegroundToImage(subpalette)
         img.paste(fg, (0, 0), fg)
         return img
+    
+    def toRaw(self):
+        raw = ""
+        for i in range(0, 64):
+            raw += hex(self.background[i])[2:]
+        raw += "\n"
+        for i in range(0, 64):
+            raw += hex(self.foreground[i])[2:]
+            
+        return raw
