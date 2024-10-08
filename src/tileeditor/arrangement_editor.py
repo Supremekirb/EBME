@@ -84,5 +84,5 @@ class TileArrangementWidget(TileGraphicsWidget):
         minitile = self.currentTile.getMinitileID(index)
         self.state.tileEditor.selectMinitile(minitile)
         subpalette = self.currentTile.getMinitileSubpalette(index)
-        self.state.tileEditor.subpaletteSelect.setCurrentText(str(subpalette))
-        self.state.tileEditor.subpaletteSelect.activated.emit(self.state.tileEditor.subpaletteSelect.currentIndex())
+        self.state.tileEditor.paletteView.setSubpaletteIndex(subpalette)
+        self.state.tileEditor.onSubpaletteSelect()

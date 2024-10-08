@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QPoint, Qt, Signal
-from PySide6.QtGui import QMouseEvent
-from PySide6.QtWidgets import QGridLayout, QSizePolicy, QWidget
+from PySide6.QtGui import QColor, QMouseEvent
+from PySide6.QtWidgets import QGridLayout, QLabel, QSizePolicy, QWidget
 
 from src.actions.fts_actions import ActionChangeBitmap
-from src.coilsnake.fts_interpreter import Minitile, Subpalette
+from src.coilsnake.fts_interpreter import Minitile, Palette, Subpalette
 from src.misc.widgets import ColourButton, MinitileGraphicsWidget
 
 if TYPE_CHECKING:
@@ -13,56 +13,79 @@ if TYPE_CHECKING:
     
 class PaletteSelector(QWidget):
     colourChanged = Signal(int)
+    subpaletteChanged = Signal(int)
     
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         layout = QGridLayout()
         self.setLayout(layout)
         
-        self.buttons: list[ColourButton] = []
+        self.buttons: list[list[ColourButton]] = [[], [], [], [], [], []]
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+        
         for i in range(16):
-            button = ColourButton(self)
-            button.setCheckable(True)
-            button.clicked.disconnect()
-            button.colourChanged.connect(self.onColourChanged)
-            button.clicked.connect(self.onColourChanged)
-            button.setAutoExclusive(True)
-            button.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred))
-            layout.addWidget(button, i // 4, i % 4)
-            self.buttons.append(button)
+            label = QLabel(str(i))
+            label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed) # otherwise they stretch
+            layout.addWidget(label, 0, i+1)
+        
+        for i in range(6):
+            layout.addWidget(QLabel(str(i)), i+1, 0)
+            for j in range(16):                
+                button = ColourButton(self)
+                button.setCheckable(True)
+                button.clicked.disconnect()
+                button.colourChanged.connect(self.onColourChanged)
+                button.clicked.connect(self.onColourChanged)
+                button.setAutoExclusive(True)
+                button.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred))
+                layout.addWidget(button, i+1, j+1)
+                self.buttons[i].append(button)
             
-        self.buttons[0].setChecked(True)
+        self.buttons[0][0].setChecked(True)
+        self.currentSubpaletteIndex = 0
+        self.currentColour = self.buttons[0][0].chosenColour
+        self.currentColourIndex = 0
+        
         self.onColourChanged()
             
     def onColourChanged(self):
-        for index, button in enumerate(self.buttons):
-            if button.isChecked():
-                self.currentColour = button.chosenColour
-                self.currentColourIndex = index
-                break
-        self.colourChanged.emit(index)
+        for subpalette, list in enumerate(self.buttons):
+            for index, button in enumerate(list):
+                if button.isChecked():
+                    self.currentColour = button.chosenColour
+                    if subpalette != self.currentSubpaletteIndex:
+                        self.currentSubpaletteIndex = subpalette
+                        self.subpaletteChanged.emit(subpalette)
+                    if index != self.currentColourIndex:
+                        self.currentColourIndex = index
+                        self.colourChanged.emit(index)
+                    return
+        raise ValueError("Can't find the currently-selected colour button?!")
         
     def setColourIndex(self, index: int):
-        self.buttons[index].setChecked(True)
         self.currentColourIndex = index
-        self.currentColour = self.buttons[index].chosenColour
+        self.buttons[self.currentSubpaletteIndex][index].setChecked(True)
         
-    def updateButtons(self):
-        for index, button in enumerate(self.buttons):
-            if self.currentColourIndex == index:
-                button.setChecked(True)
-            else:
-                button.setChecked(False)
+    def setSubpaletteIndex(self, subpalette: int):
+        self.currentSubpaletteIndex = subpalette
+        self.buttons[subpalette][self.currentColourIndex].setChecked(True)
         
     def openEditor(self):
         # maybe new implementation later,
         # but right now just open the dialog of the selected button
-        for button in self.buttons:
-            if button.isChecked():
-                button.openColourDialog()
-                break
+        for subpaletteButtons in self.buttons:
+            for button in subpaletteButtons:
+                if button.isChecked():
+                    button.openColourDialog()
+                    return
+            
+    def loadPalette(self, palette: Palette):
+        for index, subpalette in enumerate(palette.subpalettes):
+            for colour, button in enumerate(self.buttons[index]):
+                button.setColour(QColor.fromRgb(*subpalette.getSubpaletteColourRGBA(colour)))
+        
+        self.onColourChanged()
         
 class MinitileEditorWidget(MinitileGraphicsWidget):
     colourPicked = Signal(int)
@@ -77,6 +100,8 @@ class MinitileEditorWidget(MinitileGraphicsWidget):
     def mousePressEvent(self, event: QMouseEvent):
         if self.isEnabled():
             if event.button() == Qt.MouseButton.LeftButton:
+                if Qt.KeyboardModifier.ControlModifier in event.modifiers() or Qt.KeyboardModifier.ShiftModifier in event.modifiers():
+                    self.pickPixel(event.pos())
                 self._painting = True
                 self.copyToScratch()
                 self.paintPixel(event.pos())

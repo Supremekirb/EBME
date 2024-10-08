@@ -128,33 +128,24 @@ class TileEditor(QWidget):
     def onPaletteSelect(self):
         value = int(self.paletteSelect.currentText())
         self.state.currentPalette = value
-        self.subpaletteSelect.blockSignals(True)
-        self.subpaletteSelect.clear()
-        self.subpaletteSelect.addItems(str(i) for i in range(len(self.projectData.getTileset(
-            self.state.currentTileset).getPalette(self.state.currentPaletteGroup, value).subpalettes)))
         self.onSubpaletteSelect()
-        self.subpaletteSelect.blockSignals(False)
         
         palette = self.projectData.getTileset(self.state.currentTileset).getPalette(
             self.state.currentPaletteGroup, self.state.currentPalette)
         self.arrangementScene.loadPalette(palette)
         self.collisionScene.loadPalette(palette)
+        self.paletteView.loadPalette(palette)
         
         self.tileScene.renderTileset(self.state.currentTileset, self.state.currentPaletteGroup, self.state.currentPalette)
         
     def onSubpaletteSelect(self):
-        value = int(self.subpaletteSelect.currentText())
+        value = self.paletteView.currentSubpaletteIndex
         self.state.currentSubpalette = value
         self.minitileScene.renderTileset(self.state.currentTileset,
                                          self.state.currentPaletteGroup,
                                          self.state.currentPalette,
                                          self.state.currentSubpalette)
-        for i in range(16):
-            self.paletteView.buttons[i].setColour(QColor.fromRgb(*self.projectData.getTileset(
-                self.state.currentTileset).getPalette(
-                    self.state.currentPaletteGroup, self.state.currentPalette
-                ).subpalettes[self.state.currentSubpalette].subpaletteRGBA[i]))
-            
+    
         self.selectMinitile(self.state.currentMinitile)
     
     def onTileSelect(self):
@@ -283,6 +274,7 @@ class TileEditor(QWidget):
         
         self.paletteView = PaletteSelector(self)
         self.paletteView.colourChanged.connect(self.selectColour)
+        self.paletteView.subpaletteChanged.connect(self.onSubpaletteSelect)
                 
         self.tilesetSelect = QComboBox()
         self.tilesetSelect.addItems(str(i.id) for i in self.projectData.tilesets)
@@ -297,19 +289,13 @@ class TileEditor(QWidget):
         tilesetSelectPaletteLayout.addWidget(QLabel("Palette"))
         tilesetSelectPaletteLayout.addWidget(self.paletteSelect)
         
-        self.subpaletteSelect = QComboBox()
-        tilesetSelectSubpaletteLayout.addWidget(QLabel("Subpalette"))
-        tilesetSelectSubpaletteLayout.addWidget(self.subpaletteSelect)
-        
         self.tilesetSelect.activated.connect(self.onTilesetSelect)
         self.paletteGroupSelect.activated.connect(self.onPaletteGroupSelect)
         self.paletteSelect.activated.connect(self.onPaletteSelect)
-        self.subpaletteSelect.activated.connect(self.onSubpaletteSelect)
         
         tilesetSelectLayout.addLayout(tilesetSelectTilesetLayout)
         tilesetSelectLayout.addLayout(tilesetSelectPaletteGroupLayout)
         tilesetSelectLayout.addLayout(tilesetSelectPaletteLayout)
-        tilesetSelectLayout.addLayout(tilesetSelectSubpaletteLayout)
         
         minitileLayout.addLayout(tilesetSelectLayout)
         minitileLayout.addWidget(self.minitileView)
@@ -332,6 +318,8 @@ class TileEditor(QWidget):
         swapperButtonLayout.addWidget(self.fgToBgButton)
         drawingLayout.addLayout(swapperButtonLayout)
         drawingLayout.addWidget(self.bgAspectRatioContainer)
+        
+        paletteLayout.addLayout(tilesetSelectSubpaletteLayout)
         paletteLayout.addWidget(self.paletteView)
         self.editPaletteButton = QPushButton("Edit")
         self.editPaletteButton.clicked.connect(self.paletteView.openEditor)

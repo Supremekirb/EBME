@@ -20,6 +20,9 @@ class MinitileView(QGraphicsView):
         self.scale(2, 2)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setMouseTracking(True)
+        self.setFixedWidth(self.scene().width()*2 + self.verticalScrollBar().sizeHint().width() + 2)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
     
     def leaveEvent(self, event: QEvent):
         self.scene().hoverInfo.hide()
@@ -40,7 +43,7 @@ class MinitileView(QGraphicsView):
     
 class MinitileScene(QGraphicsScene):
     MINITILE_COUNT = 512
-    MINITILE_WIDTH = 32
+    MINITILE_WIDTH = 16
     
     def __init__(self, parent: "TileEditor", projectData: ProjectData):
         super().__init__(parent)
