@@ -345,7 +345,7 @@ class MinitileGraphicsWidget(QWidget):
         for i in range(64):
             x = i % 8
             y = i // 8
-            colour = self.currentSubpalette.getSubpaletteColourRGBA(self._scratchBitmap[i])
+            colour = self.currentSubpalette.subpaletteRGBA[self._scratchBitmap[i]]
             if not self.isForeground and colour[-1] == 0:
                 colour = list(colour)
                 colour[-1] = 255

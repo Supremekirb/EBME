@@ -2,6 +2,7 @@ import functools
 
 from PIL import Image, ImageOps
 
+import src.misc.common as common
 from src.misc.exceptions import NotBase32Error, NotHexError
 
 
@@ -150,11 +151,15 @@ class Palette:
             for entry in range(0, 16*3, 3): 
                 buildSub.append((palette[offset+entry] + palette[offset+entry+1] + palette[offset+entry+2])) # R, G, B out of base 32
             self.subpalettes.append(Subpalette(buildSub))
-
-        self.raw = palette
     
-    def getSubpalette(self, id):
-        return self.subpalettes[id]
+    def toRaw(self):
+        raw = ""
+        raw += common.baseN(self.groupID, 32)
+        raw += common.baseN(self.paletteID, 32)
+        for i in self.subpalettes:
+            raw += i.toRaw()
+        
+        return raw
 
 
 class Subpalette:
@@ -162,18 +167,22 @@ class Subpalette:
     ### Parameters
         `subpalette` - raw subpalette from an .fts file palette"""
     def __init__(self, subpalette):
-        self.subpalette = subpalette
         self.subpaletteRGBA: list[tuple[int, int, int, int]] = []
 
         for entry in range(16):  # create RGBA list too
-            if entry == 0: self.subpaletteRGBA.append((int(str(self.subpalette[entry][0]), 32)*8, int(str(self.subpalette[entry][1]), 32)*8, int(str(self.subpalette[entry][2]), 32)*8, 0)) # alpha channel = 0 for first colour
-            else: self.subpaletteRGBA.append((int(str(self.subpalette[entry][0]), 32)*8, int(str(self.subpalette[entry][1]), 32)*8, int(str(self.subpalette[entry][2]), 32)*8, 255)) # R, G, B out of base 32 + A
+            if entry == 0: self.subpaletteRGBA.append((int(str(subpalette[entry][0]), 32)*8, int(str(subpalette[entry][1]), 32)*8, int(str(subpalette[entry][2]), 32)*8, 0)) # alpha channel = 0 for first colour
+            else: self.subpaletteRGBA.append((int(str(subpalette[entry][0]), 32)*8, int(str(subpalette[entry][1]), 32)*8, int(str(subpalette[entry][2]), 32)*8, 255)) # R, G, B out of base 32 + A
 
-    @functools.lru_cache(maxsize=5000)
-    def getSubpaletteColourRGBA(self, index):
-        return self.subpaletteRGBA[index]
-
-
+    def toRaw(self):
+        raw = ""
+        for i in self.subpaletteRGBA:               
+            raw += common.baseN(i[0] // 8, 32)
+            raw += common.baseN(i[1] // 8, 32)
+            raw += common.baseN(i[2] // 8, 32)
+        
+        return raw
+            
+        
 class Tile:
     """Collection of minitiles, along with collision data, palette metadata, and other SNES metadata for each."""
     def __init__(self, tile):
@@ -283,10 +292,10 @@ class Minitile:
         self.foreground = foreground
 
     # @functools.lru_cache(maxsize=5000)
-    def mapIndexToRGBABackground(self, subpalette):
+    def mapIndexToRGBABackground(self, subpalette: Subpalette):
         RGBAbuild = []
         for i in self.background:
-            value = subpalette.getSubpaletteColourRGBA(i)
+            value = subpalette.subpaletteRGBA[i]
             if value[3] == 0: # bg tiles cannot have alpha
                 # TODO verify this behavior. Does it do something weird like make it subpalette 0's first colour?
                 value = (value[0], value[1], value[2], 255)
@@ -296,10 +305,10 @@ class Minitile:
         return RGBAbuild
     
     # @functools.lru_cache(maxsize=5000)
-    def mapIndexToRGBAForeground(self, subpalette):
+    def mapIndexToRGBAForeground(self, subpalette: Subpalette):
         RGBAbuild = []
         for i in self.foreground:
-            RGBAbuild.append(subpalette.getSubpaletteColourRGBA(i))
+            RGBAbuild.append(subpalette.subpaletteRGBA[i])
 
         return RGBAbuild
         

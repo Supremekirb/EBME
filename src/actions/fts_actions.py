@@ -3,7 +3,7 @@ from copy import copy
 from PySide6.QtGui import QUndoCommand
 
 import src.misc.common as common
-from src.coilsnake.fts_interpreter import Minitile, Tile
+from src.coilsnake.fts_interpreter import Minitile, Tile, Subpalette
 
 
 class ActionChangeBitmap(QUndoCommand):
@@ -94,4 +94,46 @@ class ActionChangeArrangement(QUndoCommand):
     
     def id(self):
         return common.ACTIONINDEX.ARRANGEMENTCHANGE  
-         
+
+class ActionChangeSubpaletteColour(QUndoCommand):
+    def __init__(self, subpalette: Subpalette, index: int, colour: tuple[int, int, int]):
+        super().__init__()
+        self.setText("Change subpalette colour")
+        
+        self.subpalette = subpalette
+        self.index = index
+        
+        if index == 0:
+            self.alpha = 0
+        else: self.alpha = 255
+        
+        self.colour = colour
+        
+        self._colour = subpalette.subpaletteRGBA[index]
+        
+    def redo(self):
+        self.subpalette.subpaletteRGBA[self.index] = (*self.colour, self.alpha)
+        
+    def undo(self):
+        self.subpalette.subpaletteRGBA[self.index] = self._colour
+    
+    def mergeWith(self, other: QUndoCommand):
+        # wrong action type
+        if other.id() != common.ACTIONINDEX.SUBPALETTECHANGE:
+            return False
+        # operates on wrong subpalette
+        if other.subpalette != self.subpalette:
+            return False
+        # operates on wrong index
+        if other.index != self.index:
+            return False
+        # colour change isn't the same
+        if other.colour != self.colour:
+            return False
+        
+        # success
+        self.colour = other.colour
+        return True
+        
+    def id(self):
+        return common.ACTIONINDEX.SUBPALETTECHANGE

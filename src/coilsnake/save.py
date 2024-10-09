@@ -141,7 +141,8 @@ def saveTilesets(data: ProjectData):
             fts_file.write("\n")
 
             for p in i.palettes:
-                fts_file.write(p.raw)
+                fts_file.write(p.toRaw())
+                fts_file.write("\n")
             
             fts_file.write("\n\n")
 

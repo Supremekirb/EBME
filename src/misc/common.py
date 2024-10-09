@@ -128,6 +128,7 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "MAPMUSICDELETE", # cannot merge with itself
                                       "MINITILEDRAW", # can merge with itself if contents are identical
                                       "ARRANGEMENTCHANGE", # can merge with itself if contents are identical
+                                      "SUBPALETTECHANGE", # can merge with itself if contents are identical
                                       ])
 
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18
@@ -256,6 +257,10 @@ def enemyToPix(val: int):
 def cap(val: float, min_: float, max_: float):
     """Restrict a number to range (min, max)"""
     return max(min(max_, val), min_)
+
+# https://stackoverflow.com/a/2267428
+def baseN(num: int, base: int, numerals="0123456789abcdefghijklmnopqrstuvwxyz"):
+    return ((num == 0) and numerals[0]) or (baseN(num // base, base, numerals).lstrip(numerals[0]) + numerals[num % base])
 
 
 def showErrorMsg(title: str="Error", text: str="Error.", info: str=None,
