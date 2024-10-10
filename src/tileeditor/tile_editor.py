@@ -20,7 +20,7 @@ from src.misc.dialogues import (AboutDialog, SettingsDialog,
 from src.misc.widgets import (AspectRatioWidget, HorizontalGraphicsView,
                               TileGraphicsWidget)
 from src.tileeditor.arrangement_editor import TileArrangementWidget
-from src.tileeditor.collision_editor import CollisionPresetList
+from src.tileeditor.collision_editor import CollisionPresetList, TileCollisionWidget
 from src.tileeditor.graphics_editor import (MinitileEditorWidget,
                                             PaletteSelector)
 from src.tileeditor.minitile_selector import MinitileScene, MinitileView
@@ -159,6 +159,7 @@ class TileEditor(QWidget):
             self.state.currentTileset).tiles[self.state.currentTile]
         self.arrangementScene.loadTile(tile)
         self.collisionScene.loadTile(tile)
+        self.presetList.verifyTileCollision(tile)
     
     def onColourEdit(self):
         ...
@@ -281,7 +282,7 @@ class TileEditor(QWidget):
         self.arrangementScene = TileArrangementWidget(self.state)
         self.arrangementAspectRatioContainer = AspectRatioWidget(self.arrangementScene)
         
-        self.collisionScene = TileGraphicsWidget()
+        self.collisionScene = TileCollisionWidget(self.state)
         self.collisionAspectRatioContainer = AspectRatioWidget(self.collisionScene)
         
         self.presetList = CollisionPresetList(self.state)

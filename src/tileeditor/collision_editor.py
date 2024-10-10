@@ -1,39 +1,87 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtGui import QBrush, QColor, QPixmap, Qt
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtGui import (QBrush, QColor, QMouseEvent, QPainter, QPaintEvent,
+                           QPixmap)
 from PySide6.QtWidgets import (QApplication, QGraphicsScene, QHBoxLayout,
                                QListWidget, QListWidgetItem, QPushButton,
                                QStyle, QToolButton, QVBoxLayout)
 
 import src.misc.common as common
+from src.coilsnake.fts_interpreter import Tile
 from src.coilsnake.project_data import ProjectData
+from src.misc.widgets import TileGraphicsWidget
 
 if TYPE_CHECKING:
     from tile_editor import TileEditor, TileEditorState
 
+class TileCollisionWidget(TileGraphicsWidget):
+    def __init__(self, state: "TileEditorState"):
+        super().__init__()
+        self.state = state
+        
+    def mousePressEvent(self, event: QMouseEvent):
+        if Qt.KeyboardModifier.ShiftModifier in event.modifiers() or Qt.KeyboardModifier.ControlModifier in event.modifiers():
+            self.pickCollision(event.pos())
+            
+        
 
-class CollisionScene(QGraphicsScene):
-    SIZE_MULTIPLIER = 4
-    
-    def __init__(self, parent, projectData: ProjectData):
-        super().__init__(parent)
+    def pickCollision(self, pos: QPoint):
+        index = self.indexAtPos(pos)
+        if index == None:
+            return
+        value = self.currentTile.getMinitileCollision(index)
         
-        self.projectData = projectData
+        preset = self.state.tileEditor.presetList.getPreset(value)
+        if preset:
+            self.state.tileEditor.presetList.list.setCurrentItem(preset)
+            
         
-        self.setSceneRect(0, 0, 32*self.SIZE_MULTIPLIER, 32*self.SIZE_MULTIPLIER)
+    def paintEvent(self, event: QPaintEvent):
+        super().paintEvent(event)
         
-        self.setBackgroundBrush(
-            QBrush(QPixmap(":/ui/bg.png")))
+        if self.currentTile == None or self.currentPalette == None:
+            return
         
-    def parent(self) -> "TileEditor": # for typing
-        return super().parent()
+        
+        width = self.width()
+        height = self.height()
+        
+        if width > height:
+            width = height
+        else:
+            height = width
+        
+        painter = QPainter(self)
+        
+        scale = width / 32
+        
+        painter.scale(scale, scale)
+        painter.setPen(Qt.PenStyle.NoPen)
+        
+        for i in range(16):
+            collision = self.currentTile.getMinitileCollision(i)
+            if collision == 0:
+                colour = 0x000000
+                painter.setOpacity(0)
+            else:
+                painter.setOpacity(0.7)
+                try:
+                    colour = self.state.tileEditor.presetList.getPreset(collision).colour
+                except AttributeError:
+                    colour = 0x000000
+            
+            painter.setBrush(QColor(colour))
+            painter.drawRect((i % 4)*8, (i // 4)*8, 8, 8)   
     
 class PresetItem(QListWidgetItem):
     def __init__(self, name: str, value: int, colour: int):
         super().__init__(name)
         
         self.value = value
+        self.colour = colour
         self.protected = False
+        self.unknown = False
         
         dimmed = QColor(colour)#.darker()
         
@@ -50,11 +98,9 @@ class CollisionPresetList(QVBoxLayout):
         self.state = state
         
         self.list = QListWidget()
-        for name, value in common.COLLISIONPRESETS.items():
-            item = PresetItem(name, value[0], value[1])
-            item.protected = True
-            self.list.addItem(item)
+        self.loadPresets()
         self.list.itemActivated.connect(self.onItemClicked)
+        self.list.itemDoubleClicked.connect(self.onItemDoubleClicked)
         self.addWidget(self.list)
         self.list.setMinimumWidth(self.list.sizeHint().width()-75) # it is a little too smol
         
@@ -91,5 +137,33 @@ class CollisionPresetList(QVBoxLayout):
         buttonLayout.addWidget(self.moveDownButton)
         self.addLayout(buttonLayout)
         
-    def onItemClicked(self, item):
+    def onItemClicked(self, item: PresetItem):
         self.state.currentCollision = item.value
+    
+    def onItemDoubleClicked(self, item: PresetItem):
+        ...
+        
+    def loadPresets(self):
+        self.list.clear()
+        for name, value in common.COLLISIONPRESETS.items():
+            item = PresetItem(name, value[0], value[1])
+            item.protected = True
+            self.list.addItem(item)
+        
+    def getPreset(self, value: int) -> PresetItem | None:
+        for i in range(0, self.list.count()):
+            item = self.list.item(i)
+            if isinstance(item, PresetItem):
+                if item.value == value:
+                    return item
+                
+                
+    def verifyTileCollision(self, tile: Tile):
+        self.loadPresets()
+        
+        for i in range(16):
+            if not self.getPreset(tile.getMinitileCollision(i)):
+                value = tile.getMinitileCollision(i)
+                item = PresetItem(f"Unknown 0x{hex(value)[2:].zfill(2)}", value, 0x303030)
+                item.unknown = True
+                self.list.addItem(item)

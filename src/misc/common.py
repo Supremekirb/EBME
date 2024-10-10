@@ -173,6 +173,7 @@ COLLISIONBITS = IntFlag("COLLISIONBITS", ["FOREGROUNDBOTTOM",
                                           "SOLID"])
 
 COLLISIONPRESETS = {          # value, colour
+    "None":                   [0b00000000, 0x000000],
     "Solid":                  [0b10000000, 0xFF0000],
     "Trigger":                [0b00010000, 0xFFFF00],
     "Solid trigger":          [0b10010000, 0xDD00FF],
@@ -182,7 +183,7 @@ COLLISIONPRESETS = {          # value, colour
     "Foreground top half":    [0b00000010, 0x50D000],
     "Foreground bottom half": [0b00000001, 0x30A000],
     "Foreground full":        [0b00000011, 0xA0F000],
-    "Talk through":           [0b01000010, 0xB000FF],
+    "Talk through":           [0b10000010, 0xB000FF],
 }
 
 MINITILENOFOREGROUND = 384
