@@ -38,7 +38,9 @@ class PaletteSelector(QWidget):
             layout.addWidget(label, i, 1)
             
             indicator = QLabel("")
-            if i == 0: indicator.setText("▶")
+            if i == 0: 
+                label.setText(f"<b>{i}</b>")
+                indicator.setText("▶")
             layout.addWidget(indicator, i, 0)
             
             self.subpaletteLabels.append(label)
@@ -106,7 +108,7 @@ class PaletteSelector(QWidget):
     def updateSubpaletteLabels(self):
         for id, label in enumerate(self.subpaletteLabels):
             if id == self.currentSubpaletteIndex:
-                label.setText(f"<b>{str(id)}</b>")
+                label.setText(f"<b>{id}</b>")
                 self.arrowIndicatorLabels[id].setText("▶")
             else:
                 label.setText(str(id))

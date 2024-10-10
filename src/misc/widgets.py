@@ -365,6 +365,10 @@ class MinitileGraphicsWidget(QWidget):
     
     def minimumSizeHint(self):
         return QSize(128, 128)
+
+    def resizeEvent(self, event: QResizeEvent):
+        self.setMinimumWidth(event.size().height())       
+        return super().resizeEvent(event)
     
 class TileGraphicsWidget(QWidget):
     def __init__(self):
@@ -453,3 +457,6 @@ class TileGraphicsWidget(QWidget):
     def minimumSizeHint(self):
         return QSize(128, 128)
     
+    def resizeEvent(self, event: QResizeEvent):
+        self.setMinimumWidth(event.size().height())       
+        return super().resizeEvent(event)

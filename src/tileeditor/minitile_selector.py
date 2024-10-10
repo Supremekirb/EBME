@@ -18,7 +18,7 @@ class MinitileView(QGraphicsView):
     def __init__(self, scene: "MinitileScene"):
         super().__init__(scene)
         self.scale(2, 2)
-        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
         self.setMouseTracking(True)
         self.setFixedWidth(self.scene().width()*2 + self.verticalScrollBar().sizeHint().width() + 2)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)

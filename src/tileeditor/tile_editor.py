@@ -5,12 +5,14 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import (QAction, QColor, QKeySequence, QUndoCommand,
                            QUndoStack)
 from PySide6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
-                               QMenu, QPushButton, QSizePolicy, QStyle,
-                               QToolButton, QVBoxLayout, QWidget)
+                               QMenu, QPushButton, QSizePolicy, QSplitter,
+                               QStyle, QToolButton, QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.debug as debug
-from src.actions.fts_actions import ActionChangeArrangement, ActionChangeBitmap, ActionChangeSubpaletteColour
+from src.actions.fts_actions import (ActionChangeArrangement,
+                                     ActionChangeBitmap,
+                                     ActionChangeSubpaletteColour)
 from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, SettingsDialog,
@@ -224,8 +226,22 @@ class TileEditor(QWidget):
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
+        splitter = QSplitter()
+        topWidget = QWidget()
+        topWidget.setContentsMargins(0, 0, 0, 0)
         topLayout = QHBoxLayout()
+        topWidget.setLayout(topLayout)
+        bottomWidget = QWidget()
+        bottomWidget.setContentsMargins(0, 0, 0, 0)
         bottomLayout = QHBoxLayout()
+        bottomWidget.setLayout(bottomLayout)
+        self.setLayout(contentLayout)       
+        
+        splitter.addWidget(topWidget)
+        splitter.addWidget(bottomWidget)
+        splitter.setOrientation(Qt.Orientation.Vertical)
+        splitter.setChildrenCollapsible(False)
+        contentLayout.addWidget(splitter)
         
         minitileBox = QGroupBox("Minitiles")
         minitileLayout = QVBoxLayout()
@@ -256,17 +272,19 @@ class TileEditor(QWidget):
         self.tileScene = TileScene(self, self.projectData)
         self.tileScene.tileSelected.connect(self.onTileSelect)
         self.tileView = HorizontalGraphicsView(self.tileScene)
-        self.tileView.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.tileView.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         self.tileView.setFixedHeight(32*TileScene.TILE_HEIGHT+1+self.tileView.horizontalScrollBar().sizeHint().height())
+        # self.tileView.setMaximumWidth(32*12)
         self.tileView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.tileView.centerOn(0, 0)
         
         self.arrangementScene = TileArrangementWidget(self.state)
+        self.arrangementAspectRatioContainer = AspectRatioWidget(self.arrangementScene)
         
         self.collisionScene = TileGraphicsWidget()
+        self.collisionAspectRatioContainer = AspectRatioWidget(self.collisionScene)
         
         self.presetList = CollisionPresetList(self.state)
-        self.presetList.list.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         
         self.fgScene = MinitileEditorWidget(self.state)
         self.fgScene.colourPicked.connect(self.selectColour)
@@ -338,7 +356,7 @@ class TileEditor(QWidget):
         graphicsLayout.addLayout(paletteLayout)
         
         tileLayout.addWidget(self.tileView)
-        tileLayout.addWidget(self.arrangementScene)
+        tileLayout.addWidget(self.arrangementScene)  
         
         collisionLayout.addLayout(self.presetList)
         collisionLayout.addWidget(self.collisionScene)
@@ -347,11 +365,6 @@ class TileEditor(QWidget):
         topLayout.addWidget(graphicsBox)
         bottomLayout.addWidget(tileBox)
         bottomLayout.addWidget(collisionBox)
-        
-        contentLayout.addLayout(topLayout)
-        contentLayout.addLayout(bottomLayout)
-        
-        self.setLayout(contentLayout)       
         
         
         self.menuFile = QMenu("&File")
