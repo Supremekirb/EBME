@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
 import src.misc.common as common
 import src.misc.debug as debug
 from src.actions.fts_actions import (ActionChangeArrangement,
-                                     ActionChangeBitmap,
+                                     ActionChangeBitmap, ActionChangeCollision,
                                      ActionChangeSubpaletteColour)
 from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.project_data import ProjectData
@@ -20,7 +20,8 @@ from src.misc.dialogues import (AboutDialog, SettingsDialog,
 from src.misc.widgets import (AspectRatioWidget, HorizontalGraphicsView,
                               TileGraphicsWidget)
 from src.tileeditor.arrangement_editor import TileArrangementWidget
-from src.tileeditor.collision_editor import CollisionPresetList, TileCollisionWidget
+from src.tileeditor.collision_editor import (CollisionPresetList,
+                                             TileCollisionWidget)
 from src.tileeditor.graphics_editor import (MinitileEditorWidget,
                                             PaletteSelector)
 from src.tileeditor.minitile_selector import MinitileScene, MinitileView
@@ -102,6 +103,8 @@ class TileEditor(QWidget):
                 self.fgScene.update()
                 self.bgScene.update()
                 self.paletteView.loadPalette(self.paletteView.currentPalette)
+            elif isinstance(c, ActionChangeCollision):
+                self.collisionScene.update()
                 
     def onTilesetSelect(self):
         value = int(self.tilesetSelect.currentText())

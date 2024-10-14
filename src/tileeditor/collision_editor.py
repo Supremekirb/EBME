@@ -1,19 +1,25 @@
+import json
+import logging
+import traceback
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QPoint, Qt
-from PySide6.QtGui import (QBrush, QColor, QMouseEvent, QPainter, QPaintEvent,
+from PySide6.QtCore import (QAbstractItemModel, QModelIndex, QObject,
+                            QPersistentModelIndex, QPoint, QSettings, Qt)
+from PySide6.QtGui import (QColor, QImage, QMouseEvent, QPainter, QPaintEvent,
                            QPixmap)
-from PySide6.QtWidgets import (QApplication, QGraphicsScene, QHBoxLayout,
-                               QListWidget, QListWidgetItem, QPushButton,
-                               QStyle, QToolButton, QVBoxLayout)
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QListWidget,
+                               QListWidgetItem, QMessageBox, QSpinBox, QStyle,
+                               QStyledItemDelegate, QStyleOptionViewItem,
+                               QToolButton, QVBoxLayout, QWidget)
 
 import src.misc.common as common
+from src.actions.fts_actions import ActionChangeCollision
 from src.coilsnake.fts_interpreter import Tile
-from src.coilsnake.project_data import ProjectData
+from src.misc.dialogues import PresetEditorDialog
 from src.misc.widgets import TileGraphicsWidget
 
 if TYPE_CHECKING:
-    from tile_editor import TileEditor, TileEditorState
+    from tile_editor import TileEditorState
 
 class TileCollisionWidget(TileGraphicsWidget):
     def __init__(self, state: "TileEditorState"):
@@ -21,11 +27,21 @@ class TileCollisionWidget(TileGraphicsWidget):
         self.state = state
         
     def mousePressEvent(self, event: QMouseEvent):
-        if Qt.KeyboardModifier.ShiftModifier in event.modifiers() or Qt.KeyboardModifier.ControlModifier in event.modifiers():
-            self.pickCollision(event.pos())
-            
+        if event.button() == Qt.MouseButton.LeftButton:
+            if Qt.KeyboardModifier.ShiftModifier in event.modifiers() or Qt.KeyboardModifier.ControlModifier in event.modifiers():
+                self.pickCollision(event.pos())
+            else:
+                self.placeCollision(event.pos())
         
+    def placeCollision(self, pos: QPoint):
+        index = self.indexAtPos(pos)
+        if index == None:
+            return
 
+        action = ActionChangeCollision(self.currentTile, self.state.currentCollision, index)
+        self.state.tileEditor.undoStack.push(action)
+        self.update()
+        
     def pickCollision(self, pos: QPoint):
         index = self.indexAtPos(pos)
         if index == None:
@@ -80,29 +96,81 @@ class PresetItem(QListWidgetItem):
         
         self.value = value
         self.colour = colour
-        self.protected = False
-        self.unknown = False
+        self.protected = False # protected presets (builtins) can't be edited, moved, or deleted
+        self.unknown = False # unknown presets (when collision doesn't match) will be removed when the current tile is changed
         
-        dimmed = QColor(colour)#.darker()
+        self.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
+        self.generateIcon()
+    
+    def generateIcon(self):
+        image = QImage(8, 8, QImage.Format.Format_RGB32)
+        image.fill(QColor(self.colour))
+        pixmap = QPixmap(image)
+        self.setIcon(pixmap)
         
-        self.setBackground(dimmed)
-        if dimmed.lightness() > 100:
-            self.setForeground(Qt.GlobalColor.black)
-        else:
-            self.setForeground(Qt.GlobalColor.white)
+class PresetItemDelegate(QStyledItemDelegate):
+    def __init__(self, presetList: "CollisionPresetList", parent: QObject = None):
+        self.presetList = presetList
+        super().__init__(parent)
         
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex):
+        preset: PresetItem = self.presetList.list.item(index.row())
+        if not index.isValid():
+            return
         
+        if preset.unknown:
+            result = PresetEditorDialog.editPreset(self.presetList.state.tileEditor,
+                                                   preset.text(), QColor(preset.colour), preset.value)
+            if result:
+                preset.setText(result[0])
+                preset.colour = result[1]
+                preset.value = result[2]
+                preset.unknown = False
+                preset.generateIcon()
+                self.presetList.verifyTileCollision(self.presetList.state.tileEditor.collisionScene.currentTile)
+                self.presetList.state.tileEditor.collisionScene.update()
+                self.presetList.savePresets()
+            
+            return               
+        
+        spinbox = QSpinBox(parent)
+        spinbox.setDisplayIntegerBase(16)
+        spinbox.setPrefix("0x")
+        spinbox.setMaximum(common.BYTELIMIT)
+        spinbox.setMinimum(0)
+        spinbox.setValue(preset.value)  
+        if preset.protected:
+            spinbox.setReadOnly(True)
+              
+        return spinbox
+    
+    def setModelData(self, editor: QSpinBox, model: QAbstractItemModel, index: QModelIndex | QPersistentModelIndex):
+        preset: PresetItem = self.presetList.list.item(index.row())
+        
+        if not index.isValid():
+            return
+        
+        if preset.value != editor.value():
+            preset.value = editor.value()
+            self.presetList.verifyTileCollision(self.presetList.state.tileEditor.collisionScene.currentTile)
+            self.presetList.state.tileEditor.collisionScene.update()
+        
+    
 class CollisionPresetList(QVBoxLayout):
     def __init__(self, state: "TileEditorState"):
         super().__init__()
         self.state = state
         
         self.list = QListWidget()
+        self.list.setItemDelegate(PresetItemDelegate(self))
         self.loadPresets()
-        self.list.itemActivated.connect(self.onItemClicked)
-        self.list.itemDoubleClicked.connect(self.onItemDoubleClicked)
+        self.list.currentItemChanged.connect(self.onCurrentItemChanged)
         self.addWidget(self.list)
-        self.list.setMinimumWidth(self.list.sizeHint().width()-75) # it is a little too smol
+        self.list.setMinimumWidth(self.list.sizeHint().width()) # it is a little too smol
+        self.list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.list.customContextMenuRequested.connect(self.onItemRightClicked)
+        
+        self.list.setEditTriggers(QListWidget.EditTrigger.DoubleClicked)
         
         buttonLayout = QHBoxLayout()
         
@@ -112,23 +180,23 @@ class CollisionPresetList(QVBoxLayout):
         self.addButton = QToolButton()
         self.addButton.setIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon))
         self.addButton.setToolTip("Add")
-        # self.addButton.clicked.connect(self.onAddClicked)
+        self.addButton.clicked.connect(self.onAddClicked)
         self.editButton = QToolButton()
         self.editButton.setIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView))
         self.editButton.setToolTip("Edit")
-        # self.editButton.clicked.connect(self.onEditClicked)
+        self.editButton.clicked.connect(self.onEditClicked)
         self.deleteButton = QToolButton()
         self.deleteButton.setIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon))
         self.deleteButton.setToolTip("Delete")
-        # self.deleteButton.clicked.connect(self.onDeleteClicked)
+        self.deleteButton.clicked.connect(self.onDeleteClicked)
         self.moveUpButton = QToolButton()
         self.moveUpButton.setArrowType(Qt.ArrowType.UpArrow)
         self.moveUpButton.setToolTip("Move up")
-        # self.moveUpButton.clicked.connect(self.onMoveUpClicked)
+        self.moveUpButton.clicked.connect(self.onMoveUpClicked)
         self.moveDownButton = QToolButton()
         self.moveDownButton.setArrowType(Qt.ArrowType.DownArrow)
         self.moveDownButton.setToolTip("Move down")
-        # self.moveDownButton.clicked.connect(self.onMoveDownClicked)
+        self.moveDownButton.clicked.connect(self.onMoveDownClicked)
         
         buttonLayout.addWidget(self.addButton)
         buttonLayout.addWidget(self.editButton)
@@ -137,11 +205,77 @@ class CollisionPresetList(QVBoxLayout):
         buttonLayout.addWidget(self.moveDownButton)
         self.addLayout(buttonLayout)
         
-    def onItemClicked(self, item: PresetItem):
+    def onCurrentItemChanged(self):
+        item: PresetItem = self.list.currentItem()
         self.state.currentCollision = item.value
     
-    def onItemDoubleClicked(self, item: PresetItem):
-        ...
+    def onItemRightClicked(self, pos: QPoint):
+        item = self.list.itemAt(pos)
+        if not item:
+            return
+        
+        self.list.setCurrentItem(item)
+        self.onEditClicked()
+    
+    def onAddClicked(self):
+        result = PresetEditorDialog.editPreset(self.state.tileEditor, "New preset", QColor(0), 0)
+        
+        if result:
+            item = PresetItem(result[0], result[2], result[1].rgb())
+            self.list.addItem(item)
+            self.verifyTileCollision(self.state.tileEditor.collisionScene.currentTile)
+            self.state.tileEditor.collisionScene.update()
+            self.savePresets()
+        
+    def onEditClicked(self):
+        item: PresetItem = self.list.currentItem()
+        if item.protected:
+            return common.showErrorMsg("Cannot edit preset", "Can't edit built-in presets.", icon = QMessageBox.Icon.Warning)
+            
+        result = PresetEditorDialog.editPreset(self.state.tileEditor,
+                                               item.text(), QColor(item.colour), item.value)
+        if result:
+            item.setText(result[0])
+            item.colour = result[1].rgb()
+            item.value = result[2]
+            item.unknown = False
+            item.generateIcon()
+            self.verifyTileCollision(self.state.tileEditor.collisionScene.currentTile)
+            self.state.tileEditor.collisionScene.update()
+            self.savePresets()
+        
+    def onDeleteClicked(self):
+        item: PresetItem = self.list.currentItem()
+        if item.protected:
+            return common.showErrorMsg("Cannot delete preset", "Can't remove built-in presets.", icon = QMessageBox.Icon.Warning)
+        row = self.list.row(item)
+        self.list.takeItem(row)
+        self.verifyTileCollision(self.state.tileEditor.collisionScene.currentTile)
+        self.state.tileEditor.collisionScene.update()
+        self.savePresets()
+        
+    def onMoveUpClicked(self):
+        item: PresetItem = self.list.currentItem()
+        if item.protected:
+            return common.showErrorMsg("Cannot move preset", "Can't move built-in presets.", icon = QMessageBox.Icon.Warning)
+        
+        row = self.list.row(item)
+        if row == len(common.COLLISIONPRESETS):
+            return
+        
+        self.list.takeItem(row)
+        self.list.insertItem(row-1, item)
+        self.savePresets()
+        
+    def onMoveDownClicked(self):
+        item: PresetItem = self.list.currentItem()
+        if item.protected:
+            return common.showErrorMsg("Cannot move preset", "Can't move built-in presets.", icon = QMessageBox.Icon.Warning)
+
+        row = self.list.row(item)
+        self.list.takeItem(row)
+        self.list.insertItem(row+1, item)
+        self.savePresets()
         
     def loadPresets(self):
         self.list.clear()
@@ -150,20 +284,50 @@ class CollisionPresetList(QVBoxLayout):
             item.protected = True
             self.list.addItem(item)
         
+        presets = QSettings().value("presets/presets")
+        try:
+            if presets:
+                for name, value, colour in json.loads(presets):
+                    item = PresetItem(name, value, colour)
+                    self.list.addItem(item)
+        except Exception:
+            logging.warning(f"Unable to load user-specified presets! {traceback.format_exc()}")
+            
+    def savePresets(self):
+        userPresets: list[tuple[str, int, int]] = []
+        for i in self.list.findItems("*", Qt.MatchFlag.MatchWildcard):
+            i: PresetItem
+            if i.unknown or i.protected:
+                continue
+            
+            userPresets.append((i.text(), i.value, i.colour))
+        
+        if len(userPresets) > 0:
+            QSettings().setValue("presets/presets", json.dumps(userPresets))
+        else:
+            QSettings().remove("presets/presets")
+            
+    def removeUnknowns(self):
+        for i in self.list.findItems("*", Qt.MatchFlag.MatchWildcard): # janky way to iterate despite removals
+            i: PresetItem
+            if i.unknown:
+                row = self.list.row(i)
+                self.list.takeItem(row)
+        
     def getPreset(self, value: int) -> PresetItem | None:
         for i in range(0, self.list.count()):
             item = self.list.item(i)
             if isinstance(item, PresetItem):
                 if item.value == value:
                     return item
-                
+
                 
     def verifyTileCollision(self, tile: Tile):
-        self.loadPresets()
+        self.removeUnknowns()
         
         for i in range(16):
-            if not self.getPreset(tile.getMinitileCollision(i)):
+            if self.getPreset(tile.getMinitileCollision(i)) == None:
                 value = tile.getMinitileCollision(i)
-                item = PresetItem(f"Unknown 0x{hex(value)[2:].zfill(2)}", value, 0x303030)
+                item = PresetItem(f"Unknown 0x{hex(value)[2:].zfill(2).capitalize()}", value, 0x303030)
                 item.unknown = True
                 self.list.addItem(item)

@@ -128,6 +128,7 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "MAPMUSICDELETE", # cannot merge with itself
                                       "MINITILEDRAW", # can merge with itself if contents are identical
                                       "ARRANGEMENTCHANGE", # can merge with itself if contents are identical
+                                      "COLLISIONCHANGE", # cannot merge with itself
                                       "SUBPALETTECHANGE", # can merge with itself if contents are identical
                                       ])
 

@@ -2,7 +2,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QRectF, QSettings, Qt
-from PySide6.QtGui import QImage, QPainter, QPixmap
+from PySide6.QtGui import QImage, QPainter, QPixmap, QColor
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                                QDialogButtonBox, QFileDialog, QFormLayout,
                                QGraphicsScene, QGroupBox, QHBoxLayout, QLabel,
@@ -15,7 +15,7 @@ import src.misc.common as common
 import src.misc.quotes as quotes
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
-from src.misc.widgets import CoordsInput, HSeparator
+from src.misc.widgets import ColourButton, CoordsInput, HSeparator
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
@@ -623,3 +623,77 @@ On the right side, you can place these attributes onto the currently selected ti
     def showAbout(parent):
         dialog = TileEditorAboutDialog(parent)
         dialog.exec()
+        
+class PresetEditorDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowTitle("Editing Collision Preset")
+        
+        layout = QFormLayout()
+        self.setLayout(layout)
+        
+        self.name = QLineEdit()
+        layout.addRow("Preset name", self.name)
+        
+        self.checkboxes: list[QCheckBox] = []
+        self.checkboxes.append(QCheckBox("Solid"))
+        self.checkboxes.append(QCheckBox("Unused 1 (acts solid)"))
+        self.checkboxes.append(QCheckBox("Unused 2 (no effect)"))
+        self.checkboxes.append(QCheckBox("Supports triggers"))
+        self.checkboxes.append(QCheckBox("Water"))
+        self.checkboxes.append(QCheckBox("Damage"))
+        self.checkboxes.append(QCheckBox("Mask top half of sprites"))
+        self.checkboxes.append(QCheckBox("Mask bottom half of sprites"))
+        for i in self.checkboxes: 
+            i.toggled.connect(self.calculateHex)
+            layout.addRow(i)
+        
+        self.colourButton = ColourButton()
+        layout.addRow("Display colour", self.colourButton)
+        
+        self.hexInput = QSpinBox()
+        self.hexInput.setDisplayIntegerBase(16)
+        self.hexInput.setPrefix("0x")
+        self.hexInput.setMaximum(common.BYTELIMIT)
+        self.hexInput.setMinimum(0)
+        self.hexInput.valueChanged.connect(self.calculateCheckboxes)
+        layout.addRow("Raw value", self.hexInput)
+        
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addRow(self.buttons)
+        
+    def calculateHex(self):
+        self.hexInput.blockSignals(True)
+        value = 0
+        for i in range(8):
+            checkbox = self.checkboxes[7-i]
+            if checkbox.isChecked():
+                value += 1 << i
+        self.hexInput.setValue(value)
+        self.hexInput.blockSignals(False)
+        
+    def calculateCheckboxes(self):
+        value = self.hexInput.value()
+        for i in range(8):
+            checkbox = self.checkboxes[7-i]
+            checkbox.blockSignals(True)
+            if value & 1 << i:
+                checkbox.setChecked(True)
+            else:
+                checkbox.setChecked(False)
+            checkbox.blockSignals(False)
+             
+    @staticmethod
+    def editPreset(parent, presetName: str, presetColour: QColor, presetValue: int):
+        dialog = PresetEditorDialog(parent)
+        dialog.hexInput.setValue(presetValue)
+        dialog.name.setText(presetName)
+        dialog.colourButton.setColour(presetColour)
+        
+        result = dialog.exec()
+        
+        if result == QDialog.DialogCode.Accepted:
+            return (dialog.name.text(), dialog.colourButton.chosenColour, dialog.hexInput.value())      
+        

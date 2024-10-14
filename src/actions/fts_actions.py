@@ -94,6 +94,33 @@ class ActionChangeArrangement(QUndoCommand):
     
     def id(self):
         return common.ACTIONINDEX.ARRANGEMENTCHANGE  
+    
+class ActionChangeCollision(QUndoCommand):
+    def __init__(self, tile: Tile, collision: int, index: int):
+        super().__init__()
+        self.setText("Change tile collision")
+        
+        self.tile = tile
+        self.index = index
+        
+        self.collision = collision
+        
+        self._collision = tile.collision[index]
+        
+        if self.collision == self._collision:
+            self.setObsolete(True)
+        
+    def redo(self):
+        self.tile.collision[self.index] = self.collision
+        
+    def undo(self):
+        self.tile.collision[self.index] = self._collision
+    
+    def mergeWith(self, other: QUndoCommand):
+        return False
+    
+    def id(self):
+        return common.ACTIONINDEX.COLLISIONCHANGE
 
 class ActionChangeSubpaletteColour(QUndoCommand):
     def __init__(self, subpalette: Subpalette, index: int, colour: tuple[int, int, int]):
