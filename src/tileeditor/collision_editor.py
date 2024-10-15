@@ -20,6 +20,8 @@ from src.misc.widgets import TileGraphicsWidget
 
 if TYPE_CHECKING:
     from tile_editor import TileEditorState
+    
+DEFAULT_PRESETS = "[[\"None\", 0, 0], [\"Solid\", 128, 16711680], [\"Trigger\", 16, 16776960], [\"Solid trigger\", 144, 14483711], [\"Water\", 8, 255], [\"Deep water\", 12, 127], [\"Sunstroke\", 4, 16744192], [\"Foreground bottom half\", 1, 3186688], [\"Foreground full\", 3, 10547200], [\"Talk through\", 130, 11534591]]"
 
 class TileCollisionWidget(TileGraphicsWidget):
     def __init__(self, state: "TileEditorState"):
@@ -96,7 +98,6 @@ class PresetItem(QListWidgetItem):
         
         self.value = value
         self.colour = colour
-        self.protected = False # protected presets (builtins) can't be edited, moved, or deleted
         self.unknown = False # unknown presets (when collision doesn't match) will be removed when the current tile is changed
         
         self.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsEditable)
@@ -123,7 +124,7 @@ class PresetItemDelegate(QStyledItemDelegate):
                                                    preset.text(), QColor(preset.colour), preset.value)
             if result:
                 preset.setText(result[0])
-                preset.colour = result[1]
+                preset.colour = result[1].rgb()
                 preset.value = result[2]
                 preset.unknown = False
                 preset.generateIcon()
@@ -139,8 +140,6 @@ class PresetItemDelegate(QStyledItemDelegate):
         spinbox.setMaximum(common.BYTELIMIT)
         spinbox.setMinimum(0)
         spinbox.setValue(preset.value)  
-        if preset.protected:
-            spinbox.setReadOnly(True)
               
         return spinbox
     
@@ -154,7 +153,13 @@ class PresetItemDelegate(QStyledItemDelegate):
             preset.value = editor.value()
             self.presetList.verifyTileCollision(self.presetList.state.tileEditor.collisionScene.currentTile)
             self.presetList.state.tileEditor.collisionScene.update()
+    
+    def initStyleOption(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex):
+        super().initStyleOption(option, index)
+        preset: PresetItem = self.presetList.list.item(index.row())
         
+        if self.presetList.list.currentItem() == preset:
+            option.font.setBold(True)
     
 class CollisionPresetList(QVBoxLayout):
     def __init__(self, state: "TileEditorState"):
@@ -197,17 +202,23 @@ class CollisionPresetList(QVBoxLayout):
         self.moveDownButton.setArrowType(Qt.ArrowType.DownArrow)
         self.moveDownButton.setToolTip("Move down")
         self.moveDownButton.clicked.connect(self.onMoveDownClicked)
+        self.resetPresetsButton = QToolButton()
+        self.resetPresetsButton.setIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
+        self.resetPresetsButton.setToolTip("Reset presets")
+        self.resetPresetsButton.clicked.connect(self.onResetPresetsClicked)
         
         buttonLayout.addWidget(self.addButton)
         buttonLayout.addWidget(self.editButton)
         buttonLayout.addWidget(self.deleteButton)
         buttonLayout.addWidget(self.moveUpButton)
         buttonLayout.addWidget(self.moveDownButton)
+        buttonLayout.addWidget(self.resetPresetsButton)
         self.addLayout(buttonLayout)
         
     def onCurrentItemChanged(self):
         item: PresetItem = self.list.currentItem()
-        self.state.currentCollision = item.value
+        if item:
+            self.state.currentCollision = item.value
     
     def onItemRightClicked(self, pos: QPoint):
         item = self.list.itemAt(pos)
@@ -228,10 +239,7 @@ class CollisionPresetList(QVBoxLayout):
             self.savePresets()
         
     def onEditClicked(self):
-        item: PresetItem = self.list.currentItem()
-        if item.protected:
-            return common.showErrorMsg("Cannot edit preset", "Can't edit built-in presets.", icon = QMessageBox.Icon.Warning)
-            
+        item: PresetItem = self.list.currentItem()    
         result = PresetEditorDialog.editPreset(self.state.tileEditor,
                                                item.text(), QColor(item.colour), item.value)
         if result:
@@ -246,64 +254,81 @@ class CollisionPresetList(QVBoxLayout):
         
     def onDeleteClicked(self):
         item: PresetItem = self.list.currentItem()
-        if item.protected:
-            return common.showErrorMsg("Cannot delete preset", "Can't remove built-in presets.", icon = QMessageBox.Icon.Warning)
-        row = self.list.row(item)
-        self.list.takeItem(row)
-        self.verifyTileCollision(self.state.tileEditor.collisionScene.currentTile)
-        self.state.tileEditor.collisionScene.update()
-        self.savePresets()
-        
-    def onMoveUpClicked(self):
-        item: PresetItem = self.list.currentItem()
-        if item.protected:
-            return common.showErrorMsg("Cannot move preset", "Can't move built-in presets.", icon = QMessageBox.Icon.Warning)
-        
-        row = self.list.row(item)
-        if row == len(common.COLLISIONPRESETS):
+        if item.unknown:
             return
         
+        confirm = QMessageBox.question(self.state.tileEditor, "Delete preset",
+                                       f"Delete preset \"{item.text()}\"? It cannot be recovered.",
+                                       QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+        if confirm == QMessageBox.StandardButton.Yes:  
+            row = self.list.row(item)
+            self.list.setCurrentItem(self.list.item(self.list.row(item) if row > 0 else 0))
+            self.list.takeItem(row)
+            self.verifyTileCollision(self.state.tileEditor.collisionScene.currentTile)
+            self.state.tileEditor.collisionScene.update()
+            self.savePresets()
+        
+    def onMoveUpClicked(self):
+        item: PresetItem = self.list.currentItem()        
+        row = self.list.row(item)
         self.list.takeItem(row)
         self.list.insertItem(row-1, item)
         self.savePresets()
+        self.list.setCurrentItem(item)
         
     def onMoveDownClicked(self):
         item: PresetItem = self.list.currentItem()
-        if item.protected:
-            return common.showErrorMsg("Cannot move preset", "Can't move built-in presets.", icon = QMessageBox.Icon.Warning)
-
         row = self.list.row(item)
         self.list.takeItem(row)
         self.list.insertItem(row+1, item)
         self.savePresets()
+        self.list.setCurrentItem(item)
+        
+    def onResetPresetsClicked(self):
+        confirm = QMessageBox.question(self.state.tileEditor, "Reset presets",
+                                       "Reset to default collision presets? You'll lose any custom or modified presets.",
+                                       QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+        if confirm == QMessageBox.StandardButton.Yes:
+            QSettings().remove("presets/presets")
+            self.loadPresets()
+            self.verifyTileCollision(self.state.tileEditor.collisionScene.currentTile)
+            self.state.tileEditor.collisionScene.update()
+            
         
     def loadPresets(self):
+        self.list.blockSignals(True)
         self.list.clear()
-        for name, value in common.COLLISIONPRESETS.items():
-            item = PresetItem(name, value[0], value[1])
-            item.protected = True
-            self.list.addItem(item)
         
-        presets = QSettings().value("presets/presets")
+        presets = QSettings().value("presets/presets", defaultValue=DEFAULT_PRESETS)
         try:
             if presets:
                 for name, value, colour in json.loads(presets):
                     item = PresetItem(name, value, colour)
                     self.list.addItem(item)
         except Exception:
-            logging.warning(f"Unable to load user-specified presets! {traceback.format_exc()}")
+            logging.warning(f"Unable to load user-specified presets! Trying to load defaults... {traceback.format_exc()}")
+            try:
+                QSettings().remove("presets/presets")
+                for name, value, colour in json.loads(DEFAULT_PRESETS):
+                    item = PresetItem(name, value, colour)
+                    self.list.addItem(item)
+            except Exception:
+                logging.warning("Unable to load default presets!")
+                raise 
+        
+        self.list.blockSignals(False)
+        self.list.setCurrentRow(0)
             
     def savePresets(self):
-        userPresets: list[tuple[str, int, int]] = []
+        presets: list[tuple[str, int, int]] = []
         for i in self.list.findItems("*", Qt.MatchFlag.MatchWildcard):
-            i: PresetItem
-            if i.unknown or i.protected:
+            i: PresetItem            
+            if i.unknown:
                 continue
-            
-            userPresets.append((i.text(), i.value, i.colour))
+            presets.append((i.text(), i.value, i.colour))
         
-        if len(userPresets) > 0:
-            QSettings().setValue("presets/presets", json.dumps(userPresets))
+        if len(presets) > 0:
+            QSettings().setValue("presets/presets", json.dumps(presets))
         else:
             QSettings().remove("presets/presets")
             
@@ -331,3 +356,5 @@ class CollisionPresetList(QVBoxLayout):
                 item = PresetItem(f"Unknown 0x{hex(value)[2:].zfill(2).capitalize()}", value, 0x303030)
                 item.unknown = True
                 self.list.addItem(item)
+                if not self.list.currentItem():
+                    self.list.setCurrentItem(item)

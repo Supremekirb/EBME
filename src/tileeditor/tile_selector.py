@@ -69,7 +69,14 @@ class TileScene(QGraphicsScene):
                 self.currentTile = i.getID()
                 self.tileSelected.emit(self.currentTile)
                 break
-        
-        
+    
+    def selectTile(self, tile: int):
+        if tile >= self.TILE_COUNT: raise ValueError(f"Tile must be in range 0-{self.TILE_COUNT}! Recieved {tile}")
+        x = tile // self.TILE_HEIGHT
+        y = tile % self.TILE_HEIGHT
+        self.selectedIndicator.setPos(x*32, y*32)
+        self.currentTile = tile
+        self.tileSelected.emit(self.currentTile)
+                
     def parent(self) -> "TileEditor": # for typing
         return super().parent()

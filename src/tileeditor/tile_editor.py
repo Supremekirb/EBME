@@ -61,6 +61,8 @@ class TileEditor(QWidget):
         self.setupUI()
         self.tilesetSelect.setCurrentIndex(0)
         self.tilesetSelect.activated.emit(0)
+        
+        self.tileScene.selectTile(0)
     
     def onUndo(self):
         command = self.undoStack.command(self.undoStack.index()-1)

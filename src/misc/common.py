@@ -173,20 +173,6 @@ COLLISIONBITS = IntFlag("COLLISIONBITS", ["FOREGROUNDBOTTOM",
                                           "VERYSOLID",
                                           "SOLID"])
 
-COLLISIONPRESETS = {          # value, colour
-    "None":                   [0b00000000, 0x000000],
-    "Solid":                  [0b10000000, 0xFF0000],
-    "Trigger":                [0b00010000, 0xFFFF00],
-    "Solid trigger":          [0b10010000, 0xDD00FF],
-    "Water":                  [0b00001000, 0x0000FF],
-    "Deep water":             [0b00001100, 0x00007F],
-    "Sunstroke":              [0b00000100, 0xFF7F00],
-    "Foreground top half":    [0b00000010, 0x50D000],
-    "Foreground bottom half": [0b00000001, 0x30A000],
-    "Foreground full":        [0b00000011, 0xA0F000],
-    "Talk through":           [0b10000010, 0xB000FF],
-}
-
 MINITILENOFOREGROUND = 384
 
 def getCoilsnakeVersion(id: int) -> str:
