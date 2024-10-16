@@ -111,6 +111,7 @@ class TileEditor(QWidget):
                                                  self.state.currentPaletteGroup,
                                                  self.state.currentPalette,
                                                  self.state.currentSubpalette)
+                self.minitileScene.updateHoverPreview(self.minitileScene.lastMinitileHovered)
                 
     def onTilesetSelect(self):
         value = int(self.tilesetSelect.currentText())
