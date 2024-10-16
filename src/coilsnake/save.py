@@ -134,9 +134,10 @@ def saveTilesets(data: ProjectData):
     for i in data.tilesets:
         fts_file = StringIO()
         try:
-            for m in i.minitiles:
-                fts_file.write(m.toRaw())
-                fts_file.write("\n\n")
+            for m in i.minitiles:               
+                fts_file.write(m.bgToRaw() + "\n")
+                fts_file.write(m.fgToRaw() + "\n")
+                fts_file.write("\n")
             
             fts_file.write("\n")
 

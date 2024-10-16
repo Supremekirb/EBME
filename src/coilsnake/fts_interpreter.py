@@ -27,7 +27,19 @@ class FullTileset:
             int(str_, 32)
         except ValueError as e:
             raise NotBase32Error from e
-
+    
+    def swapMinitiles(self, mt1: int, mt2: int):
+        if mt1 == mt2:
+            return
+        self.minitiles[mt1], self.minitiles[mt2] = self.minitiles[mt2], self.minitiles[mt1]
+        for t in self.tiles:
+            for i in range(0, 16):
+                if t.getMinitileID(i) == mt1:
+                    t.metadata[i] = t.metadata[i] - mt1 + mt2
+                elif t.getMinitileID(i) == mt2:
+                    t.metadata[i] = t.metadata[i] - mt2 + mt1
+                # happily we do not need to invalidate the image cache when doing this
+            
     def getPaletteGroup(self, groupID):
         """From a palette group ID, get a PaletteGroup object\n\nReturns -1 if no match was found"""
         for i in self.paletteGroups:
@@ -352,12 +364,13 @@ class Minitile:
         img.paste(fg, (0, 0), fg)
         return img
     
-    def toRaw(self):
+    def bgToRaw(self):
         raw = ""
         for i in range(0, 64):
-            raw += hex(self.background[i])[2:]
-        raw += "\n"
+            raw += hex(self.background[i])[2:]            
+        return raw
+    def fgToRaw(self):
+        raw = ""
         for i in range(0, 64):
             raw += hex(self.foreground[i])[2:]
-            
         return raw

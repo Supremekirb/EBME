@@ -1,14 +1,15 @@
 from typing import TYPE_CHECKING
 
 from PIL import ImageQt
-from PySide6.QtCore import QEvent, QRectF, Qt
-from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPixmap
+from PySide6.QtCore import QEvent, QPoint, QRectF, Qt
+from PySide6.QtGui import QColor, QMouseEvent, QPixmap
 from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsRectItem,
                                QGraphicsScene, QGraphicsSceneMouseEvent,
                                QGraphicsView, QLabel, QSizePolicy, QVBoxLayout,
                                QWidget)
 
 import src.misc.common as common
+from src.actions.fts_actions import ActionSwapMinitiles
 from src.coilsnake.project_data import ProjectData
 
 if TYPE_CHECKING:
@@ -52,12 +53,11 @@ class MinitileScene(QGraphicsScene):
         
         self.setSceneRect(0, 0, 8*self.MINITILE_WIDTH, 8*self.MINITILE_COUNT//self.MINITILE_WIDTH)
         
-        self.setBackgroundBrush(
-            QBrush(QPixmap(":/ui/bg.png")))
+        self.setBackgroundBrush(Qt.GlobalColor.white)
         
         self.minitiles: list[TileEditorMinitile] = []
         
-        self.lastMinitileHovered = 0
+        self.lastMinitileHovered = -1
         self.hoverInfo = MinitileHoverDisplay()
         self.hoverInfo.hide()
         
@@ -65,8 +65,18 @@ class MinitileScene(QGraphicsScene):
         self.selector.setPen(QColor(Qt.GlobalColor.yellow))
         self.selector.setRect(-1, -1, 10, 10)
         self.selector.setBrush(Qt.BrushStyle.NoBrush)
-        self.selector.setZValue(2)
+        self.selector.setZValue(3)
         self.addItem(self.selector)
+        
+        self.destIndicator = QGraphicsRectItem()
+        self.destIndicator.setPen(QColor(Qt.GlobalColor.white))
+        self.destIndicator.setRect(-1, -1, 10, 10)
+        self.destIndicator.setBrush(Qt.BrushStyle.NoBrush)
+        self.destIndicator.setZValue(2)
+        self.destIndicator.hide()
+        self.addItem(self.destIndicator)
+        
+        self._mouseDownPos = QPoint()
         
         # populate
         for i in range(self.MINITILE_COUNT):
@@ -85,8 +95,7 @@ class MinitileScene(QGraphicsScene):
                 self.projectData.getTileset(tileset).minitiles[id].BothToImage(
                     self.projectData.getTileset(tileset).getPalette(
                         paletteGroup, palette).subpalettes[subpalette]
-                )
-            )))
+                ))))
                  
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         pos = event.scenePos()
@@ -95,7 +104,27 @@ class MinitileScene(QGraphicsScene):
         index = y * self.MINITILE_WIDTH + x
         if index not in range(self.MINITILE_COUNT):
             return super().mouseMoveEvent(event)
-        
+
+        if Qt.MouseButton.LeftButton in event.buttons():
+            sourceIndex = int(self._mouseDownPos.y() // 8) * self.MINITILE_WIDTH + int(self._mouseDownPos.x() // 8)
+            source = self.minitiles[sourceIndex]     
+                    
+            if x != int(self._mouseDownPos.x() // 8) or y != int(self._mouseDownPos.y() // 8):                
+                source.setPos(QPoint(pos.x()-4, pos.y()-10))
+                source.setZValue(5)
+                self.selector.setPos(QPoint(pos.x()-4, pos.y()-10))
+                
+                self.destIndicator.show()
+                self.destIndicator.setPos((pos.x() // 8) * 8, (pos.y() // 8) * 8)
+            else:
+                source.setPos((self._mouseDownPos.x() // 8) * 8, (self._mouseDownPos.y() // 8) * 8)
+                source.setZValue(0)
+                self.selector.setPos((self._mouseDownPos.x() // 8) * 8, (self._mouseDownPos.y() // 8) * 8)
+                self.destIndicator.hide()
+                
+        else:
+            self.destIndicator.hide()
+            
         if self.lastMinitileHovered != index:
             self.hoverInfo.setImage(self.minitiles[index].pixmap().scaled(64, 64))
             self.hoverInfo.setData(index, True if index < common.MINITILENOFOREGROUND else False)
@@ -105,6 +134,8 @@ class MinitileScene(QGraphicsScene):
     
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         pos = event.scenePos()
+        self._mouseDownPos = pos
+        
         x = int(pos.x() // 8)
         y = int(pos.y() // 8)
         index = y * self.MINITILE_WIDTH + x
@@ -115,9 +146,41 @@ class MinitileScene(QGraphicsScene):
         self.parent().selectMinitile(index)
         
         return super().mousePressEvent(event)
+    
+    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
+        pos = event.scenePos()
+        x = int(pos.x() // 8)
+        y = int(pos.y() // 8)
+        index = y * self.MINITILE_WIDTH + x
+        if index not in range(self.MINITILE_COUNT):
+            return super().mouseReleaseEvent(event)
+        
+        sourceIndex = int(self._mouseDownPos.y() // 8) * self.MINITILE_WIDTH + int(self._mouseDownPos.x() // 8)
+        source = self.minitiles[sourceIndex] 
+        
+        if sourceIndex == index:
+            return super().mouseReleaseEvent(event)
+        
+        action = ActionSwapMinitiles(self.projectData.getTileset(self.parent().state.currentTileset),
+                                     sourceIndex, index)
+        self.parent().undoStack.push(action)        
+        
+        source.setZValue(0)
+        source.setPos((self._mouseDownPos.x() // 8) * 8, (self._mouseDownPos.y() // 8) * 8)
+        
+        self.destIndicator.hide()
+        self.parent().selectMinitile(index)
+        # aka the part where I realised that i should just pass state instead of set up parenting
+        self.renderTileset(self.parent().state.currentTileset,
+                           self.parent().state.currentPaletteGroup,
+                           self.parent().state.currentPalette,
+                           self.parent().state.currentSubpalette)
+        
+        return super().mouseReleaseEvent(event)
 
     def moveCursorToMinitile(self, minitile: int):
         if minitile >= self.MINITILE_COUNT: raise ValueError(f"Minitile must be in range 0-{self.MINITILE_COUNT}! Recieved {minitile}")
+        
         x = minitile % self.MINITILE_WIDTH
         y = minitile // self.MINITILE_WIDTH
         self.selector.setPos(x*8, y*8)

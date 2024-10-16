@@ -12,13 +12,12 @@ import src.misc.common as common
 import src.misc.debug as debug
 from src.actions.fts_actions import (ActionChangeArrangement,
                                      ActionChangeBitmap, ActionChangeCollision,
-                                     ActionChangeSubpaletteColour)
+                                     ActionChangeSubpaletteColour, ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, SettingsDialog,
                                 TileEditorAboutDialog)
-from src.misc.widgets import (AspectRatioWidget, HorizontalGraphicsView,
-                              TileGraphicsWidget)
+from src.misc.widgets import AspectRatioWidget, HorizontalGraphicsView
 from src.tileeditor.arrangement_editor import TileArrangementWidget
 from src.tileeditor.collision_editor import (CollisionPresetList,
                                              TileCollisionWidget)
@@ -107,6 +106,11 @@ class TileEditor(QWidget):
                 self.paletteView.loadPalette(self.paletteView.currentPalette)
             elif isinstance(c, ActionChangeCollision):
                 self.collisionScene.update()
+            elif isinstance(c, ActionSwapMinitiles):
+                self.minitileScene.renderTileset(self.state.currentTileset,
+                                                 self.state.currentPaletteGroup,
+                                                 self.state.currentPalette,
+                                                 self.state.currentSubpalette)
                 
     def onTilesetSelect(self):
         value = int(self.tilesetSelect.currentText())

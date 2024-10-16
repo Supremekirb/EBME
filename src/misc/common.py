@@ -130,6 +130,7 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "ARRANGEMENTCHANGE", # can merge with itself if contents are identical
                                       "COLLISIONCHANGE", # cannot merge with itself
                                       "SUBPALETTECHANGE", # can merge with itself if contents are identical
+                                      "MINITILESWAP", # cannot merge with itself
                                       ])
 
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18
