@@ -145,45 +145,41 @@ class MinitileEditorWidget(MinitileGraphicsWidget):
         self._scratchBitmap: list[str] = []
         
     def mousePressEvent(self, event: QMouseEvent):
-        if self.isEnabled():
-            if event.button() == Qt.MouseButton.LeftButton:
-                if Qt.KeyboardModifier.ControlModifier in event.modifiers() or Qt.KeyboardModifier.ShiftModifier in event.modifiers():
-                    self.pickPixel(event.pos())
-                self._painting = True
-                self.copyToScratch()
-                self.paintPixel(event.pos())
-            
-            if event.button() == Qt.MouseButton.RightButton:
+        if event.button() == Qt.MouseButton.LeftButton:
+            if Qt.KeyboardModifier.ControlModifier in event.modifiers() or Qt.KeyboardModifier.ShiftModifier in event.modifiers():
                 self.pickPixel(event.pos())
+            self._painting = True
+            self.copyToScratch()
+            self.paintPixel(event.pos())
+        
+        if event.button() == Qt.MouseButton.RightButton:
+            self.pickPixel(event.pos())
         
         return super().mousePressEvent(event)
         
     def mouseMoveEvent(self, event: QMouseEvent):
-        if self.isEnabled():
-            if self._painting:
-                self.paintPixel(event.pos())     
+        if self._painting:
+            self.paintPixel(event.pos())     
             
         return super().mouseMoveEvent(event)
     
     def mouseReleaseEvent(self, event: QMouseEvent):
-        if self.isEnabled():
-            if event.button() == Qt.MouseButton.LeftButton:
-                self._painting = False
-                action = ActionChangeBitmap(self.currentMinitile, self._scratchBitmap, self.isForeground)
-                self.state.tileEditor.undoStack.push(action)
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._painting = False
+            action = ActionChangeBitmap(self.currentMinitile, self._scratchBitmap, self.isForeground)
+            self.state.tileEditor.undoStack.push(action)
             
         return super().mouseReleaseEvent(event)
     
     def mouseDoubleClickEvent(self, event: QMouseEvent):
-        if self.isEnabled():
-            # fill bucket
-            if event.button() == Qt.MouseButton.LeftButton:
-                if self._lastOldIndex == None:
-                    return super().mouseDoubleClickEvent(event)
-                
-                self.fill(event.pos())
+        # fill bucket
+        if event.button() == Qt.MouseButton.LeftButton:
+            if self._lastOldIndex == None:
+                return super().mouseDoubleClickEvent(event)
             
-            self.update()
+            self.fill(event.pos())
+        
+        self.update()
         return super().mouseDoubleClickEvent(event)
     
     def paintPixel(self, pos: QPoint):

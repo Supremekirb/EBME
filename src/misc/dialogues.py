@@ -1,18 +1,22 @@
 import logging
+import traceback
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QRectF, QSettings, Qt
-from PySide6.QtGui import QImage, QPainter, QPixmap, QColor
+from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                                QDialogButtonBox, QFileDialog, QFormLayout,
                                QGraphicsScene, QGroupBox, QHBoxLayout, QLabel,
                                QLineEdit, QListWidget, QListWidgetItem,
-                               QPushButton, QScrollArea, QSizePolicy, QSpinBox,
-                               QStyleFactory, QTextEdit, QUndoView,
-                               QVBoxLayout, QWidget)
+                               QMessageBox, QPushButton, QScrollArea,
+                               QSizePolicy, QSpinBox, QStyleFactory, QTextEdit,
+                               QUndoView, QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.quotes as quotes
+from src.actions.fts_actions import ActionSwapMinitiles
+from src.actions.misc_actions import MultiActionWrapper
+from src.coilsnake.fts_interpreter import Minitile
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.widgets import ColourButton, CoordsInput, HSeparator
@@ -696,4 +700,81 @@ class PresetEditorDialog(QDialog):
         
         if result == QDialog.DialogCode.Accepted:
             return (dialog.name.text(), dialog.colourButton.chosenColour, dialog.hexInput.value())      
+
+class AutoMinitileRearrangerDialog(QDialog):
+    def __init__(self, parent, projectData: ProjectData):
+        super().__init__(parent)
+        self.setWindowTitle("Auto Minitile Rearranger")
+        self.projectData = projectData
+        
+        layout = QFormLayout()
+        self.setLayout(layout)
+        
+        label = QLabel("Automatically rearange minitile order in a tileset to ensure that \
+                        tiles with foreground graphics are able to use them.\n(Can be undone.)")
+        label.setWordWrap(True)
+        layout.addRow(label)
+        
+        self.tilesetInput = QSpinBox()
+        self.tilesetInput.setMaximum(len(self.projectData.tilesets)-1)
+        layout.addRow("Tileset", self.tilesetInput)
+        
+        self.buttons = QDialogButtonBox()
+        self.buttons.addButton("Do it!", QDialogButtonBox.ButtonRole.AcceptRole)
+        self.buttons.addButton(QDialogButtonBox.StandardButton.Close)
+        
+        self.buttons.accepted.connect(self.rearrange)
+        self.buttons.rejected.connect(self.reject)
+        layout.addRow(self.buttons)
+        
+        self.action: MultiActionWrapper|None = None
+        
+    def rearrange(self):
+        try:
+            tileset = self.projectData.getTileset(self.tilesetInput.value())
+            countWithFg = 0
+            toMove: list[int] = []
+            canBeReplaced: list[int] = []
+            
+            for id, minitile in enumerate(tileset.minitiles):
+                raw = minitile.fgToRaw() 
+                if raw != "0000000000000000000000000000000000000000000000000000000000000000":
+                    countWithFg += 1
+                    if id >= 384:
+                        toMove.append(id)
+                    
+                elif raw == "0000000000000000000000000000000000000000000000000000000000000000"\
+                and id < 384:
+                    canBeReplaced.append(id)
+                
+            if countWithFg > 384:
+                return common.showErrorMsg("Unable to rearrange minitiles",
+                                        f"There are {countWithFg} minitiles with foreground graphics in this tileset. The maximum to be able to rearrange is 384.",
+                                        icon = QMessageBox.Icon.Warning)
+            
+            # I've decided to reverse it for a few reasons:
+            #   - minitile 0 should probably not be messed with first... i dont know the ramifications of that if any
+            #   - this algorithm moves them out from the end so I guess it visually makes sense..?
+            canBeReplaced = list(reversed(canBeReplaced))
+            toMove = list(reversed(toMove))
+                
+            actions: list[ActionSwapMinitiles] = []
+            for id, minitile in enumerate(toMove):
+                actions.append(ActionSwapMinitiles(tileset, canBeReplaced[id], minitile))
+            
+            if len(actions) > 0:
+                self.action = MultiActionWrapper(actions, "Auto rearrange minitiles")
+            return self.accept()
+        
+        except Exception as e:
+            logging.warning(traceback.format_exc())
+            return common.showErrorMsg("Unable to rearrange minitiles",
+                                       f"There was an issue when rearranging minitiles.",
+                                       str(e))
+    
+    @staticmethod
+    def rearrangeMinitiles(parent, projectData: ProjectData):
+        dialog = AutoMinitileRearrangerDialog(parent, projectData)
+        dialog.exec()
+        return dialog.action
         

@@ -12,11 +12,12 @@ import src.misc.common as common
 import src.misc.debug as debug
 from src.actions.fts_actions import (ActionChangeArrangement,
                                      ActionChangeBitmap, ActionChangeCollision,
-                                     ActionChangeSubpaletteColour, ActionSwapMinitiles)
+                                     ActionChangeSubpaletteColour,
+                                     ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.project_data import ProjectData
-from src.misc.dialogues import (AboutDialog, SettingsDialog,
-                                TileEditorAboutDialog)
+from src.misc.dialogues import (AboutDialog, AutoMinitileRearrangerDialog,
+                                SettingsDialog, TileEditorAboutDialog)
 from src.misc.widgets import AspectRatioWidget, HorizontalGraphicsView
 from src.tileeditor.arrangement_editor import TileArrangementWidget
 from src.tileeditor.collision_editor import (CollisionPresetList,
@@ -91,28 +92,41 @@ class TileEditor(QWidget):
         else:
             commands.append(command)
         
+        actionType: str = None
         for c in commands:
             if isinstance(c, ActionChangeBitmap):
+                actionType = "bitmap"
+            elif isinstance(c, ActionChangeArrangement):
+                actionType = "arrangement"
+            elif isinstance(c, ActionChangeSubpaletteColour):
+                actionType = "colour"
+            elif isinstance(c, ActionChangeCollision):
+                actionType = "collision"
+            elif isinstance(c, ActionSwapMinitiles):
+                actionType = "swap"
+        
+        match actionType:
+            case "bitmap":
                 self.fgScene.copyToScratch()
                 self.bgScene.copyToScratch()
                 self.fgScene.update()
                 self.bgScene.update()
-            elif isinstance(c, ActionChangeArrangement):
+            case "arrangement":
                 self.arrangementScene.update()
                 self.collisionScene.update()
-            elif isinstance(c, ActionChangeSubpaletteColour):
+            case "colour":
                 self.fgScene.update()
                 self.bgScene.update()
                 self.paletteView.loadPalette(self.paletteView.currentPalette)
-            elif isinstance(c, ActionChangeCollision):
+            case "collision":
                 self.collisionScene.update()
-            elif isinstance(c, ActionSwapMinitiles):
+            case "swap":
                 self.minitileScene.renderTileset(self.state.currentTileset,
                                                  self.state.currentPaletteGroup,
                                                  self.state.currentPalette,
                                                  self.state.currentSubpalette)
                 self.minitileScene.updateHoverPreview(self.minitileScene.lastMinitileHovered)
-                
+                 
     def onTilesetSelect(self):
         value = int(self.tilesetSelect.currentText())
         self.state.currentTileset = value
@@ -178,14 +192,9 @@ class TileEditor(QWidget):
         self.state.currentMinitile = minitile
         
         if minitile >= common.MINITILENOFOREGROUND:
-            self.fgToBgButton.setDisabled(True)
-            self.bgToFgButton.setDisabled(True)
-            self.swapBgAndFgButton.setDisabled(True)
+            self.minitileFgWarning.show()
         else:
-            self.fgToBgButton.setEnabled(True)
-            self.bgToFgButton.setEnabled(True)
-            self.swapBgAndFgButton.setEnabled(True)
-        
+            self.minitileFgWarning.hide()
         minitileObj = self.projectData.getTileset(self.state.currentTileset).minitiles[minitile]
         subpaletteObj = self.projectData.getTileset(self.state.currentTileset).getPalette(
             self.state.currentPaletteGroup, self.state.currentPalette
@@ -206,8 +215,6 @@ class TileEditor(QWidget):
         self.paletteView.setColourIndex(index)
         
     def copyBgToFg(self):
-        if self.state.currentMinitile >= common.MINITILENOFOREGROUND:
-            return
         bgBitmap = self.bgScene._scratchBitmap
         action = ActionChangeBitmap(self.fgScene.currentMinitile, bgBitmap, True)
         self.undoStack.push(action)
@@ -215,8 +222,6 @@ class TileEditor(QWidget):
         self.fgScene.update()
         
     def copyFgToBg(self):
-        if self.state.currentMinitile >= common.MINITILENOFOREGROUND:
-            return
         fgBitmap = self.fgScene._scratchBitmap
         action = ActionChangeBitmap(self.bgScene.currentMinitile, fgBitmap, False)
         self.undoStack.push(action)
@@ -224,8 +229,6 @@ class TileEditor(QWidget):
         self.bgScene.update()
         
     def swapBgAndFg(self):
-        if self.state.currentMinitile >= common.MINITILENOFOREGROUND:
-            return
         self.undoStack.beginMacro("Swap BG and FG")
         bgBitmap = copy(self.bgScene._scratchBitmap)
         self.copyFgToBg()
@@ -234,6 +237,17 @@ class TileEditor(QWidget):
         self.undoStack.endMacro()
         self.fgScene.copyToScratch()
         self.fgScene.update()
+    
+    def onAutoRearrange(self):
+        action = AutoMinitileRearrangerDialog.rearrangeMinitiles(self, self.projectData)
+        
+        if action:
+            self.undoStack.push(action)
+            self.minitileScene.renderTileset(self.state.currentTileset,
+                                             self.state.currentPaletteGroup,
+                                             self.state.currentPalette,
+                                             self.state.currentSubpalette)
+            self.selectMinitile(self.state.currentMinitile)
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -297,6 +311,10 @@ class TileEditor(QWidget):
         
         self.presetList = CollisionPresetList(self.state)
         
+        self.minitileFgWarning = QLabel("<span style='color: red'>Foreground graphics won't display.</span>")
+        self.minitileFgWarning.setTextFormat(Qt.TextFormat.RichText)
+        self.minitileFgWarning.setWordWrap(True)
+        
         self.fgScene = MinitileEditorWidget(self.state)
         self.fgScene.colourPicked.connect(self.selectColour)
         self.fgAspectRatioContainer = AspectRatioWidget(self.fgScene)
@@ -335,6 +353,7 @@ class TileEditor(QWidget):
         minitileLayout.addLayout(tilesetSelectLayout)
         minitileLayout.addWidget(self.minitileView)
         
+        drawingLayout.addWidget(self.minitileFgWarning)
         drawingLayout.addWidget(self.fgAspectRatioContainer)
         self.bgToFgButton = QToolButton()
         self.bgToFgButton.setArrowType(Qt.ArrowType.UpArrow)
@@ -399,6 +418,11 @@ class TileEditor(QWidget):
         self.redoAction.triggered.connect(self.onRedo)
         self.menuEdit.addActions([self.undoAction, self.redoAction])
         
+        self.menuTools = QMenu("&Tools")
+        self.autoRearrangeAction = QAction("&Auto minitile rearranger...")
+        self.autoRearrangeAction.triggered.connect(self.onAutoRearrange)
+        self.menuTools.addActions([self.autoRearrangeAction,])
+        
         self.menuHelp = QMenu("&Help")
         self.aboutTileEditorAction = QAction("About the &tile editor...")
         self.aboutTileEditorAction.triggered.connect(lambda: TileEditorAboutDialog.showAbout(self))
@@ -413,7 +437,7 @@ class TileEditor(QWidget):
             self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
             self.menuHelp.addAction(self.openDebugAction)
         
-        self.menuItems = (self.menuFile, self.menuEdit, self.menuHelp)
+        self.menuItems = (self.menuFile, self.menuEdit, self.menuTools, self.menuHelp)
     
     def parent(self) -> "MainApplication": # for typing
         return super().parent()
