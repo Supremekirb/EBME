@@ -1,21 +1,25 @@
 import logging
+import traceback
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QRectF, QSettings, Qt
-from PySide6.QtGui import QImage, QPainter, QPixmap
+from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                                QDialogButtonBox, QFileDialog, QFormLayout,
                                QGraphicsScene, QGroupBox, QHBoxLayout, QLabel,
                                QLineEdit, QListWidget, QListWidgetItem,
-                               QPushButton, QScrollArea, QSizePolicy, QSpinBox,
-                               QStyleFactory, QTextEdit, QUndoView,
-                               QVBoxLayout, QWidget)
+                               QMessageBox, QPushButton, QScrollArea,
+                               QSizePolicy, QSpinBox, QStyleFactory, QTextEdit,
+                               QUndoView, QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.quotes as quotes
+from src.actions.fts_actions import ActionSwapMinitiles
+from src.actions.misc_actions import MultiActionWrapper
+from src.coilsnake.fts_interpreter import Minitile
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
-from src.misc.widgets import CoordsInput, HSeparator
+from src.misc.widgets import ColourButton, CoordsInput, HSeparator
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
@@ -581,3 +585,196 @@ class ClearDialog(QDialog):
             
         else:
             return False
+        
+        
+class TileEditorAboutDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowTitle("About the tile editor")
+        
+        layout = QVBoxLayout()
+        text = QLabel("""\
+<h1>About the Tile Editor</h1>
+The tile editor is where you edit the graphics of the map.
+It's split into four main quadrants. Let's go over them in order.
+
+<h2>Minitiles</h2>
+The minitile quadrant is where you will select the tileset, palette group, and palette in the three comboboxes.
+The list of minitiles will be shown. Most things are on a per-tileset basis, with the palette group and palette only defining colour sets.
+Select a minitile by left clicking to load it for editing. You can also drag minitiles around to rearrange them.
+
+<h2>Graphics</h2>
+This is where you can edit a minitile's graphics and the palette. Select a palette entry on the right side, and use the left mouse button to draw on the minitile.
+You can double-click to fill. The upper graphic is the foreground layer, and the lower graphic is the background layer. Not all minitiles have a foreground layer.
+You can also copy one layer to the other. If the relevant attributes are set, the foreground layer will display in front of sprites in-game. More on that later.
+
+<h2>Tiles</h2>
+This is where you can view and edit tiles. Left click on a tile in the list to load it for arrangement and attribute editing.
+Once it's loaded, you'll see it in the larger box on the right. Left click on this to place the currently-selected minitile, and right click to mirror the minitile.
+
+<h2>Attributes</h2>
+The attribute editor lets you configure tile attributes (commonly referred to as collision, though it can do more than that). The list on the left has a few presets of attribute configurations.
+You can use the buttons to add your own, which will open the menu. You can double click to edit the preset or custom entry.
+On the right side, you can place these attributes onto the currently selected tile.
+""")
+        
+        text.setWordWrap(True)
+        layout.addWidget(text)
+        
+        self.setLayout(layout)
+        
+    @staticmethod
+    def showAbout(parent):
+        dialog = TileEditorAboutDialog(parent)
+        dialog.exec()
+        
+class PresetEditorDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowTitle("Editing Collision Preset")
+        
+        layout = QFormLayout()
+        self.setLayout(layout)
+        
+        self.name = QLineEdit()
+        layout.addRow("Preset name", self.name)
+        
+        self.checkboxes: list[QCheckBox] = []
+        self.checkboxes.append(QCheckBox("Solid"))
+        self.checkboxes.append(QCheckBox("Unused 1 (acts solid)"))
+        self.checkboxes.append(QCheckBox("Unused 2 (no effect)"))
+        self.checkboxes.append(QCheckBox("Supports triggers"))
+        self.checkboxes.append(QCheckBox("Water"))
+        self.checkboxes.append(QCheckBox("Damage"))
+        self.checkboxes.append(QCheckBox("Mask top half of sprites"))
+        self.checkboxes.append(QCheckBox("Mask bottom half of sprites"))
+        for i in self.checkboxes: 
+            i.toggled.connect(self.calculateHex)
+            layout.addRow(i)
+        
+        self.colourButton = ColourButton()
+        layout.addRow("Display colour", self.colourButton)
+        
+        self.hexInput = QSpinBox()
+        self.hexInput.setDisplayIntegerBase(16)
+        self.hexInput.setPrefix("0x")
+        self.hexInput.setMaximum(common.BYTELIMIT)
+        self.hexInput.setMinimum(0)
+        self.hexInput.valueChanged.connect(self.calculateCheckboxes)
+        layout.addRow("Raw value", self.hexInput)
+        
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        layout.addRow(self.buttons)
+        
+    def calculateHex(self):
+        self.hexInput.blockSignals(True)
+        value = 0
+        for i in range(8):
+            checkbox = self.checkboxes[7-i]
+            if checkbox.isChecked():
+                value += 1 << i
+        self.hexInput.setValue(value)
+        self.hexInput.blockSignals(False)
+        
+    def calculateCheckboxes(self):
+        value = self.hexInput.value()
+        for i in range(8):
+            checkbox = self.checkboxes[7-i]
+            checkbox.blockSignals(True)
+            if value & 1 << i:
+                checkbox.setChecked(True)
+            else:
+                checkbox.setChecked(False)
+            checkbox.blockSignals(False)
+             
+    @staticmethod
+    def editPreset(parent, presetName: str, presetColour: QColor, presetValue: int):
+        dialog = PresetEditorDialog(parent)
+        dialog.hexInput.setValue(presetValue)
+        dialog.name.setText(presetName)
+        dialog.colourButton.setColour(presetColour)
+        
+        result = dialog.exec()
+        
+        if result == QDialog.DialogCode.Accepted:
+            return (dialog.name.text(), dialog.colourButton.chosenColour, dialog.hexInput.value())      
+
+class AutoMinitileRearrangerDialog(QDialog):
+    def __init__(self, parent, projectData: ProjectData):
+        super().__init__(parent)
+        self.setWindowTitle("Auto Minitile Rearranger")
+        self.projectData = projectData
+        
+        layout = QFormLayout()
+        self.setLayout(layout)
+        
+        label = QLabel("Automatically rearange minitile order in a tileset to ensure that \
+                        tiles with foreground graphics are able to use them.\n(Can be undone.)")
+        label.setWordWrap(True)
+        layout.addRow(label)
+        
+        self.tilesetInput = QSpinBox()
+        self.tilesetInput.setMaximum(len(self.projectData.tilesets)-1)
+        layout.addRow("Tileset", self.tilesetInput)
+        
+        self.buttons = QDialogButtonBox()
+        self.buttons.addButton("Do it!", QDialogButtonBox.ButtonRole.AcceptRole)
+        self.buttons.addButton(QDialogButtonBox.StandardButton.Close)
+        
+        self.buttons.accepted.connect(self.rearrange)
+        self.buttons.rejected.connect(self.reject)
+        layout.addRow(self.buttons)
+        
+        self.action: MultiActionWrapper|None = None
+        
+    def rearrange(self):
+        try:
+            tileset = self.projectData.getTileset(self.tilesetInput.value())
+            countWithFg = 0
+            toMove: list[int] = []
+            canBeReplaced: list[int] = []
+            
+            for id, minitile in enumerate(tileset.minitiles):
+                raw = minitile.fgToRaw() 
+                if raw != "0000000000000000000000000000000000000000000000000000000000000000":
+                    countWithFg += 1
+                    if id >= 384:
+                        toMove.append(id)
+                    
+                elif raw == "0000000000000000000000000000000000000000000000000000000000000000"\
+                and id < 384:
+                    canBeReplaced.append(id)
+                
+            if countWithFg > 384:
+                return common.showErrorMsg("Unable to rearrange minitiles",
+                                        f"There are {countWithFg} minitiles with foreground graphics in this tileset. The maximum to be able to rearrange is 384.",
+                                        icon = QMessageBox.Icon.Warning)
+            
+            # I've decided to reverse it for a few reasons:
+            #   - minitile 0 should probably not be messed with first... i dont know the ramifications of that if any
+            #   - this algorithm moves them out from the end so I guess it visually makes sense..?
+            canBeReplaced = list(reversed(canBeReplaced))
+            toMove = list(reversed(toMove))
+                
+            actions: list[ActionSwapMinitiles] = []
+            for id, minitile in enumerate(toMove):
+                actions.append(ActionSwapMinitiles(tileset, canBeReplaced[id], minitile))
+            
+            if len(actions) > 0:
+                self.action = MultiActionWrapper(actions, "Auto rearrange minitiles")
+            return self.accept()
+        
+        except Exception as e:
+            logging.warning(traceback.format_exc())
+            return common.showErrorMsg("Unable to rearrange minitiles",
+                                       f"There was an issue when rearranging minitiles.",
+                                       str(e))
+    
+    @staticmethod
+    def rearrangeMinitiles(parent, projectData: ProjectData):
+        dialog = AutoMinitileRearrangerDialog(parent, projectData)
+        dialog.exec()
+        return dialog.action
+        

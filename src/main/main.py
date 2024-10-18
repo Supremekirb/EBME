@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (QMainWindow, QMenuBar, QMessageBox, QTabWidget,
 import src.misc.common as common
 import src.project.project as project
 from src.mapeditor.map_editor import MapEditor
+from src.tileeditor.tile_editor import TileEditor
 
 
 class MainApplication(QMainWindow):
@@ -66,6 +67,16 @@ class MainApplication(QMainWindow):
         if hasattr(new, "menuItems"):
             for i in new.menuItems:
                 self.menu.addMenu(i)
+                
+    def updateTitle(self):
+        # see if all undo stacks are clean
+        title = self.window().windowTitle()
+        if not self.mapWin.scene.undoStack.isClean() or not self.tileWin.undoStack.isClean():
+            if not title.endswith("*"):
+                self.window().setWindowTitle(title + "*")
+        else:
+            if title.endswith("*"):
+                self.window().setWindowTitle(title[:-1])
 
 
     def closeEvent(self, event):
@@ -81,7 +92,7 @@ class MainApplication(QMainWindow):
                 else:
                     event.ignore()
                     
-            if not self.mapWin.scene.undoStack.isClean():                    
+            if not self.mapWin.scene.undoStack.isClean() or not self.tileWin.undoStack.isClean():                    
                 msg = QMessageBox(self)
                 msg.setText("Save your changes before closing?")
                 msg.setStandardButtons(QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
@@ -106,11 +117,11 @@ class MainApplication(QMainWindow):
         self.mainTabWin = QTabWidget(self)
         self.projectWin = project.Project(self)
         self.mapWin: MapEditor = QWidget() # replaced by MapEditor
-        # self.tileWin = QWidget()
+        self.tileWin: TileEditor = QWidget() # replaced by TileEditor
 
         self.mainTabWin.addTab(self.projectWin, "Project")
         self.mainTabWin.addTab(self.mapWin, "Map Editor")
-        # self.mainTabWin.addTab(self.tileWin, "Tile Editor")
+        self.mainTabWin.addTab(self.tileWin, "Tile Editor")
 
         self.mainTabWin.setTabEnabled(1, False)
         self.mainTabWin.setTabEnabled(2, False)
