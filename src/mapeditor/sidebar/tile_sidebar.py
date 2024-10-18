@@ -1,70 +1,72 @@
-from PySide6.QtCore import QEvent, QObject, QPoint, Qt
-from PySide6.QtGui import QBrush, QPixmap
-from PySide6.QtWidgets import (QComboBox, QFormLayout, QGraphicsPixmapItem,
-                               QGraphicsScene, QGraphicsView, QGridLayout,
-                               QGroupBox, QPushButton, QWidget)
+from typing import TYPE_CHECKING
 
-import src.misc.common as common
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (QComboBox, QFormLayout, QGraphicsView,
+                               QGridLayout, QGroupBox, QPushButton, QWidget)
+
 from src.actions.sector_actions import ActionChangeSectorAttributes
 from src.coilsnake.project_data import ProjectData
-from src.misc.coords import EBCoords
+from src.misc.widgets import TilesetDisplayGraphicsScene
 from src.objects.sector import Sector
-from src.objects.tile import MapEditorTile
+
+if TYPE_CHECKING:
+    from src.mapeditor.map_editor import MapEditor, MapEditorState
 
 
 class SidebarTile(QWidget):
     """Sidebar for tile mode"""
-    def __init__(self, parent, state, mapeditor, projectData: ProjectData):
+    def __init__(self, parent, state: "MapEditorState", mapeditor: "MapEditor", projectData: ProjectData):
         super().__init__(parent)
         self.state = state 
         self.mapeditor = mapeditor
         self.projectData = projectData
 
         self.setupUI()
-
-        # initial render
-        self.view.renderTileset(int(self.tilesetSelect.currentData(0)),
-                                int(self.paletteGroupSelect.currentData(0)),
-                                int(self.paletteSelect.currentData(0))
-                                )
-
-
         
     def getPaletteGroups(self):
-        for i in self.projectData.tilesets[int(self.tilesetSelect.currentData(0))].paletteGroups:
+        for i in self.projectData.tilesets[int(self.tilesetSelect.currentText())].paletteGroups:
             yield str(i.groupID)
 
     def getPalettes(self):
-        for i in self.projectData.tilesets[int(self.tilesetSelect.currentData(0))].getPaletteGroup(
-            int(self.paletteGroupSelect.currentData(0))).palettes:
+        for i in self.projectData.tilesets[int(self.tilesetSelect.currentText())].getPaletteGroup(
+            int(self.paletteGroupSelect.currentText())).palettes:
                 yield str(i.paletteID)
 
-    def onTilesetSelect(self, tileset: str = None):
+    def onTilesetSelect(self):
+        value = int(self.tilesetSelect.currentText())
+        
+        self.paletteGroupSelect.blockSignals(True)
         self.paletteGroupSelect.clear()
         self.paletteGroupSelect.addItems(i for i in self.getPaletteGroups())
+        
+        self.scene.currentTileset = value
         self.onPaletteGroupSelect()
-    def onPaletteGroupSelect(self, palette: str = None):
+        self.paletteGroupSelect.blockSignals(False)
+        
+    def onPaletteGroupSelect(self):
+        value = int(self.paletteGroupSelect.currentText())
+        
+        self.paletteSelect.blockSignals(True)
         self.paletteSelect.clear()
         self.paletteSelect.addItems(i for i in self.getPalettes())
+        
+        self.scene.currentPaletteGroup = value
         self.onPaletteSelect()
+        self.paletteSelect.blockSignals(False)
     
-    def onPaletteSelect(self, event=None):
-        self.view.renderTileset(int(self.tilesetSelect.currentData(0)),
-                                int(self.paletteGroupSelect.currentData(0)),
-                                int(self.paletteSelect.currentData(0))
-                                )
+    def onPaletteSelect(self):
+        value = int(self.paletteSelect.currentText())
+        
+        self.scene.currentPalette = value
+        self.scene.update()
+    
+    def onTileSelect(self, tile: int):
+        self.state.currentTile = tile
 
     def fromSector(self, sector: Sector):
         self.tilesetSelect.setCurrentText(str(sector.tileset))
-        self.paletteGroupSelect.clear()
-        self.paletteGroupSelect.addItems(i for i in self.getPaletteGroups())
-
         self.paletteGroupSelect.setCurrentText(str(sector.palettegroup))
-        self.paletteSelect.clear()
-        self.paletteSelect.addItems(i for i in self.getPalettes())
-
         self.paletteSelect.setCurrentText(str(sector.palette))
-        self.onPaletteSelect()
     
     def toSector(self):
         sectors = self.state.currentSectors
@@ -82,8 +84,8 @@ class SidebarTile(QWidget):
         self.mapeditor.scene.undoStack.endMacro()
 
     def selectTile(self, id: int):
-        self.view.selectedIndicator.setPos((id%SidebarTileCanvas.tileWidth)*32, (id//SidebarTileCanvas.tileWidth)*32)
-        self.view.centerOn(self.view.selectedIndicator)
+        self.scene.moveCursorToTile(id)
+        self.view.centerOn(self.scene.selectionIndicator)
 
     def setupUI(self):
         #####
@@ -111,20 +113,20 @@ class SidebarTile(QWidget):
         self.sectorSettingsBox.setLayout(self.sectorSettingsLayout)
         #####
 
-        self.scene = QGraphicsScene()
-        self.scene.setSceneRect(0, 0, 32*SidebarTileCanvas.tileWidth, 32*common.MAXTILES//SidebarTileCanvas.tileWidth)
-        self.view = SidebarTileCanvas(self, self.state, self.projectData, self.scene)
-
-        self.contentLayout = QGridLayout(self)
-        self.contentLayout.addWidget(self.sectorSettingsBox, 0, 0)
-        self.contentLayout.addWidget(self.view, 1, 0)
-
+        self.scene = TilesetDisplayGraphicsScene(self.projectData)
+        self.scene.tileSelected.connect(self.onTileSelect)
+        self.view = QGraphicsView()
+        self.view.setScene(self.scene)
         # to be sure
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         # minimum width accounting for scroll bar
-        self.view.setFixedWidth((32*SidebarTileCanvas.tileWidth)+1+self.view.verticalScrollBar().sizeHint().width())
+        self.view.setFixedWidth((32*self.scene.rowSize)+1+self.view.verticalScrollBar().sizeHint().width())
         self.view.centerOn(0, 0)
+
+        self.contentLayout = QGridLayout(self)
+        self.contentLayout.addWidget(self.sectorSettingsBox, 0, 0)
+        self.contentLayout.addWidget(self.view, 1, 0)
 
         self.setLayout(self.contentLayout)
 
@@ -132,69 +134,6 @@ class SidebarTile(QWidget):
         self.paletteGroupSelect.addItems(i for i in self.getPaletteGroups())
         self.paletteSelect.addItems(i for i in self.getPalettes())
 
-        self.tilesetSelect.activated.connect(self.onTilesetSelect)
-        self.paletteGroupSelect.activated.connect(self.onPaletteGroupSelect)
-        self.paletteSelect.activated.connect(self.onPaletteSelect)
-
-
-class SidebarTileCanvas(QGraphicsView):
-    tileWidth = 6
-    """How many tiles across the selector should be. Should be a factor of common.MAXTILES"""
-    def __init__(self, parent, state, projectData: ProjectData, scene: QGraphicsScene):
-        super().__init__(parent)
-        self.state = state
-        self.projectData = projectData
-        self.setScene(scene)
-
-        self.tiles = []
-
-        x = 0
-        y = 0
-        for i in range(0, common.MAXTILES):
-            item = MapEditorTile(EBCoords.fromTile(x, y))
-            item.setText(str(i).zfill(3))
-
-            self.scene().addItem(item)
-            self.tiles.append(item)
-
-            x += 1
-            if x >= SidebarTileCanvas.tileWidth:
-                x = 0
-                y += 1
-
-        self.selectedIndicator = QGraphicsPixmapItem()
-        self.selectedIndicator.setPixmap(QPixmap(":/ui/selectTile.png"))
-        self.selectedIndicator.setZValue(255)
-        self.scene().addItem(self.selectedIndicator)
-
-        # kinda weird to do it backwards like this but it makes more sense to have the width kept here...
-        self.scene().setSceneRect(0, 0, (SidebarTileCanvas.tileWidth*32), (32*common.MAXTILES)//SidebarTileCanvas.tileWidth)
-        self.scene().installEventFilter(self) # me when i subclass the wrong thing probably
-
-        self.setBackgroundBrush(
-            QBrush(QPixmap(":/ui/bg.png")))
-        self.setForegroundBrush(
-            QBrush(QPixmap(":/grids/32grid0.png")))
-
-    def eventFilter(self, object: QObject, event: QEvent):
-        if event.type() == QEvent.Type(QEvent.GraphicsSceneMousePress):
-            if event.buttons() == Qt.MouseButton.LeftButton:
-                coords = EBCoords(event.scenePos().x(), event.scenePos().y())
-
-                items = self.scene().items(QPoint(coords.x, coords.y))
-                for i in items:
-                    if isinstance(i, MapEditorTile):  
-                        self.state.currentTile = i.getID()
-                        self.selectedIndicator.setPos(coords.roundToTile()[0], coords.roundToTile()[1])
-                        break     
-                else:
-                    raise ValueError("Something went wrong when selecting a tile")
-
-        return False
-
-    def renderTileset(self, tilesetID: int, paletteGroupID: int, paletteID: int):
-        for i in self.tiles:
-            graphic = self.projectData.getTileGraphic(tilesetID, paletteGroupID, paletteID, i.getID())
-            if not graphic.hasRendered:
-                graphic.render(self.projectData.tilesets[tilesetID])
-            i.setPixmap(graphic.rendered)
+        self.tilesetSelect.currentIndexChanged.connect(self.onTilesetSelect)
+        self.paletteGroupSelect.currentIndexChanged.connect(self.onPaletteGroupSelect)
+        self.paletteSelect.currentIndexChanged.connect(self.onPaletteSelect)

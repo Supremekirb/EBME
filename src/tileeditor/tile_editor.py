@@ -18,14 +18,14 @@ from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AutoMinitileRearrangerDialog,
                                 SettingsDialog, TileEditorAboutDialog)
-from src.misc.widgets import AspectRatioWidget, HorizontalGraphicsView
+from src.misc.widgets import (AspectRatioWidget, HorizontalGraphicsView,
+                              TilesetDisplayGraphicsScene)
 from src.tileeditor.arrangement_editor import TileArrangementWidget
 from src.tileeditor.collision_editor import (CollisionPresetList,
                                              TileCollisionWidget)
 from src.tileeditor.graphics_editor import (MinitileEditorWidget,
                                             PaletteSelector)
 from src.tileeditor.minitile_selector import MinitileScene, MinitileView
-from src.tileeditor.tile_selector import TileScene
 
 if TYPE_CHECKING:
     from src.main.main import MainApplication
@@ -61,8 +61,6 @@ class TileEditor(QWidget):
         self.setupUI()
         self.tilesetSelect.setCurrentIndex(0)
         self.tilesetSelect.activated.emit(0)
-        
-        self.tileScene.selectTile(0)
     
     def onUndo(self):
         command = self.undoStack.command(self.undoStack.index()-1)
@@ -140,6 +138,8 @@ class TileEditor(QWidget):
         self.collisionScene.loadTile(tileset.tiles[self.state.currentTile])
         self.collisionScene.loadTileset(tileset)
         
+        self.tileScene.currentTileset = value
+        
         self.onPaletteGroupSelect()
         self.paletteGroupSelect.blockSignals(False)
         
@@ -150,6 +150,8 @@ class TileEditor(QWidget):
         self.paletteSelect.clear()
         self.paletteSelect.addItems(str(i.paletteID) for i in self.projectData.getTileset(
             self.state.currentTileset).getPaletteGroup(value).palettes)
+        
+        self.tileScene.currentPaletteGroup = value 
         
         self.onPaletteSelect()
         self.paletteSelect.blockSignals(False)    
@@ -165,7 +167,8 @@ class TileEditor(QWidget):
         self.collisionScene.loadPalette(palette)
         self.paletteView.loadPalette(palette)
         
-        self.tileScene.renderTileset(self.state.currentTileset, self.state.currentPaletteGroup, self.state.currentPalette)
+        self.tileScene.currentPalette = value
+        self.tileScene.update()
         
     def onSubpaletteSelect(self):
         value = self.paletteView.currentSubpaletteIndex
@@ -177,13 +180,13 @@ class TileEditor(QWidget):
     
         self.selectMinitile(self.state.currentMinitile)
     
-    def onTileSelect(self):
-        self.state.currentTile = self.tileScene.currentTile
-        tile = self.projectData.getTileset(
+    def onTileSelect(self, tile: int):
+        self.state.currentTile = tile
+        tileObj = self.projectData.getTileset(
             self.state.currentTileset).tiles[self.state.currentTile]
-        self.arrangementScene.loadTile(tile)
-        self.collisionScene.loadTile(tile)
-        self.presetList.verifyTileCollision(tile)
+        self.arrangementScene.loadTile(tileObj)
+        self.collisionScene.loadTile(tileObj)
+        self.presetList.verifyTileCollision(tileObj)
     
     def onColourEdit(self):
         ...
@@ -294,11 +297,11 @@ class TileEditor(QWidget):
         self.minitileScene = MinitileScene(self, self.projectData)
         self.minitileView = MinitileView(self.minitileScene)
         
-        self.tileScene = TileScene(self, self.projectData)
+        self.tileScene = TilesetDisplayGraphicsScene(self.projectData, True, 5)
         self.tileScene.tileSelected.connect(self.onTileSelect)
         self.tileView = HorizontalGraphicsView(self.tileScene)
         self.tileView.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        self.tileView.setFixedHeight(32*TileScene.TILE_HEIGHT+1+self.tileView.horizontalScrollBar().sizeHint().height())
+        self.tileView.setFixedHeight(32*self.tileScene.rowSize+1+self.tileView.horizontalScrollBar().sizeHint().height())
         # self.tileView.setMaximumWidth(32*12)
         self.tileView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.tileView.centerOn(0, 0)

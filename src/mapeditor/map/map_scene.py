@@ -45,7 +45,6 @@ from src.misc.dialogues import ClearDialog
 from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
-from src.objects.tile import MapEditorTile
 from src.objects.warp import MapEditorWarp
 
 if TYPE_CHECKING:
@@ -658,16 +657,7 @@ class MapEditorScene(QGraphicsScene):
         """
         self.state.tempMode = index
 
-    def changeMode(self, index: int):
-        previous = self.state.mode
-        
-        if index == common.MODEINDEX.TILE:
-            MapEditorTile.showTileIDsModeSwitch()
-            self.grid.setBrush
-        else:
-            if (previous == common.MODEINDEX.TILE or previous == common.MODEINDEX.ALL) and index != common.MODEINDEX.ALL:
-                MapEditorTile.hideTileIDsModeSwitch()
-            
+    def changeMode(self, index: int):           
         if index == common.MODEINDEX.SECTOR:
             self.sectorSelect.show()
         else:
@@ -703,7 +693,6 @@ class MapEditorScene(QGraphicsScene):
             MapEditorWarp.hideWarps()
             
         if index == common.MODEINDEX.ALL:
-            MapEditorTile.showTileIDsModeSwitch()
             if self.parent().sidebarAll.showNPCs.isChecked():
                 MapEditorNPC.showNPCs()
             else: MapEditorNPC.hideNPCs()
@@ -839,20 +828,6 @@ class MapEditorScene(QGraphicsScene):
         x = x % 4
         y = y % 4
         return collisionMap[x + y * 4]
-
-    # def tileAt(self, coords: EBCoords) -> MapEditorTile | None:
-    #     """Get a MapEditorTile at coords
-
-    #     Args:
-    #         coords (EBCoords): location of the tile
-
-    #     Returns:
-    #         MapEditorTile | None: the tile. None if no tile found.
-    #     """
-    #     items = self.items(QPoint(coords.roundToTile()[0], coords.roundToTile()[1]))
-    #     for item in items:
-    #         if isinstance(item, MapEditorTile):
-    #             return item
             
     def enemyTileAt(self, coords: EBCoords) -> MapEditorEnemyTile | None:
         """Get a MapEditorEnemyTile at coords
@@ -1458,7 +1433,7 @@ class MapEditorScene(QGraphicsScene):
         font = painter.font()
         font.setPointSize(12)
         painter.setFont(font)
-        if MapEditorTile.tileIDsEnabled and MapEditorTile.tileIDsShown:
+        if QSettings().value("mapeditor/ShowTileIDs", False, bool) and self.state.mode in (common.MODEINDEX.TILE, common.MODEINDEX.ALL):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(0, 0, 0, 128))
             painter.drawRect(rect)
@@ -1845,13 +1820,14 @@ class MapEditorScene(QGraphicsScene):
     
     def toggleTileIDs(self):
         settings = QSettings()
-        if MapEditorTile.tileIDsEnabled:
-            MapEditorTile.hideTileIDs()
+        if settings.value("mapeditor/ShowTileIDs", False, bool):
             settings.setValue("mapeditor/ShowTileIDs", False)
         else: 
-            MapEditorTile.showTileIDs()
             settings.setValue("mapeditor/ShowTileIDs", True)
+        
+        settings.sync()
         self.update()
+        self.parent().sidebarTile.scene.update()
 
     def toggleNPCIDs(self):
         settings = QSettings()
@@ -1925,16 +1901,6 @@ class MapEditorScene(QGraphicsScene):
         self.grid.setBrush(QBrush(QPixmap(f":/grids/{type}grid{id}.png")))
         settings.setValue("mapeditor/GridStyle", id)
         self._currentGrid = id
-            
-    # def populateTiles(self):
-    #     # create tiles, but - and this is the trick for performance - don't render them
-    #     size = EBCoords(common.EBMAPWIDTH, common.EBMAPHEIGHT)
-    #     for r in range(size.coordsTile()[0]):
-    #         for c in range(size.coordsTile()[1]):
-    #             item = MapEditorTile(EBCoords.fromTile(r, c))
-    #             self.addItem(item)
-
-    #         QApplication.processEvents()
         
     def populateNPCs(self):
         for i in self.projectData.npcinstances:

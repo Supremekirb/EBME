@@ -1,17 +1,21 @@
 from copy import copy
 
 from PIL import ImageQt
-from PySide6.QtCore import QPoint, QSettings, QSize, Qt, Signal
+from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, QSize, Qt, Signal
 from PySide6.QtGui import (QBrush, QColor, QGuiApplication, QMouseEvent,
                            QPainter, QPaintEvent, QPalette, QPen, QPixmap,
                            QResizeEvent, QWheelEvent)
 from PySide6.QtWidgets import (QBoxLayout, QCheckBox, QColorDialog, QFrame,
-                               QGraphicsView, QHBoxLayout, QLabel, QPushButton,
-                               QSizePolicy, QSpacerItem, QSpinBox, QWidget)
+                               QGraphicsPixmapItem, QGraphicsScene,
+                               QGraphicsSceneMouseEvent, QGraphicsView,
+                               QHBoxLayout, QLabel, QPushButton, QSizePolicy,
+                               QSpacerItem, QSpinBox, QWidget)
 
 import src.misc.common as common
 from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
                                            Subpalette, Tile)
+from src.coilsnake.project_data import ProjectData
+from src.misc.coords import EBCoords
 
 
 class BaseChangerSpinbox(QSpinBox):
@@ -453,3 +457,94 @@ class TileGraphicsWidget(QWidget):
     def resizeEvent(self, event: QResizeEvent):
         self.setMinimumWidth(event.size().height())       
         return super().resizeEvent(event)
+    
+class TilesetDisplayGraphicsScene(QGraphicsScene):
+    tileSelected = Signal(int)
+        
+    def __init__(self, projectData: ProjectData, horizontal: bool = False, rowSize: int = 6):
+        super().__init__()
+        
+        self.projectData = projectData
+        self.horizontal = horizontal
+        self.rowSize = rowSize
+        
+        self.selectionIndicator = QGraphicsPixmapItem(QPixmap(":/ui/selectTile.png"))
+        
+        if not horizontal:
+            self.setSceneRect(0, 0, self.rowSize*32, (common.MAXTILES*32)//self.rowSize)
+        else:
+            self.setSceneRect(0, 0, (common.MAXTILES*32)//self.rowSize, self.rowSize*32)
+            
+        self.addItem(self.selectionIndicator)
+        self.setForegroundBrush((QBrush(QPixmap(":/grids/32grid0.png"))))
+        self.setBackgroundBrush((QBrush(QPixmap(":/ui/bg.png"))))
+        
+        self.currentTileset = 0
+        self.currentPaletteGroup = 0
+        self.currentPalette = 0
+    
+    def cursorOverTile(self):
+        return self.posToTileIndex(*self.selectionIndicator.pos().toTuple())
+    
+    def moveCursorToTile(self, tile: int):
+        x, y = self.tileIndexToPos(tile)
+        self.selectionIndicator.setPos(x*32, y*32)
+        
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
+        pos = EBCoords(*event.scenePos().toTuple())
+        self.tileSelected.emit(self.posToTileIndex(*pos.coordsTile()))
+        self.selectionIndicator.setPos(*pos.roundToTile())
+        
+        super().mousePressEvent(event)
+    
+    def drawBackground(self, painter: QPainter, rect: QRectF | QRect):
+        super().drawBackground(painter, rect)
+        start = EBCoords(*rect.topLeft().toTuple())
+        end = EBCoords(*rect.bottomRight().toTuple())
+        x0, y0 = start.coordsTile()
+        x1, y1 = end.coordsTile()
+        
+        tileset = self.projectData.getTileset(self.currentTileset)        
+        for y in range(y0, y1+1):
+            for x in range(x0, x1+1):
+                tileID = self.posToTileIndex(x, y)
+                if tileID >= common.MAXTILES or tileID < 0:
+                    continue
+                tileGfx = self.projectData.getTileGraphic(self.currentTileset,
+                                                          self.currentPaletteGroup,
+                                                          self.currentPalette,
+                                                          tileID)
+                if not tileGfx.hasRendered:
+                    tileGfx.render(tileset)
+                    tileGfx.hasRendered = True
+                    
+                painter.drawPixmap(x*32, y*32, tileGfx.rendered)
+                
+        if QSettings().value("mapeditor/ShowTileIDs", False, bool):
+            painter.setFont("EBMain")
+            font = painter.font()
+            font.setPointSize(12)
+            painter.setFont(font)
+            painter.setBrush(QColor(0, 0, 0, 128))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawRect(rect)
+            
+            for y in range(y0, y1+1):
+                for x in range(x0, x1+1):
+                    tileID = self.posToTileIndex(x, y)
+                    painter.setPen(Qt.GlobalColor.black)
+                    painter.drawText((x*32)+8, (y*32)+23, str(tileID).zfill(3))
+                    painter.setPen(Qt.GlobalColor.white)
+                    painter.drawText((x*32)+7, (y*32)+22, str(tileID).zfill(3))
+    
+    def posToTileIndex(self, x: int, y: int):
+        if self.horizontal:
+            return int(x * self.rowSize + y)
+        else:
+            return int(y * self.rowSize + x)
+        
+    def tileIndexToPos(self, tile: int):
+        if self.horizontal:
+            return tile // self.rowSize, tile % self.rowSize
+        else:
+            return tile % self.rowSize, tile // self.rowSize
