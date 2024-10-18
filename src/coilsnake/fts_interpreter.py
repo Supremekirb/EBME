@@ -27,7 +27,19 @@ class FullTileset:
             int(str_, 32)
         except ValueError as e:
             raise NotBase32Error from e
-
+    
+    def swapMinitiles(self, mt1: int, mt2: int):
+        if mt1 == mt2:
+            return
+        self.minitiles[mt1], self.minitiles[mt2] = self.minitiles[mt2], self.minitiles[mt1]
+        for t in self.tiles:
+            for i in range(0, 16):
+                if t.getMinitileID(i) == mt1:
+                    t.metadata[i] = t.metadata[i] - mt1 + mt2
+                elif t.getMinitileID(i) == mt2:
+                    t.metadata[i] = t.metadata[i] - mt2 + mt1
+                # happily we do not need to invalidate the image cache when doing this
+            
     def getPaletteGroup(self, groupID):
         """From a palette group ID, get a PaletteGroup object\n\nReturns -1 if no match was found"""
         for i in self.paletteGroups:
@@ -53,7 +65,7 @@ class FullTileset:
         """From an .fts file, read the data of all 512 minitiles.
         ### Returns
         `minitiles` - a list of Minitile objects"""
-        minitiles = []
+        minitiles: list[Minitile] = []
         for t in range(0, 512*3, 3): # 512 minitiles per tileset, three lines per minitile
             bg = []
             fg = []
@@ -62,8 +74,8 @@ class FullTileset:
                 self.verify_hex(fts[t][i])
                 self.verify_hex(fts[t+1][i])
 
-                bg.append(fts[t][i]) # handle background and foreground iteration all at once
-                fg.append(fts[t+1][i])
+                bg.append(int(fts[t][i], 16)) # handle background and foreground iteration all at once
+                fg.append(int(fts[t+1][i], 16))
         
             minitiles.append(Minitile(bg, fg)) # create list of minitiles
             
@@ -73,7 +85,7 @@ class FullTileset:
         """From an .fts file, read the data of the various palettes.
         ### Returns
         `palettes` - a list of Palette objects"""
-        palettes = []
+        palettes: list[Palette] = []
 
         offset = 1537 # all .fts files start palettes here
         while fts[offset] != "\n": # palette listing is of variable length, so check it until we hit a whitespace gap
@@ -92,7 +104,7 @@ class FullTileset:
 
         oldID = self.palettes[0].groupID
         groupBuilder = []
-        groupList = []
+        groupList: list[PaletteGroup] = []
         for i in self.palettes:
             if i.groupID == oldID:
                 groupBuilder.append(i)
@@ -110,7 +122,7 @@ class FullTileset:
         """From an .fts file, read the data of all <=960 tiles.
         ### Returns
            `tiles` - a list of Tile ob6jects"""
-        tiles = []
+        tiles: list[Tile] = []
         # verify tiles
         for i in range(self.tileOffset, self.tileOffset+common.MAXTILES):
             self.verify_hex(fts[i])
@@ -131,7 +143,7 @@ class PaletteGroup:
     ### Parameters
         `palettes` - a list of Palette objects (of the same ID)"""
     def __init__(self, palettes):
-        self.palettes = palettes
+        self.palettes: list[Palette] = palettes
         self.groupID = palettes[0].groupID
     
 
@@ -142,7 +154,7 @@ class Palette:
     def __init__(self, palette):
         self.groupID = int(palette[0], 32) # base 32 number, convert to int
         self.paletteID = int(palette[1], 32) # same
-        self.subpalettes = []
+        self.subpalettes: list[Subpalette] = []
 
         # build subpalette list on init (we'll use it all the time anyway)
         for subpalette in range(6):
@@ -151,11 +163,15 @@ class Palette:
             for entry in range(0, 16*3, 3): 
                 buildSub.append((palette[offset+entry] + palette[offset+entry+1] + palette[offset+entry+2])) # R, G, B out of base 32
             self.subpalettes.append(Subpalette(buildSub))
-
-        self.raw = palette
     
-    def getSubpalette(self, id):
-        return self.subpalettes[id]
+    def toRaw(self):
+        raw = ""
+        raw += common.baseN(self.groupID, 32)
+        raw += common.baseN(self.paletteID, 32)
+        for i in self.subpalettes:
+            raw += i.toRaw()
+        
+        return raw
 
 
 class Subpalette:
@@ -163,18 +179,22 @@ class Subpalette:
     ### Parameters
         `subpalette` - raw subpalette from an .fts file palette"""
     def __init__(self, subpalette):
-        self.subpalette = subpalette
-        self.subpaletteRGBA = []
+        self.subpaletteRGBA: list[tuple[int, int, int, int]] = []
 
         for entry in range(16):  # create RGBA list too
-            if entry == 0: self.subpaletteRGBA.append((int(str(self.subpalette[entry][0]), 32)*8, int(str(self.subpalette[entry][1]), 32)*8, int(str(self.subpalette[entry][2]), 32)*8, 0)) # alpha channel = 0 for first colour
-            else: self.subpaletteRGBA.append((int(str(self.subpalette[entry][0]), 32)*8, int(str(self.subpalette[entry][1]), 32)*8, int(str(self.subpalette[entry][2]), 32)*8, 255)) # R, G, B out of base 32 + A
+            if entry == 0: self.subpaletteRGBA.append((int(str(subpalette[entry][0]), 32)*8, int(str(subpalette[entry][1]), 32)*8, int(str(subpalette[entry][2]), 32)*8, 0)) # alpha channel = 0 for first colour
+            else: self.subpaletteRGBA.append((int(str(subpalette[entry][0]), 32)*8, int(str(subpalette[entry][1]), 32)*8, int(str(subpalette[entry][2]), 32)*8, 255)) # R, G, B out of base 32 + A
 
-    @functools.lru_cache(maxsize=5000)
-    def getSubpaletteColourRGBA(self, index):
-        return self.subpaletteRGBA[int(index, 16)]
-
-
+    def toRaw(self):
+        raw = ""
+        for i in self.subpaletteRGBA:               
+            raw += common.baseN(i[0] // 8, 32)
+            raw += common.baseN(i[1] // 8, 32)
+            raw += common.baseN(i[2] // 8, 32)
+        
+        return raw
+            
+        
 class Tile:
     """Collection of minitiles, along with collision data, palette metadata, and other SNES metadata for each."""
     def __init__(self, tile):
@@ -185,12 +205,12 @@ class Tile:
         self.collision = []
 
         for i in range(0, 96, 6):
-            self.metadata.append(self.tile[i] + self.tile[i+1] + self.tile[i+2] + self.tile[i+3])
-            self.collision.append(self.tile[i+4] + self.tile[i+5])
+            self.metadata.append(int(self.tile[i] + self.tile[i+1] + self.tile[i+2] + self.tile[i+3], 16))
+            self.collision.append(int(self.tile[i+4] + self.tile[i+5], 16))
     
     def getMetadata(self, id):
         """Return the SNES metadata of a given minitile placement in a tile"""
-        return int(self.metadata[id], 16)
+        return self.metadata[id]
         # We will extract the actual metadata in the other functions - see below
     
     def getMinitileID(self, id):
@@ -272,6 +292,14 @@ class Tile:
         
         return img
 
+    def toRaw(self):
+        raw = ""
+        for i in range(0, 16):
+            raw += hex(self.getMetadata(i))[2:].zfill(4)
+            raw += hex(self.getMinitileCollision(i))[2:].zfill(2)
+        
+        return raw
+
 
 class Minitile:
     """Raw bitmap graphics, 4bpp. No associated palette."""
@@ -279,19 +307,24 @@ class Minitile:
         self.background = background
         self.foreground = foreground
 
-    @functools.lru_cache(maxsize=5000)
-    def mapIndexToRGBABackground(self, subpalette):
+    # @functools.lru_cache(maxsize=5000)
+    def mapIndexToRGBABackground(self, subpalette: Subpalette):
         RGBAbuild = []
         for i in self.background:
-            RGBAbuild.append(subpalette.getSubpaletteColourRGBA(i))
-
+            value = subpalette.subpaletteRGBA[i]
+            if value[3] == 0: # bg tiles cannot have alpha
+                # TODO verify this behavior. Does it do something weird like make it subpalette 0's first colour?
+                value = (value[0], value[1], value[2], 255)
+                
+            RGBAbuild.append(value)
+        
         return RGBAbuild
     
-    @functools.lru_cache(maxsize=5000)
-    def mapIndexToRGBAForeground(self, subpalette):
+    # @functools.lru_cache(maxsize=5000)
+    def mapIndexToRGBAForeground(self, subpalette: Subpalette):
         RGBAbuild = []
         for i in self.foreground:
-            RGBAbuild.append(subpalette.getSubpaletteColourRGBA(i))
+            RGBAbuild.append(subpalette.subpaletteRGBA[i])
 
         return RGBAbuild
         
@@ -334,3 +367,14 @@ class Minitile:
         fg = self.ForegroundToImage(subpalette)
         img.paste(fg, (0, 0), fg)
         return img
+    
+    def bgToRaw(self):
+        raw = ""
+        for i in range(0, 64):
+            raw += hex(self.background[i])[2:]            
+        return raw
+    def fgToRaw(self):
+        raw = ""
+        for i in range(0, 64):
+            raw += hex(self.foreground[i])[2:]
+        return raw

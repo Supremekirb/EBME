@@ -131,25 +131,26 @@ def saveProject(data: ProjectData):
     except Exception as e:
         raise Exception(f"Could not write Project.snake to {os.path.normpath(os.path.join(data.dir, 'Project.snake'))}.") from e
 
-def saveTilesets(data: ProjectData):
-    # big note: this heavily relies on how the raw data is saved within each class when it doesnt need to be. make conversion functions.
+def saveTilesets(data: ProjectData):    
     for i in data.tilesets:
         fts_file = StringIO()
         try:
-            for m in i.minitiles:
-                fts_file.write(''.join(str(px) for px in m.background) + "\n")
-                fts_file.write(''.join(str(px) for px in m.foreground) + "\n")
+            for m in i.minitiles:               
+                fts_file.write(m.bgToRaw() + "\n")
+                fts_file.write(m.fgToRaw() + "\n")
                 fts_file.write("\n")
             
             fts_file.write("\n")
 
             for p in i.palettes:
-                fts_file.write(p.raw)
+                fts_file.write(p.toRaw())
+                fts_file.write("\n")
             
             fts_file.write("\n\n")
 
             for t in i.tiles:
-                fts_file.write(t.tile)
+                fts_file.write(t.toRaw())
+                fts_file.write("\n")
 
             for _ in range(common.MAXTILES, 1024):
                 # bunch of empty tiles needed

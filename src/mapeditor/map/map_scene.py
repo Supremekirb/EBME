@@ -434,7 +434,8 @@ class MapEditorScene(QGraphicsScene):
             
             progressDialog.setValue(progressDialog.value()+1)
         
-        progressDialog.setValue(progressDialog.maximum())
+        # progressDialog.setValue(progressDialog.maximum())
+        progressDialog.close()
 
         match actionType:
             case "tile":
@@ -827,6 +828,17 @@ class MapEditorScene(QGraphicsScene):
                             
                 except IndexError:
                     pass
+                
+    def collisionAt(self, coords: EBCoords) -> int:
+        tile = self.projectData.getTile(coords)
+        
+        tileset = self.projectData.getTileset(tile.tileset)
+        collisionMap = tileset.tiles[tile.tile].collision
+        
+        x, y = coords.coordsWarp()
+        x = x % 4
+        y = y % 4
+        return collisionMap[x + y * 4]
 
     # def tileAt(self, coords: EBCoords) -> MapEditorTile | None:
     #     """Get a MapEditorTile at coords

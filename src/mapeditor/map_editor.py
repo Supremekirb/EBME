@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 
 import numpy
 from PySide6.QtCore import QSettings, Qt
@@ -36,9 +37,12 @@ from src.objects.trigger import Trigger
 from src.objects.warp import MapEditorWarp, Teleport, Warp
 from src.png2fts.png2fts_gui import png2ftsMapEditorGui
 
+if TYPE_CHECKING:
+    from src.main.main import MainApplication
+
 
 class MapEditor(QWidget):
-    def __init__(self, parent, projectData: ProjectData):
+    def __init__(self, parent: "MainApplication", projectData: ProjectData):
         super().__init__(parent)
         
         self.projectData = projectData
@@ -168,15 +172,6 @@ class MapEditor(QWidget):
     
     def renderMap(self, x1 = 0, y1 = 0, x2 = 0, y2 = 0, immediate = False):
         RenderDialog.renderMap(self, self.scene, x1, y1, x2, y2, immediate)
-        
-    def updateWindowTitle(self):
-        title = self.window().windowTitle()
-        if not self.scene.undoStack.isClean():
-            if not title.endswith("*"):
-                self.window().setWindowTitle(title + "*")
-        else:
-            if title.endswith("*"):
-                self.window().setWindowTitle(title[:-1])
 
     def setupUI(self):
         self.view.setLayoutDirection(Qt.LayoutDirection.RightToLeft) # vert. scrollbar on left edge
@@ -238,11 +233,11 @@ class MapEditor(QWidget):
             
         self.menuFile = QMenu("&File")
         self.saveAction = QAction("&Save", shortcut=QKeySequence("Ctrl+S"))
-        self.saveAction.triggered.connect(self.parent().saveAction.trigger)
+        self.saveAction.triggered.connect(self.parent().projectWin.saveAction.trigger)
         self.openAction = QAction("&Open", shortcut=QKeySequence("Ctrl+O"))
-        self.openAction.triggered.connect(self.parent().openAction.trigger)
+        self.openAction.triggered.connect(self.parent().projectWin.openAction.trigger)
         self.reloadAction = QAction("&Reload", shortcut=QKeySequence("Ctrl+R"))
-        self.reloadAction.triggered.connect(self.parent().reloadAction.trigger)
+        self.reloadAction.triggered.connect(self.parent().projectWin.reloadAction.trigger)
         self.openSettingsAction = QAction("Settings...")
         self.openSettingsAction.triggered.connect(lambda: SettingsDialog.openSettings(self))
         self.menuFile.addActions([self.saveAction, self.openAction, self.reloadAction])
@@ -281,7 +276,7 @@ class MapEditor(QWidget):
         self.addAction(self.copyAltShiftAction)
         self.copyAltShiftAction.triggered.connect(self.scene.copySelectedSectorPalettes)
         
-        self.scene.undoStack.cleanChanged.connect(self.updateWindowTitle)
+        self.scene.undoStack.cleanChanged.connect(self.parent().updateTitle)
 
         self.menuView = QMenu("&View")
         settings = QSettings()
@@ -461,6 +456,9 @@ class MapEditor(QWidget):
 
         self.sidebar.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred))
         self.view.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum))
+        
+    def parent(self) -> "MainApplication": # for typing
+        return super().parent()
 
 class MapEditorState():
     def __init__(self, mapeditor: MapEditor):
