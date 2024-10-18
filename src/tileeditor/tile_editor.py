@@ -311,7 +311,7 @@ class TileEditor(QWidget):
         
         self.presetList = CollisionPresetList(self.state)
         
-        self.minitileFgWarning = QLabel("<span style='color: red'>Foreground graphics won't display.</span>")
+        self.minitileFgWarning = QLabel("<span style='color: red'>Foreground graphics won't display in-game.</span>")
         self.minitileFgWarning.setTextFormat(Qt.TextFormat.RichText)
         self.minitileFgWarning.setWordWrap(True)
         

@@ -265,7 +265,6 @@ class MinitileGraphicsWidget(QWidget):
         self.currentMinitile: Minitile = None
         self.currentSubpalette: Subpalette = None
         self.isForeground = True
-        self.hasForeground = True
         
         policy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         policy.setHeightForWidth(True)
@@ -276,9 +275,6 @@ class MinitileGraphicsWidget(QWidget):
         
     def loadMinitile(self, minitile: Minitile, id: int=0):
         self.currentMinitile = minitile
-        if id >= common.MINITILENOFOREGROUND and self.isForeground:
-            self.hasForeground = False
-        else: self.hasForeground = True
         self.copyToScratch()
 
     def copyToScratch(self):
@@ -342,10 +338,6 @@ class MinitileGraphicsWidget(QWidget):
         painter.setPen(Qt.PenStyle.NoPen)
         painter.drawRect(0, 0, 16, 16)
         painter.scale(2, 2)
-        
-        if not self.hasForeground:
-            painter.setBrush(QColor(0, 0, 0, 128))
-            painter.drawRect(0, 0, 8, 8)
         
         for i in range(64):
             x = i % 8
