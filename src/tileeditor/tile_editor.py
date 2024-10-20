@@ -17,7 +17,7 @@ from src.actions.fts_actions import (ActionChangeArrangement,
 from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AutoMinitileRearrangerDialog,
-                                SettingsDialog, TileEditorAboutDialog)
+                                SettingsDialog)
 from src.misc.widgets import (AspectRatioWidget, HorizontalGraphicsView,
                               TilesetDisplayGraphicsScene)
 from src.tileeditor.arrangement_editor import TileArrangementWidget
@@ -426,11 +426,7 @@ class TileEditor(QWidget):
         self.autoRearrangeAction.triggered.connect(self.onAutoRearrange)
         self.menuTools.addActions([self.autoRearrangeAction,])
         
-        self.menuHelp = QMenu("&Help")
-        self.aboutTileEditorAction = QAction("About the &tile editor...")
-        self.aboutTileEditorAction.triggered.connect(lambda: TileEditorAboutDialog.showAbout(self))
-        self.menuHelp.addAction(self.aboutTileEditorAction)
-        
+        self.menuHelp = QMenu("&Help")        
         self.aboutAction = QAction("&About EBME...")
         self.aboutAction.triggered.connect(lambda: AboutDialog.showAbout(self))
         self.menuHelp.addAction(self.aboutAction)
