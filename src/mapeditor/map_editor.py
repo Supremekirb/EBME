@@ -92,17 +92,6 @@ class MapEditor(QWidget):
             self.sidebarTile.tilesetSelect.setCurrentText(str(result[0]))
             self.sidebarTile.onTilesetSelect()
 
-            progressDialog.setValue(1)
-
-            progressDialog.setLabelText("Updating sectors...")
-            progressDialog.setMaximum(len(self.projectData.sectors) * len(self.projectData.sectors[0]))
-            progressDialog.setValue(0)
-            for y in self.projectData.sectors:
-                for s in y:
-                    if s.tileset == result[0]: # refresh all sectors that use the tileset
-                        self.scene.refreshSector(s.coords)
-                    progressDialog.setValue(progressDialog.value() + 1)
-
             progressDialog.setLabelText("Finalising...")
             progressDialog.setValue(2)
             progressDialog.setMaximum(3)
@@ -123,6 +112,8 @@ class MapEditor(QWidget):
 
             else:
                 progressDialog.setValue(3)
+            
+            self.update()
 
     def doFind(self):
         result = FindDialog.findObject(self, self.projectData)

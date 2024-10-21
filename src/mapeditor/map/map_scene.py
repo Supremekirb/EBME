@@ -369,11 +369,6 @@ class MapEditorScene(QGraphicsScene):
         for c in commands:
             if isinstance(c, ActionPlaceTile):
                 actionType = "tile"
-                if len(commands) < 1000:
-                    self.refreshTile(c.maptile.coords)
-                else:
-                    # more performant, but requires re-render
-                    self.projectData.getTile(c.maptile.coords).isPlaced = False
 
             if isinstance(c, ActionMoveNPCInstance) or isinstance(c, ActionChangeNPCInstance):
                 actionType = "npc"
@@ -439,6 +434,7 @@ class MapEditorScene(QGraphicsScene):
         match actionType:
             case "tile":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.TILE)
+                self.update()
             case "npc":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.NPC)
                 if self.state.currentNPCInstances != []:
@@ -451,7 +447,7 @@ class MapEditorScene(QGraphicsScene):
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.SECTOR)
                 if self.state.currentSectors != []:
                     self.parent().sidebarSector.fromSectors()
-                #self.parent().sidebarTile.fromSectors(self.state.currentSectors)
+                self.update()
             case "enemy":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.ENEMY)
                 self.parent().sidebarEnemy.selectEnemyTile(self.state.currentEnemyTile)
@@ -530,6 +526,7 @@ class MapEditorScene(QGraphicsScene):
                     inMacro = False
                     self.parent().sidebar.setCurrentIndex(common.MODEINDEX.SECTOR)
                     self.parent().sidebarSector.fromSectors()
+                    self.update()
                     
                 case "NPC":
                     absolute = QSettings().value("main/absolutePaste", False, type=bool)
@@ -744,51 +741,6 @@ class MapEditorScene(QGraphicsScene):
             
         # fix grid
         self.setGrid(self._currentGrid, index)
-
-    def renderArea(self, coords: EBCoords, w: int, h: int):
-        """Render a rectangular region of tiles
-
-        Args:
-            coords (EBCoords): top-left corner
-            w (int): width of box (tiles)
-            h (int): height of box (tiles)
-        """
-        x = coords.coordsTile()[0]
-        y = coords.coordsTile()[1]
-        LENIENCY = 3 # Rendering a little more around the edges prevents inaccurate size guesses from making the map look weird
-        for r in range(x-LENIENCY, x+w+LENIENCY): 
-            for c in range(y-LENIENCY, y+h+LENIENCY):
-                try:
-                    tile = self.projectData.tiles[c, r]
-                    if not tile.isPlaced:
-                        try:
-                            graphic = self.projectData.getTileGraphic(tile.tileset, tile.palettegroup, tile.palette, tile.tile)
-                        except KeyError:
-                            logging.warning(f"Tile at {r, c} has invalid palette data. Resolving...")
-                            try: # resolve the graphic and update the sector
-                                curcoords = EBCoords.fromTile(r, c)
-                                graphic = self.projectData.resolveTileGraphic(tile.tileset, tile.palettegroup, tile.palette, tile.tile)
-                                sector = self.projectData.getSector(curcoords)
-                                sector.tileset = graphic.tileset
-                                sector.palettegroup = graphic.palettegroup
-                                sector.palette = graphic.palette
-                                self.refreshSector(curcoords)
-
-                            except Exception:
-                                logging.warning(f"Failed to resolve tile graphic for tile {tile.tile} at {r, c} in tileset {tile.tileset} with palette group {tile.palettegroup} and palette {tile.palette}.")
-                                continue
-                        if not graphic.hasRendered:
-                            graphic.render(self.projectData.getTileset(tile.tileset))
-                        try: 
-                            # item = self.tileAt(EBCoords.fromTile(r, c))
-                            # item.setPixmap(graphic.rendered)
-                            # item.setText(str(tile.tile).zfill(3))
-                            tile.isPlaced = True
-                        except AttributeError:
-                            pass # probably just scrolled past the edge of the map
-
-                except IndexError:
-                    pass # another cheap fix to scrollpast giving oob coords
 
     def renderEnemies(self, coords: EBCoords, w: int, h: int):
         """Render a rectangular region of enemy tiles
@@ -1447,6 +1399,9 @@ class MapEditorScene(QGraphicsScene):
                     painter.setPen(Qt.GlobalColor.white)
                     painter.drawText((x*32)+7, (y*32)+22, str(tile.tile).zfill(3))
         
+        if self.state.mode in (common.MODEINDEX.ENEMY, common.MODEINDEX.ALL):
+            self.renderEnemies(start, *(end-start).coordsEnemy())
+            
     def drawForeground(self, painter: QPainter, rect: QRectF):
         if self.state.mode == common.MODEINDEX.GAME:
             painter.setPen(Qt.PenStyle.NoPen)
@@ -1562,6 +1517,7 @@ class MapEditorScene(QGraphicsScene):
         self.setTemporaryMode(common.TEMPMODEINDEX.IMPORTMAP)
 
         self.addItem(self.importedMap)
+        self.update()
     
     def moveImportMap(self, coords: EBCoords):
         coords.x = common.cap(coords.x, 0, common.EBMAPWIDTH-(self.importedTiles.shape[1]*32))
@@ -1644,13 +1600,13 @@ class MapEditorScene(QGraphicsScene):
                 action = ActionPlaceTile(self.projectData.getTile(coords.fromTile(
                     coords.coordsTile()[0]+r, coords.coordsTile()[1]+c)), int(self.importedTiles[c, r], 16))
                 self.undoStack.push(action)
-                self.refreshTile(coords.fromTile(coords.coordsTile()[0]+r, coords.coordsTile()[1]+c))
                 progressDialog.setValue(progressDialog.value()+1)
 
         progressDialog.setValue(progressDialog.maximum())
         self.removeItem(self.importedMap)
         self.setTemporaryMode(common.TEMPMODEINDEX.NONE)
         self.undoStack.endMacro()
+        self.update()
         
     def cancelImportMap(self):
         self.removeItem(self.importedMap)
@@ -1717,11 +1673,12 @@ class MapEditorScene(QGraphicsScene):
                 raise
             else:
                 self.undoStack.endMacro()
+        self.update()
     
     def clearTiles(self):
         progressDialog = QProgressDialog("Clearing tiles...", "NONCANELLABLE", 0,
-                                         (common.EBMAPWIDTH//32)*(common.EBMAPHEIGHT//32),
-                                         self.parent())
+                                         common.EBMAPWIDTH//32//8, # updating once per tile or even once per row isn't performant
+                                         self.parent()) # you spend more time updating the progress bar than the tiles!
         progressDialog.setCancelButton(None)
         progressDialog.setWindowFlag(Qt.WindowCloseButtonHint, False)
         progressDialog.setWindowModality(Qt.WindowModal)
@@ -1733,6 +1690,7 @@ class MapEditorScene(QGraphicsScene):
                 action = ActionPlaceTile(tile, 0)
                 tile.isPlaced = False
                 self.undoStack.push(action)
+            if r % 8 == 0: # only once every 8 rows (compromise between speed & user clarity)
                 progressDialog.setValue(progressDialog.value()+1)
         
         progressDialog.setValue(progressDialog.maximum())
@@ -1753,7 +1711,6 @@ class MapEditorScene(QGraphicsScene):
                                                       "none", "none", "none",
                                                       0, 0)
                 self.undoStack.push(action)
-                self.refreshSector(EBCoords.fromSector(r, c))
                 progressDialog.setValue(progressDialog.value()+1)
         
         progressDialog.setValue(progressDialog.maximum())

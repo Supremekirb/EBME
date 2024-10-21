@@ -560,15 +560,6 @@ class RenderDialog(QDialog):
                       self.renderEndPos.x.value() - self.renderStartPos.x.value(),
                       self.renderEndPos.y.value() - self.renderStartPos.y.value())
         
-        self.scene.renderArea(EBCoords(rect.topLeft().x(), rect.topLeft().y()),
-                              common.pixToTile(rect.width()),
-                              common.pixToTile(rect.height()))
-        
-        if self.scene.state.mode == common.MODEINDEX.ENEMY or self.scene.state.mode == common.MODEINDEX.ALL:
-            self.scene.renderEnemies(EBCoords(rect.topLeft().x(), rect.topLeft().x()),
-                                     common.pixToTile(rect.width()),
-                                     common.pixToTile(rect.height()))
-        
         image = QImage(rect.width(), rect.height(), QImage.Format.Format_ARGB32)
         painter = QPainter(image)
         
