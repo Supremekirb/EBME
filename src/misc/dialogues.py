@@ -709,8 +709,7 @@ class AutoMinitileRearrangerDialog(QDialog):
         layout = QFormLayout()
         self.setLayout(layout)
         
-        label = QLabel("Automatically rearange minitile order in a tileset to ensure that \
-                        tiles with foreground graphics are able to use them.\n(Can be undone.)")
+        label = QLabel("Automatically rearrange minitile order in a tileset to ensure that tiles with foreground graphics are able to use them.\n(Can be undone.)")
         label.setWordWrap(True)
         layout.addRow(label)
         
@@ -719,7 +718,7 @@ class AutoMinitileRearrangerDialog(QDialog):
         layout.addRow("Tileset", self.tilesetInput)
         
         self.buttons = QDialogButtonBox()
-        self.buttons.addButton("Do it!", QDialogButtonBox.ButtonRole.AcceptRole)
+        self.buttons.addButton("Apply", QDialogButtonBox.ButtonRole.AcceptRole)
         self.buttons.addButton(QDialogButtonBox.StandardButton.Close)
         
         self.buttons.accepted.connect(self.rearrange)

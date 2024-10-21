@@ -27,6 +27,7 @@ from src.tileeditor.collision_editor import (CollisionPresetList,
 from src.tileeditor.graphics_editor import (MinitileEditorWidget,
                                             PaletteSelector)
 from src.tileeditor.minitile_selector import MinitileScene, MinitileView
+from src.tileeditor.palette_manager import PaletteManagerDialog
 
 if TYPE_CHECKING:
     from src.main.main import MainApplication
@@ -474,7 +475,9 @@ class TileEditor(QWidget):
         self.menuTools = QMenu("&Tools")
         self.autoRearrangeAction = QAction("&Auto minitile rearranger...")
         self.autoRearrangeAction.triggered.connect(self.onAutoRearrange)
-        self.menuTools.addActions([self.autoRearrangeAction,])
+        self.paletteManagerAction = QAction("&Palette manager...")
+        self.paletteManagerAction.triggered.connect(lambda: PaletteManagerDialog(self.projectData, self).exec())
+        self.menuTools.addActions([self.autoRearrangeAction, self.paletteManagerAction])
         
         self.menuHelp = QMenu("&Help")        
         self.aboutAction = QAction("&About EBME...")
