@@ -15,6 +15,7 @@ from src.actions.fts_actions import (ActionChangeArrangement,
                                      ActionChangeSubpaletteColour,
                                      ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
+from src.coilsnake.fts_interpreter import Minitile, Tile
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AutoMinitileRearrangerDialog,
                                 SettingsDialog)
@@ -94,10 +95,13 @@ class TileEditor(QWidget):
         for c in commands:
             if isinstance(c, ActionChangeBitmap):
                 actionType = "bitmap"
+                self.updateMinitile(c.minitile)
             elif isinstance(c, ActionChangeArrangement):
                 actionType = "arrangement"
+                self.updateTile(c.tile)
             elif isinstance(c, ActionChangeSubpaletteColour):
                 actionType = "colour"
+                self.onColourEdit()
             elif isinstance(c, ActionChangeCollision):
                 actionType = "collision"
             elif isinstance(c, ActionSwapMinitiles):
@@ -189,7 +193,20 @@ class TileEditor(QWidget):
         self.presetList.verifyTileCollision(tileObj)
     
     def onColourEdit(self):
-        ...
+        self.projectData.clearTileGraphicsCache()
+        for i in self.projectData.getTileset(self.state.currentTileset).minitiles:
+            i.BothToImage.cache_clear()
+            
+
+        self.minitileScene.renderTileset(self.state.currentTileset,
+                                         self.state.currentPaletteGroup,
+                                         self.state.currentPalette,
+                                         self.state.currentSubpalette)
+        self.tileScene.update()
+        self.arrangementScene.update()
+        self.collisionScene.update()
+        self.fgScene.update()
+        self.bgScene.update()
         
     def selectMinitile(self, minitile: int):
         self.state.currentMinitile = minitile
@@ -251,6 +268,39 @@ class TileEditor(QWidget):
                                              self.state.currentPalette,
                                              self.state.currentSubpalette)
             self.selectMinitile(self.state.currentMinitile)
+        
+    def updateTile(self, tile: Tile|int):
+        if isinstance(tile, Tile):
+            tile = self.projectData.getTileset(self.state.currentTileset).tiles.index(tile)
+        self.projectData.clearTileGraphicsCache()
+        self.tileScene.update()
+        self.arrangementScene.update()
+        self.collisionScene.update()
+        
+    def updateMinitile(self, minitile: Minitile|int):
+        if isinstance(minitile, int):
+            minitile = self.projectData.getTileset(self.state.currentTileset).minitiles[minitile]
+        
+        minitile.BothToImage.cache_clear() 
+        # TODO fix the following:
+        # the three instances of clearTileGraphicsCache() in this file should be more specific.
+        # however, if the current tileset/palette group/palette/subpalette doesn't match the
+        # one we *should* be undoing (ie. it was changed), then cached graphics aren't invalidated.
+        # in other words, we don't know the context of the change.
+        # right now, I've just bitten the bullet and clobbered the entire cache each time.
+        # it's less than ideal, but it doesn't seem to have too much of a performance impact.
+        # Still... I'd like to do it properly. But I don't know where this data will go.
+        # (the function does support specification as per definition and documentation)
+        
+        self.projectData.clearTileGraphicsCache()
+        
+        self.tileScene.update()
+        self.arrangementScene.update()
+        self.collisionScene.update()
+        self.minitileScene.renderTileset(self.state.currentTileset,
+                                         self.state.currentPaletteGroup,
+                                         self.state.currentPalette,
+                                         self.state.currentSubpalette)
         
     def setupUI(self):
         contentLayout = QVBoxLayout()

@@ -41,6 +41,7 @@ class TileArrangementWidget(TileGraphicsWidget):
         action = ActionChangeArrangement(self.currentTile, metadata, index)
         action.setText("Place minitile")
         self.state.tileEditor.undoStack.push(action)
+        self.state.tileEditor.updateTile(self.currentTile)
         
         self.update()
         
@@ -73,6 +74,7 @@ class TileArrangementWidget(TileGraphicsWidget):
         action = ActionChangeArrangement(self.currentTile, metadata, index)
         action.setText("Modify minitile mirroring/flipping")
         self.state.tileEditor.undoStack.push(action)
+        self.state.tileEditor.updateTile(self.currentTile)
         
         self.update()
         
