@@ -7,12 +7,13 @@ from PySide6.QtCore import (QAbstractItemModel, QModelIndex, QObject,
                             QPersistentModelIndex, QPoint, QSettings, Qt)
 from PySide6.QtGui import (QColor, QImage, QMouseEvent, QPainter, QPaintEvent,
                            QPixmap)
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QListWidget,
-                               QListWidgetItem, QMessageBox, QSpinBox, QStyle,
-                               QStyledItemDelegate, QStyleOptionViewItem,
-                               QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QHBoxLayout, QListWidget, QListWidgetItem,
+                               QMessageBox, QSpinBox, QStyledItemDelegate,
+                               QStyleOptionViewItem, QToolButton, QVBoxLayout,
+                               QWidget)
 
 import src.misc.common as common
+import src.misc.icons as icons
 from src.actions.fts_actions import ActionChangeCollision
 from src.coilsnake.fts_interpreter import Tile
 from src.misc.dialogues import PresetEditorDialog
@@ -183,27 +184,27 @@ class CollisionPresetList(QVBoxLayout):
         # QtAwesome?
         
         self.addButton = QToolButton()
-        self.addButton.setIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_FileIcon))
+        self.addButton.setIcon(icons.ICON_NEW)
         self.addButton.setToolTip("Add")
         self.addButton.clicked.connect(self.onAddClicked)
         self.editButton = QToolButton()
-        self.editButton.setIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_FileDialogContentsView))
+        self.editButton.setIcon(icons.ICON_EDIT)
         self.editButton.setToolTip("Edit")
         self.editButton.clicked.connect(self.onEditClicked)
         self.deleteButton = QToolButton()
-        self.deleteButton.setIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_TrashIcon))
+        self.deleteButton.setIcon(icons.ICON_DELETE)
         self.deleteButton.setToolTip("Delete")
         self.deleteButton.clicked.connect(self.onDeleteClicked)
         self.moveUpButton = QToolButton()
-        self.moveUpButton.setArrowType(Qt.ArrowType.UpArrow)
+        self.moveUpButton.setIcon(icons.ICON_UP)
         self.moveUpButton.setToolTip("Move up")
         self.moveUpButton.clicked.connect(self.onMoveUpClicked)
         self.moveDownButton = QToolButton()
-        self.moveDownButton.setArrowType(Qt.ArrowType.DownArrow)
+        self.moveDownButton.setIcon(icons.ICON_DOWN)
         self.moveDownButton.setToolTip("Move down")
         self.moveDownButton.clicked.connect(self.onMoveDownClicked)
         self.resetPresetsButton = QToolButton()
-        self.resetPresetsButton.setIcon(QApplication.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
+        self.resetPresetsButton.setIcon(icons.ICON_UNDO)
         self.resetPresetsButton.setToolTip("Reset presets")
         self.resetPresetsButton.clicked.connect(self.onResetPresetsClicked)
         

@@ -1,8 +1,9 @@
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import (QApplication, QDialog, QFormLayout, QGroupBox,
-                               QHBoxLayout, QStyle, QToolButton, QTreeWidget,
-                               QTreeWidgetItem, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QDialog, QFormLayout, QGroupBox, QHBoxLayout,
+                               QToolButton, QTreeWidget, QTreeWidgetItem,
+                               QVBoxLayout, QWidget)
 
+import src.misc.icons as icons
 from src.coilsnake.project_data import ProjectData
 from src.misc.widgets import ColourButton
 
@@ -111,7 +112,6 @@ class PaletteManagerDialog(QDialog):
         editGroupBoxLayout.addLayout(editOtherButtonsLayout)
         editGroupBoxLayout.addWidget(self.selection2)
         
-        iconProvider = QApplication.style().standardIcon
         for i in range(0, 16):
             button = ColourButton()
             button.setFixedSize(24, 24)
@@ -120,7 +120,7 @@ class PaletteManagerDialog(QDialog):
             
             tempCopyButtonsLayout = QVBoxLayout()
             button = QToolButton()
-            button.setIcon(iconProvider(QStyle.StandardPixmap.SP_ArrowUp))
+            button.setIcon(icons.ICON_UP)
             button.setToolTip("Copy from bottom to top")
             button.clicked.connect(lambda: self.transferColourUp(i))
             button.setDisabled(True)
@@ -128,7 +128,7 @@ class PaletteManagerDialog(QDialog):
             tempCopyButtonsLayout.addWidget(button)
             
             button = QToolButton()
-            button.setIcon(iconProvider(QStyle.StandardPixmap.SP_ArrowDown))
+            button.setIcon(icons.ICON_DOWN)
             button.setToolTip("Copy from top to bottom")
             button.clicked.connect(lambda: self.transferColourDown(i))
             button.setDisabled(True)
@@ -143,7 +143,7 @@ class PaletteManagerDialog(QDialog):
             editBottomRowLayout.addWidget(button)
         
         button = QToolButton()
-        button.setIcon(iconProvider(QStyle.StandardPixmap.SP_ArrowUp))
+        button.setIcon(icons.ICON_UP_DOUBLE)
         button.setToolTip("Copy all from bottom to top")
         button.clicked.connect(self.transferAllColoursUp)
         button.setDisabled(True)
@@ -151,7 +151,7 @@ class PaletteManagerDialog(QDialog):
         editOtherButtonsLayout.addWidget(button)
         
         button = QToolButton()
-        button.setIcon(iconProvider(QStyle.StandardPixmap.SP_ArrowDown))
+        button.setIcon(icons.ICON_DOWN_DOUBLE)
         button.setToolTip("Copy all from top to bottom")
         button.setDisabled(True)
         button.clicked.connect(self.transferAllColoursDown)
@@ -188,11 +188,15 @@ class TilesetListItem(QTreeWidgetItem):
     def __init__(self, tileset: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.tileset = tileset
+        
+        self.setIcon(0, icons.ICON_TILESET)
 
 class PaletteGroupListItem(QTreeWidgetItem):
     def __init__(self, palettegroup: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.paletteGroup = palettegroup
+        
+        self.setIcon(0, icons.ICON_PALETTE_GROUP)
     
     def parent(self) -> TilesetListItem:
         return super().parent()
@@ -201,6 +205,8 @@ class PaletteListItem(QTreeWidgetItem):
     def __init__(self, palette: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.palette = palette
+        
+        self.setIcon(0, icons.ICON_PALETTE)
     
     def parent(self) -> PaletteGroupListItem:
         return super().parent()
@@ -209,6 +215,8 @@ class SubpaletteListItem(QTreeWidgetItem):
     def __init__(self, subpalette: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.subpalette = subpalette
+        
+        self.setIcon(0, icons.ICON_SUBPALETTE)
     
     def parent(self) -> PaletteListItem:
         return super().parent()

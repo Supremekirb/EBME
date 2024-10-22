@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (QComboBox, QCompleter, QDialog, QFileDialog,
                                QHeaderView, QMessageBox, QPushButton,
                                QSizePolicy, QTreeWidget, QVBoxLayout)
 
+import src.misc.icons as icons
 from src.actions.music_actions import (ActionAddMapMusicTrack,
                                        ActionChangeMapMusicTrack,
                                        ActionDeleteMapMusicTrack,

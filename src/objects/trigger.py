@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
 import src.misc.common as common
 from src.actions.trigger_actions import ActionMoveTrigger
 from src.misc.coords import EBCoords
+import src.misc.icons as icons
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
@@ -190,17 +191,17 @@ class MapEditorTrigger(QGraphicsPixmapItem):
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
         if self.scene().state.mode == common.MODEINDEX.TRIGGER:
             menu = QMenu()
-            menu.addAction("New trigger",
+            menu.addAction(icons.ICON_NEW, "New trigger",
                         lambda: self.scene().newTrigger(EBCoords(event.scenePos().x(), event.scenePos().y())))
-            menu.addAction("New &ladder", lambda: self.scene().addTrigger(Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
+            menu.addAction(icons.ICON_NEW, "New &ladder", lambda: self.scene().addTrigger(Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
                                                                                 TriggerLadder())))
-            menu.addAction("New &rope", lambda: self.scene().addTrigger(Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
+            menu.addAction(icons.ICON_NEW, "New &rope", lambda: self.scene().addTrigger(Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
                                                                                 TriggerRope())))
-            menu.addAction("Delete", self.scene().deleteSelectedTriggers, shortcut=QKeySequence(Qt.Key.Key_Delete))
+            menu.addAction(icons.ICON_DELETE, "Delete", self.scene().deleteSelectedTriggers, shortcut=QKeySequence(Qt.Key.Key_Delete))
             menu.addSeparator()
-            menu.addAction("Cut", self.scene().onCut)
-            menu.addAction("Copy", self.scene().onCopy)
-            menu.addAction("Paste", self.scene().onPaste)
+            menu.addAction(icons.ICON_CUT, "Cut", self.scene().onCut)
+            menu.addAction(icons.ICON_COPY, "Copy", self.scene().onCopy)
+            menu.addAction(icons.ICON_PASTE, "Paste", self.scene().onPaste)
             
             menu.exec(event.screenPos())
             super().contextMenuEvent(event)

@@ -15,6 +15,7 @@ import src.misc.common as common
 from src.actions.npc_actions import ActionMoveNPCInstance
 from src.misc.coords import EBCoords
 from src.objects.tile import MapTile
+import src.misc.icons as icons
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
@@ -288,13 +289,13 @@ class MapEditorNPC(QGraphicsPixmapItem):
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
         if (not self.isDummy) and self.scene().state.mode == common.MODEINDEX.NPC:
             menu = QMenu()
-            menu.addAction("New NPC",
+            menu.addAction(icons.ICON_NEW, "New NPC",
                         lambda: self.scene().newNPC(EBCoords(event.scenePos().x(), event.scenePos().y())))
-            menu.addAction("Delete", self.scene().deleteSelectedNPCs, shortcut=QKeySequence(Qt.Key.Key_Delete))
+            menu.addAction(icons.ICON_DELETE, "Delete", self.scene().deleteSelectedNPCs, shortcut=QKeySequence(Qt.Key.Key_Delete))
             menu.addSeparator()
-            menu.addAction("Cut", self.scene().onCut)
-            menu.addAction("Copy", self.scene().onCopy)
-            menu.addAction("Paste", self.scene().onPaste)
+            menu.addAction(icons.ICON_CUT, "Cut", self.scene().onCut)
+            menu.addAction(icons.ICON_COPY, "Copy", self.scene().onCopy)
+            menu.addAction(icons.ICON_PASTE, "Paste", self.scene().onPaste)
             menu.exec(event.screenPos())
             super().contextMenuEvent(event)
             

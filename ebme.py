@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QApplication
 import resources_rc
 import src.main.main as main
 import src.misc.debug as debug
+import src.misc.icons as icons
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -42,6 +43,9 @@ if __name__ == "__main__":
         logging.basicConfig(level=args.debug)
 
     app = QApplication(sys.argv)
+    
+    # init icons now that we have a QApplication
+    icons.init_icons()
     
     # this means we dont have to specify this every time we use QSettings
     app.setApplicationName("EBME")

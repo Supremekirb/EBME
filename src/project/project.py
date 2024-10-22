@@ -16,6 +16,7 @@ import src.coilsnake.save as save
 import src.mapeditor.map_editor as map_editor
 import src.misc.common as common
 import src.misc.debug as debug
+import src.misc.icons as icons
 import src.tileeditor.tile_editor as tile_editor
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import AboutDialog, SettingsDialog
@@ -322,25 +323,25 @@ class Project(QWidget):
 
     def setupUI(self):
         self.menuFile = QMenu("&File")
-        self.openAction = QAction("&Open", shortcut=QKeySequence("Ctrl+O"))
+        self.openAction = QAction(icons.ICON_LOAD, "&Open", shortcut=QKeySequence("Ctrl+O"))
         self.openAction.triggered.connect(self.openDirectory)
-        self.saveAction = QAction("&Save", shortcut=QKeySequence("Ctrl+S"))
+        self.saveAction = QAction(icons.ICON_SAVE, "&Save", shortcut=QKeySequence("Ctrl+S"))
         self.saveAction.triggered.connect(self.saveProject)
-        self.reloadAction = QAction("&Reload", shortcut=QKeySequence("Ctrl+R"))
+        self.reloadAction = QAction(icons.ICON_RELOAD, "&Reload", shortcut=QKeySequence("Ctrl+R"))
         self.reloadAction.triggered.connect(lambda: self.openDirectory(self.projectData.dir))
         self.menuFile.addActions([self.openAction, self.saveAction, self.reloadAction])
         self.menuFile.addSeparator()
-        self.openSettingsAction = QAction("&Settings...")
+        self.openSettingsAction = QAction(icons.ICON_SETTINGS, "&Settings...")
         self.openSettingsAction.triggered.connect(lambda: SettingsDialog.openSettings(self))
         self.menuFile.addAction(self.openSettingsAction)
 
         self.menuHelp = QMenu("&Help")
-        self.aboutAction = QAction("&About EBME...")
+        self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")
         self.aboutAction.triggered.connect(lambda: AboutDialog.showAbout(self))
         self.menuHelp.addAction(self.aboutAction)
         
         if not debug.SYSTEM_OUTPUT:
-            self.openDebugAction = QAction("Debug output")
+            self.openDebugAction = QAction(icons.ICON_DEBUG, "Debug output")
             self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
             self.menuHelp.addAction(self.openDebugAction)
 

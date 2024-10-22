@@ -2,14 +2,14 @@ from copy import copy
 
 from PIL import ImageQt
 from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, QSize, Qt, Signal
-from PySide6.QtGui import (QBrush, QColor, QGuiApplication, QMouseEvent,
+from PySide6.QtGui import (QBrush, QColor, QGuiApplication, QIcon, QMouseEvent,
                            QPainter, QPaintEvent, QPalette, QPen, QPixmap,
-                           QResizeEvent, QWheelEvent)
+                           QResizeEvent, QTransform, QWheelEvent)
 from PySide6.QtWidgets import (QBoxLayout, QCheckBox, QColorDialog, QFrame,
                                QGraphicsPixmapItem, QGraphicsScene,
                                QGraphicsSceneMouseEvent, QGraphicsView,
                                QHBoxLayout, QLabel, QPushButton, QSizePolicy,
-                               QSpacerItem, QSpinBox, QWidget)
+                               QSpacerItem, QSpinBox, QTabWidget, QWidget)
 
 import src.misc.common as common
 from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
@@ -548,3 +548,8 @@ class TilesetDisplayGraphicsScene(QGraphicsScene):
             return tile // self.rowSize, tile % self.rowSize
         else:
             return tile % self.rowSize, tile // self.rowSize
+
+class UprightIconsWestTabWidget(QTabWidget):
+    def addTab(self, widget: QWidget, icon: QIcon, label: str):
+        icon = QIcon(icon.pixmap(QSize(100, 100)).transformed(QTransform().rotate(90)))
+        return super().addTab(widget, icon, label)

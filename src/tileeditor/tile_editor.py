@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
 
 import src.misc.common as common
 import src.misc.debug as debug
+import src.misc.icons as icons
 from src.actions.fts_actions import (ActionChangeArrangement,
                                      ActionChangeBitmap, ActionChangeCollision,
                                      ActionChangeSubpaletteColour,
@@ -410,15 +411,15 @@ class TileEditor(QWidget):
         drawingLayout.addWidget(self.minitileFgWarning)
         drawingLayout.addWidget(self.fgAspectRatioContainer)
         self.bgToFgButton = QToolButton()
-        self.bgToFgButton.setArrowType(Qt.ArrowType.UpArrow)
+        self.bgToFgButton.setIcon(icons.ICON_UP)
         self.bgToFgButton.setToolTip("Copy background to foreground")
         self.bgToFgButton.clicked.connect(self.copyBgToFg)
         self.swapBgAndFgButton = QToolButton()
-        self.swapBgAndFgButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
+        self.swapBgAndFgButton.setIcon(icons.ICON_SWAP)
         self.swapBgAndFgButton.setToolTip("Swap foreground and background")
         self.swapBgAndFgButton.clicked.connect(self.swapBgAndFg)
         self.fgToBgButton = QToolButton()
-        self.fgToBgButton.setArrowType(Qt.ArrowType.DownArrow)
+        self.fgToBgButton.setIcon(icons.ICON_DOWN)
         self.fgToBgButton.setToolTip("Copy foreground to background")
         self.fgToBgButton.clicked.connect(self.copyFgToBg)
         swapperButtonLayout.addWidget(self.bgToFgButton)
@@ -452,40 +453,40 @@ class TileEditor(QWidget):
         
         
         self.menuFile = QMenu("&File")
-        self.saveAction = QAction("&Save", shortcut=QKeySequence("Ctrl+S"))
+        self.saveAction = QAction(icons.ICON_SAVE, "&Save", shortcut=QKeySequence("Ctrl+S"))
         self.saveAction.triggered.connect(self.parent().projectWin.saveAction.trigger)
-        self.openAction = QAction("&Open", shortcut=QKeySequence("Ctrl+O"))
+        self.openAction = QAction(icons.ICON_LOAD, "&Open", shortcut=QKeySequence("Ctrl+O"))
         self.openAction.triggered.connect(self.parent().projectWin.openAction.trigger)
-        self.reloadAction = QAction("&Reload", shortcut=QKeySequence("Ctrl+R"))
+        self.reloadAction = QAction(icons.ICON_RELOAD, "&Reload", shortcut=QKeySequence("Ctrl+R"))
         self.reloadAction.triggered.connect(self.parent().projectWin.reloadAction.trigger)
-        self.openSettingsAction = QAction("Settings...")
+        self.openSettingsAction = QAction(icons.ICON_SETTINGS, "Settings...")
         self.openSettingsAction.triggered.connect(lambda: SettingsDialog.openSettings(self))
         self.menuFile.addActions([self.saveAction, self.openAction, self.reloadAction])
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.openSettingsAction)
         
         self.menuEdit = QMenu("&Edit")
-        self.undoAction = QAction("&Undo", shortcut=QKeySequence("Ctrl+Z"))
+        self.undoAction = QAction(icons.ICON_UNDO, "&Undo", shortcut=QKeySequence("Ctrl+Z"))
         self.undoAction.triggered.connect(self.onUndo)
-        self.redoAction = QAction("&Redo")
+        self.redoAction = QAction(icons.ICON_REDO, "&Redo")
         self.redoAction.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
         self.redoAction.triggered.connect(self.onRedo)
         self.menuEdit.addActions([self.undoAction, self.redoAction])
         
         self.menuTools = QMenu("&Tools")
-        self.autoRearrangeAction = QAction("&Auto minitile rearranger...")
+        self.autoRearrangeAction = QAction(icons.ICON_AUTO_REARRANGE, "&Auto minitile rearranger...")
         self.autoRearrangeAction.triggered.connect(self.onAutoRearrange)
-        self.paletteManagerAction = QAction("&Palette manager...")
+        self.paletteManagerAction = QAction(icons.ICON_PALETTE, "&Palette manager...")
         self.paletteManagerAction.triggered.connect(lambda: PaletteManagerDialog(self.projectData, self).exec())
         self.menuTools.addActions([self.autoRearrangeAction, self.paletteManagerAction])
         
         self.menuHelp = QMenu("&Help")        
-        self.aboutAction = QAction("&About EBME...")
+        self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")
         self.aboutAction.triggered.connect(lambda: AboutDialog.showAbout(self))
         self.menuHelp.addAction(self.aboutAction)
         
         if not debug.SYSTEM_OUTPUT:
-            self.openDebugAction = QAction("Debug output")
+            self.openDebugAction = QAction(icons.ICON_DEBUG, "Debug output")
             self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
             self.menuHelp.addAction(self.openDebugAction)
         

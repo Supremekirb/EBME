@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (QApplication, QGraphicsLineItem,
                                QMessageBox, QProgressDialog)
 
 import src.misc.common as common
+import src.misc.icons as icons
 import src.objects.trigger as trigger
 from src.actions.enemy_actions import (ActionPlaceEnemyTile,
                                        ActionUpdateEnemyMapGroup)
@@ -297,27 +298,27 @@ class MapEditorScene(QGraphicsScene):
                         entireSectorStr = "Copy entire sector"
                         dataSectorStr = "Copy sector data"
                         paletteSectorStr = "Copy only sector palette"
-                        
-                    menu.addAction(entireSectorStr, self.copySelectedSectors, shortcut=QKeySequence.StandardKey.Copy)
-                    menu.addAction(dataSectorStr, self.copySelectedSectorAttributes, shortcut=QKeySequence("Ctrl+Shift+C"))
-                    menu.addAction(paletteSectorStr, self.copySelectedSectorPalettes, shortcut=QKeySequence("Ctrl+Alt+Shift+C"))
+                    
+                    menu.addAction(icons.ICON_RECT, entireSectorStr, self.copySelectedSectors, shortcut=QKeySequence.StandardKey.Copy)
+                    menu.addAction(icons.ICON_COPY, dataSectorStr, self.copySelectedSectorAttributes, shortcut=QKeySequence("Ctrl+Shift+C"))
+                    menu.addAction(icons.ICON_PALETTE, paletteSectorStr, self.copySelectedSectorPalettes, shortcut=QKeySequence("Ctrl+Alt+Shift+C"))
                     menu.addSeparator()
-                    menu.addAction("Paste", self.onPaste)
+                    menu.addAction(icons.ICON_PASTE, "Paste", self.onPaste)
                 case common.MODEINDEX.NPC:
-                    menu.addAction("New NPC", lambda: self.newNPC(EBCoords(x, y)))
-                    menu.addAction("Paste", self.onPaste)
+                    menu.addAction(icons.ICON_NEW, "New NPC", lambda: self.newNPC(EBCoords(x, y)))
+                    menu.addAction(icons.ICON_PASTE, "Paste", self.onPaste)
                 case common.MODEINDEX.TRIGGER:
-                    menu.addAction("New &trigger", lambda: self.newTrigger(EBCoords(x, y)))
-                    menu.addAction("New &ladder", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
+                    menu.addAction(icons.ICON_NEW, "New &trigger", lambda: self.newTrigger(EBCoords(x, y)))
+                    menu.addAction(icons.ICON_NEW, "New &ladder", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
                                                                          trigger.TriggerLadder())))
-                    menu.addAction("New &rope", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
+                    menu.addAction(icons.ICON_NEW, "New &rope", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
                                                                        trigger.TriggerRope())))
-                    menu.addAction("Paste", self.onPaste)
+                    menu.addAction(icons.ICON_PASTE, "Paste", self.onPaste)
                 case common.MODEINDEX.HOTSPOT:
-                    menu.addAction("&Move hotspot here...", lambda: self.moveHotspot(EBCoords(x, y)))
+                    menu.addAction(icons.ICON_MOVE_TO, "&Move hotspot here...", lambda: self.moveHotspot(EBCoords(x, y)))
                 case common.MODEINDEX.WARP:
-                    menu.addAction("Move &warp here...", lambda: self.moveWarp(EBCoords(x, y)))
-                    menu.addAction("Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
+                    menu.addAction(icons.ICON_MOVE_TO, "Move &warp here...", lambda: self.moveWarp(EBCoords(x, y)))
+                    menu.addAction(icons.ICON_MOVE_TO, "Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
                 case _:
                     return super().contextMenuEvent(event)
             menu.exec(event.screenPos())          

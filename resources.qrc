@@ -40,8 +40,8 @@
         <file alias="erase.png">assets/ui/erase.png</file>
         <file alias="modeAll.png">assets/ui/modeAll.png</file>
         <file alias="modeAllDark.png">assets/ui/modeAllDark.png</file>
-        <file alias="modeDoor.png">assets/ui/modeDoor.png</file>
-        <file alias="modeDoorDark.png">assets/ui/modeDoorDark.png</file>
+        <file alias="modeTrigger.png">assets/ui/modeTrigger.png</file>
+        <file alias="modeTriggerDark.png">assets/ui/modeTriggerDark.png</file>
         <file alias="modeEnemy.png">assets/ui/modeEnemy.png</file>
         <file alias="modeEnemyDark.png">assets/ui/modeEnemyDark.png</file>
         <file alias="modeGame.png">assets/ui/modeGame.png</file>
