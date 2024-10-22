@@ -193,7 +193,7 @@ def readTilesets(data: ProjectData):
     data.tilesets = []
     try:
         for i in range(20): # TODO hardcoded, no good
-            with open(data.getResourcePath("eb.TilesetModule", f"Tilesets/{i:02d}")) as fts:
+            with open(data.getResourcePath("eb.TilesetModule", f"Tilesets/{i:02d}"), encoding="utf-8") as fts:
                 data.tilesets.append(FullTileset(contents=fts.readlines(), id=i))
 
     except KeyError as e:
@@ -213,7 +213,7 @@ def readSectors(data: ProjectData):
     """Read project sectors"""
     try:
         hasLoadedYml = False 
-        with open(data.getResourcePath("eb.MapModule", "map_sectors")) as map_sectors:
+        with open(data.getResourcePath("eb.MapModule", "map_sectors"), encoding="utf-8") as map_sectors:
             sectorList = []
             map_sectors = yaml.load(map_sectors, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
@@ -255,7 +255,7 @@ def readTiles(data: ProjectData):
     
     try:
         path = data.getResourcePath("eb.MapModule", "map_tiles")
-        with open(path) as map_tiles:
+        with open(path, encoding="utf-8") as map_tiles:
             tileArray = numpy.zeros(shape=[320, 256], dtype=numpy.object_)
             map_tiles = map_tiles.read()
 
@@ -321,7 +321,7 @@ def readNPCTable(data: ProjectData):
             path = data.getResourcePath("eb.MiscTablesModule", "npc_config_table")
         except KeyError:
             path = data.getResourcePath("eb.ExpandedTablesModule", "npc_config_table") # projects made with coilsnake-next
-        with open(path) as npc_config_table:
+        with open(path, encoding="utf-8") as npc_config_table:
             npc_config_table = yaml.load(npc_config_table, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
             for n in npc_config_table.items(): 
@@ -357,7 +357,7 @@ def readNPCInstances(data: ProjectData):
         hasLoadedYml = False
         data.npcinstances = []
         path = data.getResourcePath("eb.MapSpriteModule", "map_sprites")
-        with open(path) as map_sprites:
+        with open(path, encoding="utf-8") as map_sprites:
             hasLoadedYml = True
             map_sprites = yaml.load(map_sprites, Loader=yaml.CSafeLoader)
 
@@ -392,7 +392,7 @@ def readSpriteGroups(data: ProjectData):
         hasLoadedYml = False
         data.sprites = []
         path = data.getResourcePath("eb.SpriteGroupModule", "sprite_groups")
-        with open(path) as sprite_groups:
+        with open(path, encoding="utf-8") as sprite_groups:
             sprite_groups = yaml.load(sprite_groups, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
 
@@ -438,7 +438,7 @@ def readTriggers(data: ProjectData):
         hasLoadedYml = False
         data.triggers = []
         path = data.getResourcePath("eb.DoorModule", "map_doors")
-        with open(path) as map_doors:
+        with open(path, encoding="utf-8") as map_doors:
             map_doors = yaml.load(map_doors, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
 
@@ -496,7 +496,7 @@ def readEnemyPlacements(data: ProjectData):
         hasLoadedYml = False
         enemyPlacementList = []
         path = data.getResourcePath("eb.MapEnemyModule", "map_enemy_placement")
-        with open(path) as map_enemy_placement:
+        with open(path, encoding="utf-8") as map_enemy_placement:
             map_enemy_placement = yaml.load(map_enemy_placement, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
             for i in map_enemy_placement.items():
@@ -532,7 +532,7 @@ def readMapEnemyGroups(data: ProjectData):
         hasLoadedYml = False
         enemyMapGroups = []
         path = data.getResourcePath("eb.MapEnemyModule", "map_enemy_groups")
-        with open(path) as map_enemy_groups:
+        with open(path, encoding="utf-8") as map_enemy_groups:
             map_enemy_groups = yaml.load(map_enemy_groups, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
             for i in map_enemy_groups.items():
@@ -568,7 +568,7 @@ def readEnemyGroups(data: ProjectData):
         hasLoadedYml = False
         enemyGroups = []
         path = data.getResourcePath("eb.EnemyModule", "enemy_groups")
-        with open(path) as enemy_groups:
+        with open(path, encoding="utf-8") as enemy_groups:
             enemy_groups = yaml.load(enemy_groups, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
             for i in enemy_groups.items():
@@ -598,7 +598,7 @@ def readEnemySprites(data: ProjectData):
         hasLoadedYml = False
         enemySprites = []
         path = data.getResourcePath("eb.EnemyModule", "enemy_configuration_table")
-        with open(path) as enemy_configuration_table:
+        with open(path, encoding="utf-8") as enemy_configuration_table:
             enemy_configuration_table = yaml.load(enemy_configuration_table, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
             for i in enemy_configuration_table.items():       
@@ -646,7 +646,7 @@ def readHotspots(data: ProjectData):
         hasLoadedYml = False
         hotspots = []
         path = data.getResourcePath("eb.MiscTablesModule", "map_hotspots")
-        with open(path) as map_hotspots:
+        with open(path, encoding="utf-8") as map_hotspots:
             map_hotspots = yaml.load(map_hotspots, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
             for i in map_hotspots.items():    
@@ -684,7 +684,7 @@ def readWarps(data: ProjectData):
         hasLoadedYml = False
         warps = []
         path = data.getResourcePath("eb.MiscTablesModule", "teleport_destination_table")     
-        with open(path) as warp_table:
+        with open(path, encoding="utf-8") as warp_table:
             warp_table = yaml.load(warp_table, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
             for i in warp_table.items():
@@ -706,7 +706,7 @@ def readTeleports(data: ProjectData):
         hasLoadedYml = False
         teleports = []
         path = data.getResourcePath("eb.MiscTablesModule", "psi_teleport_dest_table")
-        with open(path) as teleport_table:
+        with open(path, encoding="utf-8") as teleport_table:
             teleport_table = yaml.load(teleport_table, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
             for i in teleport_table.items():
@@ -724,7 +724,7 @@ def readMapMusic(data: ProjectData):
         hasLoadedYml = False
         hiearchies = []
         path = data.getResourcePath("eb.MapMusicModule", "map_music")
-        with open(path) as map_music:
+        with open(path, encoding="utf-8") as map_music:
             map_music = yaml.load(map_music, Loader=yaml.CSafeLoader)
             hasLoadedYml = True
             for i in map_music.items():

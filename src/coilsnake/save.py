@@ -125,7 +125,7 @@ def writeDirectory(parent, data):
 def saveProject(data: ProjectData):
     project = data.projectSnake
     try:
-        with open(os.path.normpath(os.path.join(data.dir, "Project.snake")), "w") as file:
+        with open(os.path.normpath(os.path.join(data.dir, "Project.snake")), "w", encoding="utf-8") as file:
             yaml.dump(project, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write Project.snake to {os.path.normpath(os.path.join(data.dir, 'Project.snake'))}.") from e
@@ -159,7 +159,7 @@ def saveTilesets(data: ProjectData):
 
         try:
             fts_file.seek(0)
-            with open(data.getResourcePath('eb.TilesetModule', f'Tilesets/{i.id:02d}'), "w") as file:
+            with open(data.getResourcePath('eb.TilesetModule', f'Tilesets/{i.id:02d}'), "w", encoding="utf-8") as file:
                 shutil.copyfileobj(fts_file, file)
         except Exception as e:
             raise Exception(f"Could not write tileset {i.id:02d} at {os.path.normpath(data.getResourcePath('eb.TilesetModule', f'Tilesets/{i.id:02d}'))}.") from e
@@ -186,7 +186,7 @@ def saveSectors(data: ProjectData):
         raise Exception(f"Could not convert sectors to .yml format.") from e
     
     try:
-        with open(data.getResourcePath('eb.MapModule', 'map_sectors'), "w") as file:
+        with open(data.getResourcePath('eb.MapModule', 'map_sectors'), "w", encoding="utf-8") as file:
             yaml.dump(sector_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=False, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write sectors to {os.path.normpath(data.getResourcePath('eb.MapModule', 'map_sectors'))}.") from e
@@ -207,7 +207,7 @@ def saveTiles(data: ProjectData):
 
     try:
         map.seek(0)
-        with open(data.getResourcePath('eb.MapModule', 'map_tiles'), "w") as file:
+        with open(data.getResourcePath('eb.MapModule', 'map_tiles'), "w", encoding="utf-8") as file:
             shutil.copyfileobj(map, file)
     except Exception as e:
         raise Exception(f"Could not write map tiles to {os.path.normpath(data.getResourcePath('eb.MapModule', 'map_tiles'))}.") from e
@@ -235,7 +235,7 @@ def saveNPCTable(data: ProjectData):
             path = data.getResourcePath('eb.MiscTablesModule', 'npc_config_table')
         except KeyError:
             path = data.getResourcePath('eb.ExpandedTablesModule', 'npc_config_table')
-        with open(path, "w") as file:
+        with open(path, "w", encoding="utf-8") as file:
             yaml.dump(npc_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=False, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write NPCs to {os.path.normpath(path)}.") from e
@@ -265,7 +265,7 @@ def saveNPCInstances(data: ProjectData):
         raise Exception(f"Could not convert NPC instances to .yml format.") from e
 
     try:
-        with open(data.getResourcePath('eb.MapSpriteModule', 'map_sprites'), "w") as file:
+        with open(data.getResourcePath('eb.MapSpriteModule', 'map_sprites'), "w", encoding="utf-8") as file:
             yaml.dump(instances_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write NPC instances to {os.path.normpath(data.getResourcePath('eb.MapSpriteModule', 'map_sprites'))}.") from e
@@ -326,7 +326,7 @@ def saveTriggers(data: ProjectData):
         raise Exception(f"Could not convert triggers to .yml format.") from e
 
     try:
-        with open(data.getResourcePath('eb.DoorModule', 'map_doors'), "w") as file:
+        with open(data.getResourcePath('eb.DoorModule', 'map_doors'), "w", encoding="utf-8") as file:
             yaml.dump(triggers_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write triggers to {os.path.normpath(data.getResourcePath('eb.DoorModule', 'map_doors'))}.") from e
@@ -343,7 +343,7 @@ def saveEnemyPlacements(data: ProjectData):
         raise Exception(f"Could not convert enemy placements to .yml format.") from e
     
     try:
-        with open(data.getResourcePath('eb.MapEnemyModule', 'map_enemy_placement'), "w") as file:
+        with open(data.getResourcePath('eb.MapEnemyModule', 'map_enemy_placement'), "w", encoding="utf-8") as file:
             yaml.dump(placements_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=False, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write enemy placements to {os.path.normpath(data.getResourcePath('eb.MapEnemyModule', 'map_enemy_placement'))}.") from e
@@ -379,7 +379,7 @@ def saveMapEnemyGroups(data: ProjectData):
         raise Exception("Could not convert map enemy groups to .yml format") from e
     
     try:
-        with open(data.getResourcePath('eb.MapEnemyModule', 'map_enemy_groups'), "w") as file:
+        with open(data.getResourcePath('eb.MapEnemyModule', 'map_enemy_groups'), "w", encoding="utf-8") as file:
             yaml.dump(groups_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write map enemy groups to {os.path.normpath(data.getResourcePath('eb.MapEnemyModule', 'map_enemy_groups'))}.") from e
@@ -400,7 +400,7 @@ def saveHotspots(data: ProjectData):
         raise Exception("Could not convert hotspots to .yml format") from e
     
     try:
-        with open(data.getResourcePath('eb.MiscTablesModule', 'map_hotspots'), "w") as file:
+        with open(data.getResourcePath('eb.MiscTablesModule', 'map_hotspots'), "w", encoding="utf-8") as file:
             yaml.dump(hotspots_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write hotspots to {os.path.normpath(data.getResourcePath('eb.MiscTablesModule', 'map_hotspots'))}.") from e
@@ -421,7 +421,7 @@ def saveWarps(data: ProjectData):
         raise Exception("Could not convert warps to .yml format") from e
     
     try:
-        with open(data.getResourcePath('eb.MiscTablesModule', 'teleport_destination_table'), "w") as file:
+        with open(data.getResourcePath('eb.MiscTablesModule', 'teleport_destination_table'), "w", encoding="utf-8") as file:
             yaml.dump(warps_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write hotspots to {os.path.normpath(data.getResourcePath('eb.MiscTablesModule', 'teleport_destination_table'))}.") from e 
@@ -440,7 +440,7 @@ def saveTeleports(data: ProjectData):
         raise Exception("Could not convert teleports to .yml format") from e
     
     try:
-        with open(data.getResourcePath('eb.MiscTablesModule', 'psi_teleport_dest_table'), "w") as file:
+        with open(data.getResourcePath('eb.MiscTablesModule', 'psi_teleport_dest_table'), "w", encoding="utf-8") as file:
             yaml.dump(teleports_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write teleports to {os.path.normpath(data.getResourcePath('eb.MiscTablesModule', 'psi_teleport_dest_table'))}.") from e
@@ -459,7 +459,7 @@ def saveMapMusic(data: ProjectData):
         raise Exception("Could not convert map music to .yml format") from e
     
     try:
-        with open(data.getResourcePath('eb.MapMusicModule', 'map_music'), "w") as file:
+        with open(data.getResourcePath('eb.MapMusicModule', 'map_music'), "w", encoding="utf-8") as file:
             yaml.dump(music_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=None, sort_keys=False)
     except Exception as e:
         raise Exception(f"Could not write map music to {os.path.normpath(data.getResourcePath('eb.MapMusicModule', 'map_music'))}.") from e
