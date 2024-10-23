@@ -12,6 +12,7 @@ from src.objects.enemy import EnemyGroup, EnemyMapGroup, EnemyTile
 from src.objects.hotspot import Hotspot
 from src.objects.music import MapMusicHierarchy
 from src.objects.npc import NPC, NPCInstance
+from src.objects.palette_settings import PaletteSettings
 from src.objects.sector import Sector
 from src.objects.sprite import BattleSprite, Sprite
 from src.objects.tile import MapTile, MapTileGraphic
@@ -25,9 +26,10 @@ class ProjectData():
         
         self.dir = directory
         self.tilesets: list[FullTileset] = []
+        self.paletteSettings: dict[int, dict[int, PaletteSettings]] = {}
         self.sectors: numpy.ndarray[Sector] = []
         self.tiles: numpy.ndarray[MapTile] = []
-        self.tilegfx: dict[int, dict[int, dict[int, dict[int, MapTileGraphic]]]]
+        self.tilegfx: dict[int, dict[int, dict[int, dict[int, MapTileGraphic]]]] = {}
         self.npcs: list[NPC] = []
         self.npcinstances: list[NPCInstance] = []
         self.sprites: list[Sprite] = []

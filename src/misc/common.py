@@ -250,6 +250,7 @@ def cap(val: float, min_: float, max_: float):
     return max(min(max_, val), min_)
 
 # https://stackoverflow.com/a/2267428
+# TODO remove. it is stupid. this is also accomplished by str(int(str(x), n))
 def baseN(num: int, base: int, numerals="0123456789abcdefghijklmnopqrstuvwxyz"):
     return ((num == 0) and numerals[0]) or (baseN(num // base, base, numerals).lstrip(numerals[0]) + numerals[num % base])
 

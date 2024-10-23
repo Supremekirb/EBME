@@ -7,7 +7,7 @@ import yaml
 from PIL import Image, ImageQt
 
 import src.misc.common as common
-from src.coilsnake.fts_interpreter import FullTileset
+from src.coilsnake.fts_interpreter import FullTileset, Palette
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.exceptions import NotBase32Error, NotHexError
@@ -15,6 +15,7 @@ from src.objects.enemy import EnemyGroup, EnemyMapGroup, EnemyTile
 from src.objects.hotspot import Hotspot
 from src.objects.music import MapMusicEntry, MapMusicHierarchy
 from src.objects.npc import NPC, NPCInstance
+from src.objects.palette_settings import PaletteSettings
 from src.objects.sector import Sector
 from src.objects.sprite import BattleSprite, Sprite
 from src.objects.tile import MapTile, MapTileGraphic
@@ -41,6 +42,14 @@ def readDirectory(parent, dir):
         except Exception as e:
             parent.returns.emit({"title": "Failed to load tilesets",
                                     "text": "Could not load tileset data.",
+                                    "info": str(e)})
+            raise
+            
+        try:
+            readPaletteSettings(projectData)
+        except Exception as e:
+            parent.returns.emit({"title": "Failed to load palette settings",
+                                    "text": "Could not load palette settings data.",
                                     "info": str(e)})
             raise
             
@@ -195,7 +204,7 @@ def readTilesets(data: ProjectData):
             if not i.startswith("Tilesets/"):
                 continue
             id = int(i.split("/")[-1])
-            with open(data.getResourcePath("eb.TilesetModule", i), encoding='utf-8') as fts:
+            with open(data.getResourcePath("eb.TilesetModule", i), encoding="utf-8") as fts:
                 data.tilesets.append(FullTileset(contents=fts.readlines(), id=id))
 
     except KeyError as e:
@@ -206,7 +215,51 @@ def readTilesets(data: ProjectData):
     
     except NotHexError or NotBase32Error or ValueError as e:
         raise ValueError(f"Invalid data in tileset {id}.") from e
+
+def readPaletteSettings(data: ProjectData):
+    try:
+        hasLoadedYml = False
+        with open(data.getResourcePath("eb.TilesetModule", "map_palette_settings"), encoding="utf-8") as map_palette_settings:
+            map_palette_settings = yaml.load(map_palette_settings, Loader=yaml.CSafeLoader)
+            hasLoadedYml = True
+
+            for paletteGroup, palettes in map_palette_settings.items():
+                data.paletteSettings[paletteGroup] = {}
+                for palette, settings in palettes.items():
+                    root = PaletteSettings(settings["Event Flag"],
+                                           settings["Flash Effect"],
+                                           settings["Sprite Palette"])
+                    parent = root
+                    parentSettings = settings
+                    while "Event Palette" in parentSettings:
+                        childSettings = parentSettings["Event Palette"]
+                        child = PaletteSettings(childSettings["Event Flag"],
+                                                childSettings["Flash Effect"],
+                                                childSettings["Sprite Palette"])
+                        try:
+                            paletteObj = Palette(str(int(str(paletteGroup), 32)) + str(int(str(palette), 32))
+                                              + childSettings["Colors"])
+                            parent.addChild(child, paletteObj)
+                        except KeyError as e:
+                            raise KeyError("Nested palette settings must contain a colour palette.") from e
+                        
+                        parent = child
+                        parentSettings = childSettings
+                    
+                    data.paletteSettings[paletteGroup][palette] = root
+                    
+    except KeyError as e:
+        if not hasLoadedYml:
+            raise KeyError("Could not find path to map_palette_settings in Project.snake.") from e
+        else:
+            raise KeyError(f"Could not read data in palette settings {paletteGroup}/{palette}.") from e
+        
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"Could not find the file at {data.getResourcePath('eb.TilesetModule','map_palette_settings')}.") from e
     
+    except yaml.YAMLError as e:
+        raise yaml.YAMLError("Could not interpret map palette settings data.") from e
+            
 
 def readSectors(data: ProjectData):
     """Read project sectors"""
@@ -296,8 +349,6 @@ def readTiles(data: ProjectData):
 
 def readTileGraphics(data: ProjectData):
     """Read project tile graphics. This differs from just using Tile objects as they are not unique per-palette, whereas these are"""
-    data.tilegfx = {}
-    # try:
     for t in data.tilesets:
             data.tilegfx[t.id] = {}
             for g in t.paletteGroups:

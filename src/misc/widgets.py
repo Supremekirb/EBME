@@ -222,8 +222,14 @@ class ColourButton(QPushButton):
                 painter.setPen(self._thickPen)
             else:
                 painter.setPen(Qt.PenStyle.NoPen)
+        
+        color = self.chosenColour
+        brush = QBrush(color) 
+        
+        if not self.isEnabled():
+            brush.setStyle(Qt.BrushStyle.Dense5Pattern)
             
-        painter.setBrush(self.chosenColour)
+        painter.setBrush(brush)
         painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
         painter.end()
 
@@ -553,3 +559,36 @@ class UprightIconsWestTabWidget(QTabWidget):
     def addTab(self, widget: QWidget, icon: QIcon, label: str):
         icon = QIcon(icon.pixmap(QSize(100, 100)).transformed(QTransform().rotate(90)))
         return super().addTab(widget, icon, label)
+
+# https://stackoverflow.com/a/64279374
+class IconLabel(QWidget):
+    IconSize = QSize(16, 16)
+    HorizontalSpacing = 2
+
+    def __init__(self, text: str|None=None, icon: QIcon|None=None, final_stretch=True):
+        super().__init__()
+
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+
+        self.iconLabel = QLabel()
+        if icon:
+            self.setIcon(icon)
+            
+        self.textLabel = QLabel()
+        if text:
+            self.setText(text)
+
+        layout.addWidget(self.iconLabel)
+        layout.addSpacing(self.HorizontalSpacing)
+        layout.addWidget(self.textLabel)
+
+        if final_stretch:
+            layout.addStretch()
+    
+    def setIcon(self, icon: QIcon):
+        self.iconLabel.setPixmap(icon.pixmap(self.IconSize))
+    
+    def setText(self, text: str):
+        self.textLabel.setText(text)

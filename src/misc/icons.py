@@ -121,6 +121,12 @@ def init_icons():
     global ICON_ZOOM_OUT
     ICON_ZOOM_OUT = icon("ph.magnifying-glass-minus")
     
+    global ICON_WARNING
+    ICON_WARNING = icon("ph.warning")
+    
+    global ICON_OK
+    ICON_OK = icon("ph.check")
+    
     global ICON_GRID
     ICON_GRID = icon("ph.grid-four")
     
@@ -132,6 +138,12 @@ def init_icons():
     
     global ICON_RECT
     ICON_RECT = icon("ph.rectangle")
+    
+    global ICON_DIAMOND
+    ICON_DIAMOND = icon("ph.diamond")
+    
+    global ICON_SPLIT
+    ICON_SPLIT = icon("ph.git-merge")
     
     global ICON_MUSIC_LIST
     ICON_MUSIC_LIST = icon("ph.playlist")
