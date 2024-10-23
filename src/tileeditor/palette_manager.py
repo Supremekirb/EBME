@@ -15,7 +15,7 @@ class PaletteManagerDialog(QDialog):
         super().__init__(parent)
         self.projectData = projectData
         
-        self.setWindowTitle("Palette Manager")
+        self.setWindowTitle("Palette Manager (NO FUNCTIONALITY YET)")
         
         self.subpalette1Buttons: list[ColourButton] = []
         self.subpalette2Buttons: list[ColourButton] = []
