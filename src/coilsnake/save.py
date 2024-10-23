@@ -6,6 +6,7 @@ from io import StringIO
 
 import yaml
 
+import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
 from src.objects import trigger
 
@@ -119,7 +120,7 @@ def writeDirectory(parent, data):
         parent.returns.emit(True)
 
     except Exception:
-        logging.warn(traceback.format_exc())
+        logging.warning(traceback.format_exc())
         raise
 
 def saveProject(data: ProjectData):
@@ -151,7 +152,7 @@ def saveTilesets(data: ProjectData):
                 fts_file.write(t.toRaw())
                 fts_file.write("\n")
 
-            for _ in range(960, 1024):
+            for _ in range(common.MAXTILES, 1024):
                 # bunch of empty tiles needed
                 fts_file.write("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\n")
         except Exception as e:

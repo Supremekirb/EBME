@@ -12,6 +12,7 @@ from src.objects.enemy import EnemyGroup, EnemyMapGroup, EnemyTile
 from src.objects.hotspot import Hotspot
 from src.objects.music import MapMusicHierarchy
 from src.objects.npc import NPC, NPCInstance
+from src.objects.palette_settings import PaletteSettings
 from src.objects.sector import Sector
 from src.objects.sprite import BattleSprite, Sprite
 from src.objects.tile import MapTile, MapTileGraphic
@@ -25,9 +26,10 @@ class ProjectData():
         
         self.dir = directory
         self.tilesets: list[FullTileset] = []
+        self.paletteSettings: dict[int, dict[int, PaletteSettings]] = {}
         self.sectors: numpy.ndarray[Sector] = []
         self.tiles: numpy.ndarray[MapTile] = []
-        self.tilegfx: list[MapTileGraphic] = []
+        self.tilegfx: dict[int, dict[int, dict[int, dict[int, MapTileGraphic]]]] = {}
         self.npcs: list[NPC] = []
         self.npcinstances: list[NPCInstance] = []
         self.sprites: list[Sprite] = []
@@ -102,14 +104,11 @@ class ProjectData():
 
         self.tilesets[tilesetNumber] = newTileset
     
-        for pg in self.tilegfx[tilesetNumber].items():
-            for p in pg[1].items():
-                for t in p[1].items():
-                    t[1].hasRendered = False
+        self.clearTileGraphicsCache(tilesetNumber)
 
     def resolveTileGraphic(self, tileset: int, palettegroup: int, palette: int, tile: int) -> MapTileGraphic:
         """Find the closest valid tile graphic if the requested one is invalid."""
-        tile = common.cap(tile, 0, 960)
+        tile = common.cap(tile, 0, common.MAXTILES)
 
         for i in self.tilegfx.items():
             if i[0] == tileset:
@@ -128,7 +127,39 @@ class ProjectData():
                 palette = i[0]
                 
         return self.tilegfx[tileset][palettegroup][palette][tile]
-
+    
+    def clearTileGraphicsCache(self, tileset: int|None=None, paletteGroup: int|None=None, palette: int|None=None, tile: int|None=None):
+        """Clear cached tile graphics. Failing to specify an argument clears all graphics under that argument."""
+        if tileset:
+            if paletteGroup:
+                if palette:
+                    if tile: # all params
+                        gfx = self.getTileGraphic(tileset, paletteGroup, palette, tile)
+                        gfx.hasRendered = False
+                        gfx.hasRenderedFg = False
+                    else: # clear one palette
+                        for gfx in self.tilegfx[tileset][paletteGroup][palette].values():
+                            gfx.hasRendered = False
+                            gfx.hasRenderedFg = False
+                else: # clear one palette group
+                    for p in self.tilegfx[tileset][paletteGroup].values():
+                        for gfx in p.values():
+                            gfx.hasRendered = False
+                            gfx.hasRenderedFg = False
+            else: # clear one tileset
+                for pg in self.tilegfx[tileset].values():
+                    for p in pg.values():
+                        for gfx in p.values():
+                            gfx.hasRendered = False
+                            gfx.hasRenderedFg = False
+        else: # clear entire cache
+            for t in self.tilegfx.values():
+                for pg in t.values():
+                    for p in pg.values():
+                        for gfx in p.values():
+                            gfx.hasRendered = False
+                            gfx.hasRenderedFg = False
+                            
     # project getters
     def getProjectVersion(self) -> str:
         return self.projectSnake['version']

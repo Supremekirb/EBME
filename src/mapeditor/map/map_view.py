@@ -6,13 +6,14 @@ from PySide6.QtGui import (QBrush, QMouseEvent, QPaintEvent, QPen,
 from PySide6.QtWidgets import (QGraphicsLineItem, QGraphicsPixmapItem,
                                QGraphicsView)
 
-if TYPE_CHECKING:
-    from src.mapeditor.map_editor import MapEditorState, MapEditor
-
 import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
 from src.mapeditor.map.map_scene import MapEditorScene
 from src.misc.coords import EBCoords
+
+if TYPE_CHECKING:
+    from src.mapeditor.map_editor import MapEditor, MapEditorState
+   
 
 WHITEBRUSH = QBrush(Qt.white)
 BLACKBRUSH = QBrush(Qt.black)
@@ -39,20 +40,6 @@ class MapEditorView(QGraphicsView):
         # bonuses
         #self.shear(1, 0) # unisometric mode
         #self.rotate(45) # normal fourside mode
-
-        self._lastTransform = self.viewportTransform()
-    
-    # overriding to render shown
-    def paintEvent(self, event: QPaintEvent):
-        if self.viewportTransform() != self._lastTransform:
-            self._lastTransform = self.viewportTransform()
-            self.renderShown()
-            
-        super().paintEvent(event)
-    
-    def resizeEvent(self, event: QResizeEvent):
-        super().resizeEvent(event)
-        self.renderShown()
 
     def leaveEvent(self, event: QEvent):
         self.parent().status.updateCoords(EBCoords(-1, -1))
@@ -118,23 +105,6 @@ class MapEditorView(QGraphicsView):
             
             else: super().wheelEvent(event)
 
-    def renderShown(self):
-        """Get the shown area of the viewport and render it"""
-        rect = self.mapToScene(self.viewport().geometry()).boundingRect().getRect()
-        
-        self.scene().renderArea(
-            EBCoords(rect[0], rect[1]), # top left
-            common.pixToTile(rect[2]),
-            common.pixToTile(rect[3])
-            )
-    
-        if self.state.mode == common.MODEINDEX.ENEMY or self.state.mode == common.MODEINDEX.ALL:
-            self.scene().renderEnemies(
-                EBCoords(rect[0], rect[1]), # top left
-                common.pixToEnemy(rect[2]),
-                common.pixToEnemy(rect[3])
-            )
-
 
     def revealTriggerDestination(self, start: EBCoords, end: EBCoords):
         """Reveal the destination of a trigger
@@ -180,7 +150,6 @@ class MapEditorView(QGraphicsView):
             self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
             
         self.horizontalScrollBar().blockSignals(False)
-        self.renderShown()
         self.parent().status.setZoom(self.scaleFactor)
         
         
@@ -196,7 +165,6 @@ class MapEditorView(QGraphicsView):
             self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
             
         self.horizontalScrollBar().blockSignals(False)
-        self.renderShown()
         self.parent().status.setZoom(self.scaleFactor)
 
     def autoCenterOn(self, coords: EBCoords, msecs: int=500):

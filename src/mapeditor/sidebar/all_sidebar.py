@@ -3,15 +3,15 @@ from typing import TYPE_CHECKING
 from PySide6.QtWidgets import (QCheckBox, QFormLayout, QGroupBox, QLabel,
                                QVBoxLayout, QWidget)
 
-if TYPE_CHECKING:
-    from src.mapeditor.map_editor import MapEditor, MapEditorState
-
 from src.coilsnake.project_data import ProjectData
 from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import MapEditorNPC
 from src.objects.trigger import MapEditorTrigger
 from src.objects.warp import MapEditorWarp
+
+if TYPE_CHECKING:
+    from src.mapeditor.map_editor import MapEditor, MapEditorState
 
 
 class SidebarAll(QWidget):

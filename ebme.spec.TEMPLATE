@@ -39,7 +39,7 @@ plugins = platforms_qtforandroid
 # eg = extra_args = --show-modules --follow-stdlib
 ###  extra args for deployment: --disable-console ### I feel like there should be more??
 # --include-data-dir=./assets/=assets
-extra_args = --disable-console --quiet --noinclude-qt-translations=True --nofollow-import-to=tkinter --include-data-dir=./assets/fonts=assets/fonts --include-data-file=./eb-png2fts/eb_png2fts.py=eb-png2fts/eb_png2fts.py --include-data-file=./eb-png2fts/image_cropper.py=eb-png2fts/image_cropper.py --include-data-file=./eb-png2fts/palettepacker.py=eb-png2fts/palettepacker.py --windows-icon-from-ico=./assets/logos/icon.ico --static-libpython=no --assume-yes-for-downloads
+extra_args = --disable-console --quiet --noinclude-qt-translations=True --nofollow-import-to=tkinter --include-data-dir=./assets/fonts=assets/fonts --include-data-file=./eb-png2fts/eb_png2fts.py=eb-png2fts/eb_png2fts.py --include-data-file=./eb-png2fts/image_cropper.py=eb-png2fts/image_cropper.py --include-data-file=./eb-png2fts/palettepacker.py=eb-png2fts/palettepacker.py --include-data-file=./eb-png2fts/LICENSE=eb-png2fts/LICENSE --windows-icon-from-ico=./assets/logos/icon.ico --static-libpython=no --assume-yes-for-downloads
 
 [buildozer]
 # build mode

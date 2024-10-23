@@ -1,5 +1,8 @@
 from PySide6.QtWidgets import QTreeWidgetItem
 
+from src.misc import icons
+
+
 class MapMusicEntry:
     """Flag + Music ID combo for MapMusicHierarchy"""
     def __init__(self, flag: int, music: int):
@@ -66,9 +69,13 @@ class MapMusicHierarchyListItem(QTreeWidgetItem):
     def __init__(self, id: int):
         super().__init__([f"Entry {id}"])
         self.id = id
+        
+        self.setIcon(0, icons.ICON_MUSIC_LIST)
 
 class MapMusicEntryListItem(QTreeWidgetItem):
     def __init__(self, flag: int, music: int):
         super().__init__([f"{music} Unknown", str(flag) if flag < 0x8000 else f"{flag - 0x8000} (Inverted)"])
         self.flag = flag
         self.music = music
+        
+        self.setIcon(0, icons.ICON_MUSIC)

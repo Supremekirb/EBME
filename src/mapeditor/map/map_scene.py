@@ -1,15 +1,11 @@
 import copy
 import json
 import logging
+import math
 import sys
 from math import ceil
 from typing import TYPE_CHECKING
 from uuid import UUID
-
-from src.objects.warp import MapEditorWarp
-
-if TYPE_CHECKING:
-    from src.mapeditor.map_editor import MapEditor, MapEditorState
 
 import numpy
 from PIL import ImageQt
@@ -25,6 +21,7 @@ from PySide6.QtWidgets import (QApplication, QGraphicsLineItem,
                                QMessageBox, QProgressDialog)
 
 import src.misc.common as common
+import src.misc.icons as icons
 import src.objects.trigger as trigger
 from src.actions.enemy_actions import (ActionPlaceEnemyTile,
                                        ActionUpdateEnemyMapGroup)
@@ -49,10 +46,15 @@ from src.misc.dialogues import ClearDialog
 from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
-from src.objects.tile import MapEditorTile
+from src.objects.warp import MapEditorWarp
+
+if TYPE_CHECKING:
+    from src.mapeditor.map_editor import MapEditor, MapEditorState
 
 
 class MapEditorScene(QGraphicsScene):
+    PREVIEWNPCMAXSAMPLES = 4 # higher = less jittering on diagonals, but more delay. 4 seems to work nicely
+    PREVIEWNPCANIMDELAY = 7 # how many mouse-move inputs before switching animation frame
     def __init__(self, parent: "MapEditor", state: "MapEditorState", data: ProjectData):
         super().__init__(parent)
 
@@ -86,6 +88,13 @@ class MapEditorScene(QGraphicsScene):
         self.previewNPC.setDummy()
         self.previewNPC.setZValue(common.MAPZVALUES.SCREENMASK)
         self.previewNPC.setCursor(Qt.CursorShape.BlankCursor)
+        self.previewNPCPositionSamples: list[EBCoords] = []
+        self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
+        self.previewNPCAnimState = 0
+        self.previewNPCCurrentDir = 0
+        self.previewNPCStillTimer = QTimer()
+        self.previewNPCStillTimer.setInterval(500)
+        self.previewNPCStillTimer.timeout.connect(self.resetPreviewNPCAnim)
         
         spr = self.projectData.getSprite(1)
         self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(
@@ -112,7 +121,7 @@ class MapEditorScene(QGraphicsScene):
         self.populateTriggers()
         self.populateHotspots()
         self.populateWarps()
-        self.populateTiles()
+        # self.populateTiles()
     
     def updateSelected(self):
         match self.state.mode:
@@ -174,8 +183,11 @@ class MapEditorScene(QGraphicsScene):
                         if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                             self.pickEnemyTile(coords)
                 case common.MODEINDEX.GAME:
-                    if not self.state.previewLocked:
-                        self.moveGameModeMask(coords)
+                    if not self.state.previewLocked: # only move if we're not panning - messes with anim
+                        if not (Qt.KeyboardModifier.ShiftModifier in event.modifiers() and \
+                        Qt.MouseButton.LeftButton in event.buttons()) and \
+                            Qt.MouseButton.MiddleButton not in event.buttons():
+                            self.moveGameModeMask(coords)
         else:
             match self.state.tempMode:
                 case common.TEMPMODEINDEX.IMPORTMAP:
@@ -286,28 +298,29 @@ class MapEditorScene(QGraphicsScene):
                         entireSectorStr = "Copy entire sector"
                         dataSectorStr = "Copy sector data"
                         paletteSectorStr = "Copy only sector palette"
-                        
-                    menu.addAction(entireSectorStr, self.copySelectedSectors, shortcut=QKeySequence.StandardKey.Copy)
-                    menu.addAction(dataSectorStr, self.copySelectedSectorAttributes, shortcut=QKeySequence("Ctrl+Shift+C"))
-                    menu.addAction(paletteSectorStr, self.copySelectedSectorPalettes, shortcut=QKeySequence("Ctrl+Alt+Shift+C"))
-                    menu.addSeparator()
-                    menu.addAction("Paste", self.onPaste)
-                case common.MODEINDEX.NPC:
-                    menu.addAction("New NPC", lambda: self.newNPC(EBCoords(x, y)))
-                    menu.addAction("Paste", self.onPaste)
-                case common.MODEINDEX.TRIGGER:
-                    menu.addAction("New &trigger", lambda: self.newTrigger(EBCoords(x, y)))
-                    menu.addAction("New &ladder", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
-                                                                         trigger.TriggerLadder())))
-                    menu.addAction("New &rope", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
-                                                                       trigger.TriggerRope())))
-                    menu.addAction("Paste", self.onPaste)
-                case common.MODEINDEX.HOTSPOT:
-                    menu.addAction("&Move hotspot here...", lambda: self.moveHotspot(EBCoords(x, y)))
-                case common.MODEINDEX.WARP:
-                    menu.addAction("Move &warp here...", lambda: self.moveWarp(EBCoords(x, y)))
-                    menu.addAction("Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
                     
+                    menu.addAction(icons.ICON_RECT, entireSectorStr, self.copySelectedSectors, shortcut=QKeySequence.StandardKey.Copy)
+                    menu.addAction(icons.ICON_COPY, dataSectorStr, self.copySelectedSectorAttributes, shortcut=QKeySequence("Ctrl+Shift+C"))
+                    menu.addAction(icons.ICON_PALETTE, paletteSectorStr, self.copySelectedSectorPalettes, shortcut=QKeySequence("Ctrl+Alt+Shift+C"))
+                    menu.addSeparator()
+                    menu.addAction(icons.ICON_PASTE, "Paste", self.onPaste)
+                case common.MODEINDEX.NPC:
+                    menu.addAction(icons.ICON_NEW, "New NPC", lambda: self.newNPC(EBCoords(x, y)))
+                    menu.addAction(icons.ICON_PASTE, "Paste", self.onPaste)
+                case common.MODEINDEX.TRIGGER:
+                    menu.addAction(icons.ICON_NEW, "New &trigger", lambda: self.newTrigger(EBCoords(x, y)))
+                    menu.addAction(icons.ICON_NEW, "New &ladder", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
+                                                                         trigger.TriggerLadder())))
+                    menu.addAction(icons.ICON_NEW, "New &rope", lambda: self.addTrigger(trigger.Trigger(EBCoords(event.scenePos().x(), event.scenePos().y()),
+                                                                       trigger.TriggerRope())))
+                    menu.addAction(icons.ICON_PASTE, "Paste", self.onPaste)
+                case common.MODEINDEX.HOTSPOT:
+                    menu.addAction(icons.ICON_MOVE_TO, "&Move hotspot here...", lambda: self.moveHotspot(EBCoords(x, y)))
+                case common.MODEINDEX.WARP:
+                    menu.addAction(icons.ICON_MOVE_TO, "Move &warp here...", lambda: self.moveWarp(EBCoords(x, y)))
+                    menu.addAction(icons.ICON_MOVE_TO, "Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
+                case _:
+                    return super().contextMenuEvent(event)
             menu.exec(event.screenPos())          
     
     def onUndo(self):
@@ -357,11 +370,6 @@ class MapEditorScene(QGraphicsScene):
         for c in commands:
             if isinstance(c, ActionPlaceTile):
                 actionType = "tile"
-                if len(commands) < 1000:
-                    self.refreshTile(c.maptile.coords)
-                else:
-                    # more performant, but requires re-render
-                    self.projectData.getTile(c.maptile.coords).isPlaced = False
 
             if isinstance(c, ActionMoveNPCInstance) or isinstance(c, ActionChangeNPCInstance):
                 actionType = "npc"
@@ -427,6 +435,7 @@ class MapEditorScene(QGraphicsScene):
         match actionType:
             case "tile":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.TILE)
+                self.update()
             case "npc":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.NPC)
                 if self.state.currentNPCInstances != []:
@@ -439,7 +448,7 @@ class MapEditorScene(QGraphicsScene):
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.SECTOR)
                 if self.state.currentSectors != []:
                     self.parent().sidebarSector.fromSectors()
-                #self.parent().sidebarTile.fromSectors(self.state.currentSectors)
+                self.update()
             case "enemy":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.ENEMY)
                 self.parent().sidebarEnemy.selectEnemyTile(self.state.currentEnemyTile)
@@ -518,6 +527,7 @@ class MapEditorScene(QGraphicsScene):
                     inMacro = False
                     self.parent().sidebar.setCurrentIndex(common.MODEINDEX.SECTOR)
                     self.parent().sidebarSector.fromSectors()
+                    self.update()
                     
                 case "NPC":
                     absolute = QSettings().value("main/absolutePaste", False, type=bool)
@@ -594,7 +604,7 @@ class MapEditorScene(QGraphicsScene):
                                 typeData = trigger.TriggerSwitch(i["data"]["text"],
                                                                  i["data"]["flag"])
                             case _:
-                                logging.warn(f"Unknown trigger type {i['data']['type']}")
+                                logging.warning(f"Unknown trigger type {i['data']['type']}")
                                 continue
                         trigger_ = trigger.Trigger(EBCoords(i["coords"][0], i["coords"][1]), typeData)
                         
@@ -609,11 +619,11 @@ class MapEditorScene(QGraphicsScene):
         except json.decoder.JSONDecodeError:
             if inMacro:
                 self.undoStack.endMacro()
-            logging.warn("Clipboard data is not valid for pasting.")
+            logging.warning("Clipboard data is not valid for pasting.")
         except Exception as e:
             if inMacro:
                 self.undoStack.endMacro()
-            logging.warn(f"Failed to paste possibly valid data: {e}")
+            logging.warning(f"Failed to paste possibly valid data: {e}")
             raise
         
     def onDelete(self):
@@ -645,16 +655,7 @@ class MapEditorScene(QGraphicsScene):
         """
         self.state.tempMode = index
 
-    def changeMode(self, index: int):
-        previous = self.state.mode
-        
-        if index == common.MODEINDEX.TILE:
-            MapEditorTile.showTileIDsModeSwitch()
-            self.grid.setBrush
-        else:
-            if (previous == common.MODEINDEX.TILE or previous == common.MODEINDEX.ALL) and index != common.MODEINDEX.ALL:
-                MapEditorTile.hideTileIDsModeSwitch()
-            
+    def changeMode(self, index: int):           
         if index == common.MODEINDEX.SECTOR:
             self.sectorSelect.show()
         else:
@@ -690,7 +691,6 @@ class MapEditorScene(QGraphicsScene):
             MapEditorWarp.hideWarps()
             
         if index == common.MODEINDEX.ALL:
-            MapEditorTile.showTileIDsModeSwitch()
             if self.parent().sidebarAll.showNPCs.isChecked():
                 MapEditorNPC.showNPCs()
             else: MapEditorNPC.hideNPCs()
@@ -730,63 +730,18 @@ class MapEditorScene(QGraphicsScene):
                 pass # this happens on init
                 
             self.previewNPC.hide()
-            if QSettings().value("mapeditor/ShowNPCVisualBounds") == "true":
+            if QSettings().value("mapeditor/ShowNPCVisualBounds", type=bool):
                 MapEditorNPC.showVisualBounds()
             else: MapEditorNPC.hideVisualBounds()
-            if QSettings().value("mapeditor/ShowNPCCollisionBounds") == "true":
+            if QSettings().value("mapeditor/ShowNPCCollisionBounds", type=bool):
                 MapEditorNPC.showCollisionBounds()
             else: MapEditorNPC.hideCollisionBounds
-            if QSettings().value("mapeditor/ShowNPCIDs") == "true":
+            if QSettings().value("mapeditor/ShowNPCIDs", type=bool):
                 MapEditorNPC.showNPCIDs()
             else: MapEditorNPC.hideNPCIDs()
             
         # fix grid
         self.setGrid(self._currentGrid, index)
-
-    def renderArea(self, coords: EBCoords, w: int, h: int):
-        """Render a rectangular region of tiles
-
-        Args:
-            coords (EBCoords): top-left corner
-            w (int): width of box (tiles)
-            h (int): height of box (tiles)
-        """
-        x = coords.coordsTile()[0]
-        y = coords.coordsTile()[1]
-        LENIENCY = 3 # Rendering a little more around the edges prevents inaccurate size guesses from making the map look weird
-        for r in range(x-LENIENCY, x+w+LENIENCY): 
-            for c in range(y-LENIENCY, y+h+LENIENCY):
-                try:
-                    tile = self.projectData.tiles[c, r]
-                    if not tile.isPlaced:
-                        try:
-                            graphic = self.projectData.getTileGraphic(tile.tileset, tile.palettegroup, tile.palette, tile.tile)
-                        except KeyError:
-                            logging.warn(f"Tile at {r, c} has invalid palette data. Resolving...")
-                            try: # resolve the graphic and update the sector
-                                curcoords = EBCoords.fromTile(r, c)
-                                graphic = self.projectData.resolveTileGraphic(tile.tileset, tile.palettegroup, tile.palette, tile.tile)
-                                sector = self.projectData.getSector(curcoords)
-                                sector.tileset = graphic.tileset
-                                sector.palettegroup = graphic.palettegroup
-                                sector.palette = graphic.palette
-                                self.refreshSector(curcoords)
-
-                            except Exception:
-                                logging.warn(f"Failed to resolve tile graphic for tile {tile.tile} at {r, c} in tileset {tile.tileset} with palette group {tile.palettegroup} and palette {tile.palette}.")
-                                continue
-                        if not graphic.hasRendered:
-                            graphic.render(self.projectData.getTileset(tile.tileset))
-                        try: 
-                            item = self.tileAt(EBCoords.fromTile(r, c))
-                            item.setPixmap(graphic.rendered)
-                            item.setText(str(tile.tile).zfill(3))
-                            tile.isPlaced = True
-                        except AttributeError:
-                            pass # probably just scrolled past the edge of the map
-
-                except IndexError:
-                    pass # another cheap fix to scrollpast giving oob coords
 
     def renderEnemies(self, coords: EBCoords, w: int, h: int):
         """Render a rectangular region of enemy tiles
@@ -826,20 +781,6 @@ class MapEditorScene(QGraphicsScene):
         x = x % 4
         y = y % 4
         return collisionMap[x + y * 4]
-
-    def tileAt(self, coords: EBCoords) -> MapEditorTile | None:
-        """Get a MapEditorTile at coords
-
-        Args:
-            coords (EBCoords): location of the tile
-
-        Returns:
-            MapEditorTile | None: the tile. None if no tile found.
-        """
-        items = self.items(QPoint(coords.roundToTile()[0], coords.roundToTile()[1]))
-        for item in items:
-            if isinstance(item, MapEditorTile):
-                return item
             
     def enemyTileAt(self, coords: EBCoords) -> MapEditorEnemyTile | None:
         """Get a MapEditorEnemyTile at coords
@@ -862,28 +803,29 @@ class MapEditorScene(QGraphicsScene):
             coords (EBCoords): location to place the tile
         """
 
-        item = self.tileAt(coords)
-        if item:
-            toPlace = self.state.currentTile 
-            tile = self.projectData.getTile(coords)
-            if tile.tile != toPlace:
-                if not self.state.placingTiles:
-                    self.state.placingTiles = True
-                    self.undoStack.beginMacro("Place tiles")
+        # item = self.tileAt(coords)
+        # if item:
+        toPlace = self.state.currentTile 
+        tile = self.projectData.getTile(coords)
+        if tile.tile != toPlace:
+            if not self.state.placingTiles:
+                self.state.placingTiles = True
+                self.undoStack.beginMacro("Place tiles")
 
-                tilesetID = tile.tileset
-                paletteGroupID = tile.palettegroup
-                paletteID = tile.palette
-                tileGraphic = self.projectData.getTileGraphic(tilesetID, paletteGroupID, paletteID, toPlace)
+            tilesetID = tile.tileset
+            paletteGroupID = tile.palettegroup
+            paletteID = tile.palette
+            tileGraphic = self.projectData.getTileGraphic(tilesetID, paletteGroupID, paletteID, toPlace)
 
-                if not tileGraphic.hasRendered:
-                    tileGraphic.render(self.projectData.getTileset(tilesetID))
+            if not tileGraphic.hasRendered:
+                tileGraphic.render(self.projectData.getTileset(tilesetID))
 
-                item.setPixmap(tileGraphic.rendered)
-                item.setText(str(toPlace).zfill(3))
+            # item.setPixmap(tileGraphic.rendered)
+            # item.setText(str(toPlace).zfill(3))
 
-                action = ActionPlaceTile(tile, toPlace)
-                self.undoStack.push(action)
+            action = ActionPlaceTile(tile, toPlace)
+            self.undoStack.push(action)
+            self.update(*tile.coords.coords(), 32, 32)
     
     def endPlacingTiles(self):
         if self.state.placingTiles:
@@ -899,11 +841,11 @@ class MapEditorScene(QGraphicsScene):
         """
         coords.restrictToMap()
 
-        placement = self.tileAt(coords)
-        if placement:
-            tile = self.projectData.getTile(coords)
-            self.state.currentTile = tile.tile
-            self.parent().sidebarTile.selectTile(tile.tile)
+        # placement = self.tileAt(coords)
+        # if placement:
+        tile = self.projectData.getTile(coords)
+        self.state.currentTile = tile.tile
+        self.parent().sidebarTile.selectTile(tile.tile)
 
         sector = self.projectData.getSector(coords)
         self.parent().sidebarTile.fromSector(sector)
@@ -920,16 +862,18 @@ class MapEditorScene(QGraphicsScene):
         tile.palettegroup = sector.palettegroup
         tile.palette = sector.palette
 
-        item = self.tileAt(coords)
-        if item:
-            try:
-                tileGraphic = self.projectData.getTileGraphic(tile.tileset, tile.palettegroup, tile.palette, tile.tile)
-            except KeyError as e:
-                raise KeyError(f"No such tile with tileset {tile.tileset}, palette group {tile.palettegroup}, palette {tile.palette}, tile {tile.tile}.") from e
-            if not tileGraphic.hasRendered:
-                tileGraphic.render(self.projectData.getTileset(tile.tileset))
-            item.setPixmap(tileGraphic.rendered)
-            item.setText(str(tile.tile).zfill(3))
+        # item = self.tileAt(coords)
+        # if item:
+        try:
+            tileGraphic = self.projectData.getTileGraphic(tile.tileset, tile.palettegroup, tile.palette, tile.tile)
+        except KeyError as e:
+            raise KeyError(f"No such tile with tileset {tile.tileset}, palette group {tile.palettegroup}, palette {tile.palette}, tile {tile.tile}.") from e
+        if not tileGraphic.hasRendered:
+            tileGraphic.render(self.projectData.getTileset(tile.tileset))
+        
+        self.update(*tile.coords.coords(), 32, 32)
+            # item.setPixmap(tileGraphic.rendered)
+            # item.setText(str(tile.tile).zfill(3))
             
     def placeEnemyTile(self, coords: EBCoords):
         item = self.enemyTileAt(coords)
@@ -1347,7 +1291,7 @@ class MapEditorScene(QGraphicsScene):
             case trigger.TriggerSwitch:
                 placement.setPixmap(self.imgTriggerSwitch)
             case _: # should never happen
-                logging.warn(f"Unknown trigger type {trigger_.typeData}")
+                logging.warning(f"Unknown trigger type {trigger_.typeData}")
     
     def refreshHotspot(self, id: int):
         hotspot = self.projectData.hotspots[id]
@@ -1413,7 +1357,52 @@ class MapEditorScene(QGraphicsScene):
             action = ActionMoveTeleport(teleport, coords)
             self.undoStack.push(action)
             self.refreshTeleport(id[0])
+            
+    def drawBackground(self, painter: QPainter, rect: QRectF):
+        super().drawBackground(painter, rect)
+        start = EBCoords(*rect.topLeft().toTuple())
+        end = EBCoords(*rect.bottomRight().toTuple())
         
+        start.restrictToMap()
+        end.restrictToMap()
+        x0, y0 = start.coordsTile()
+        x1, y1 = end.coordsTile()
+        
+        for y in range(y0, y1+1):
+            for x in range(x0, x1+1):
+                coords = EBCoords.fromTile(x, y)
+                tile = self.projectData.getTile(coords)
+                graphic = self.projectData.getTileGraphic(tile.tileset,
+                                                          tile.palettegroup,
+                                                          tile.palette,
+                                                          tile.tile)
+                if not graphic.hasRendered:
+                    graphic.render(self.projectData.getTileset(tile.tileset))
+                    graphic.hasRendered = True
+                    
+                painter.drawPixmap(QPoint(x*32, y*32), graphic.rendered)
+                
+        painter.setFont("EBMain")
+        font = painter.font()
+        font.setPointSize(12)
+        painter.setFont(font)
+        if QSettings().value("mapeditor/ShowTileIDs", False, bool) and self.state.mode in (common.MODEINDEX.TILE, common.MODEINDEX.ALL):
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QColor(0, 0, 0, 128))
+            painter.drawRect(rect)
+            
+            for y in range(y0, y1+1):
+                for x in range(x0, x1+1):
+                    coords = EBCoords.fromTile(x, y)
+                    tile = self.projectData.getTile(coords)
+                    painter.setPen(Qt.GlobalColor.black)
+                    painter.drawText((x*32)+8, (y*32)+23, str(tile.tile).zfill(3))
+                    painter.setPen(Qt.GlobalColor.white)
+                    painter.drawText((x*32)+7, (y*32)+22, str(tile.tile).zfill(3))
+        
+        if self.state.mode in (common.MODEINDEX.ENEMY, common.MODEINDEX.ALL):
+            self.renderEnemies(start, *(end-start).coordsEnemy())
+            
     def drawForeground(self, painter: QPainter, rect: QRectF):
         if self.state.mode == common.MODEINDEX.GAME:
             painter.setPen(Qt.PenStyle.NoPen)
@@ -1431,13 +1420,54 @@ class MapEditorScene(QGraphicsScene):
                 painter.drawPolygon(QPolygon(rect.toRect()).subtracted(QRect(self._lastCoords.x, self._lastCoords.y, 256, 224).adjusted(-128, -112, -128, -112)))
                 
             # draw preview npc
-            if self.state.showPreviewNPC:
-                painter.drawPixmap(self.previewNPC.x()+self.previewNPC.offset().x(), self.previewNPC.y()+self.previewNPC.offset().y(), self.previewNPC.pixmap())
+            # if self.state.showPreviewNPC:
+            #     painter.drawPixmap(self.previewNPC.x()+self.previewNPC.offset().x(), self.previewNPC.y()+self.previewNPC.offset().y(), self.previewNPC.pixmap())
             
+    def resetPreviewNPCAnim(self):
+        self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
+        self.previewNPCAnimState = 0
+        sprite = self.projectData.getSprite(1).renderFacingImg(self.previewNPCCurrentDir, 0)
+        self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(sprite)))
         
     def moveGameModeMask(self, coords: EBCoords, forceRefreshSector: bool=False):
         coords.restrictToMap()
+        
+        # janky little fun thing to do direction and animation
+        if coords == EBCoords(self.previewNPC.x(), self.previewNPC.y()):
+            return
+        
+        self.previewNPCPositionSamples.insert(0, coords)
+        if len(self.previewNPCPositionSamples) > self.PREVIEWNPCMAXSAMPLES:
+            last = self.previewNPCPositionSamples.pop()
+            delta = coords - last 
+        else:
+            while len(self.previewNPCPositionSamples) < self.PREVIEWNPCMAXSAMPLES:
+                self.previewNPCPositionSamples.append(coords)
+                delta = EBCoords(0, 0)
+        
+        self.previewNPCStillTimer.start()
+        self.previewNPCAnimTimer -= 1
+        if self.previewNPCAnimTimer < 0:
+            self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
+            self.previewNPCAnimState = int(not self.previewNPCAnimState)        
+        
+        angle = math.atan2(delta.y, delta.x)
+        angle = math.degrees(angle)
+        angle += 90
+        if angle >=  360:
+            angle -= 360
+        if angle < 0:
+            angle += 360
+            
+        facing = round(angle/45)
+        if facing > 7: facing = 0
+        
+        self.previewNPCCurrentDir = facing
+        sprite = self.projectData.getSprite(1).renderFacingImg(facing, self.previewNPCAnimState)
+        self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(sprite)))   
+        
         self.previewNPC.setPos(coords.x, coords.y)
+        
         self._lastCoords = coords
         sector = self.projectData.getSector(coords)
         
@@ -1488,6 +1518,7 @@ class MapEditorScene(QGraphicsScene):
         self.setTemporaryMode(common.TEMPMODEINDEX.IMPORTMAP)
 
         self.addItem(self.importedMap)
+        self.update()
     
     def moveImportMap(self, coords: EBCoords):
         coords.x = common.cap(coords.x, 0, common.EBMAPWIDTH-(self.importedTiles.shape[1]*32))
@@ -1570,13 +1601,13 @@ class MapEditorScene(QGraphicsScene):
                 action = ActionPlaceTile(self.projectData.getTile(coords.fromTile(
                     coords.coordsTile()[0]+r, coords.coordsTile()[1]+c)), int(self.importedTiles[c, r], 16))
                 self.undoStack.push(action)
-                self.refreshTile(coords.fromTile(coords.coordsTile()[0]+r, coords.coordsTile()[1]+c))
                 progressDialog.setValue(progressDialog.value()+1)
 
         progressDialog.setValue(progressDialog.maximum())
         self.removeItem(self.importedMap)
         self.setTemporaryMode(common.TEMPMODEINDEX.NONE)
         self.undoStack.endMacro()
+        self.update()
         
     def cancelImportMap(self):
         self.removeItem(self.importedMap)
@@ -1643,11 +1674,12 @@ class MapEditorScene(QGraphicsScene):
                 raise
             else:
                 self.undoStack.endMacro()
+        self.update()
     
     def clearTiles(self):
         progressDialog = QProgressDialog("Clearing tiles...", "NONCANELLABLE", 0,
-                                         (common.EBMAPWIDTH//32)*(common.EBMAPHEIGHT//32),
-                                         self.parent())
+                                         common.EBMAPWIDTH//32//8, # updating once per tile or even once per row isn't performant
+                                         self.parent()) # you spend more time updating the progress bar than the tiles!
         progressDialog.setCancelButton(None)
         progressDialog.setWindowFlag(Qt.WindowCloseButtonHint, False)
         progressDialog.setWindowModality(Qt.WindowModal)
@@ -1659,6 +1691,7 @@ class MapEditorScene(QGraphicsScene):
                 action = ActionPlaceTile(tile, 0)
                 tile.isPlaced = False
                 self.undoStack.push(action)
+            if r % 8 == 0: # only once every 8 rows (compromise between speed & user clarity)
                 progressDialog.setValue(progressDialog.value()+1)
         
         progressDialog.setValue(progressDialog.maximum())
@@ -1679,7 +1712,6 @@ class MapEditorScene(QGraphicsScene):
                                                       "none", "none", "none",
                                                       0, 0)
                 self.undoStack.push(action)
-                self.refreshSector(EBCoords.fromSector(r, c))
                 progressDialog.setValue(progressDialog.value()+1)
         
         progressDialog.setValue(progressDialog.maximum())
@@ -1746,12 +1778,14 @@ class MapEditorScene(QGraphicsScene):
     
     def toggleTileIDs(self):
         settings = QSettings()
-        if MapEditorTile.tileIDsEnabled:
-            MapEditorTile.hideTileIDs()
+        if settings.value("mapeditor/ShowTileIDs", False, bool):
             settings.setValue("mapeditor/ShowTileIDs", False)
         else: 
-            MapEditorTile.showTileIDs()
             settings.setValue("mapeditor/ShowTileIDs", True)
+        
+        settings.sync()
+        self.update()
+        self.parent().sidebarTile.scene.update()
 
     def toggleNPCIDs(self):
         settings = QSettings()
@@ -1785,7 +1819,16 @@ class MapEditorScene(QGraphicsScene):
             if self.state.mode != common.MODEINDEX.GAME:
                 MapEditorNPC.showCollisionBounds()
             settings.setValue("mapeditor/ShowNPCCollisionBounds", True)
+    
+    def toggleNPCForegroundMask(self):
+        settings = QSettings()
+        if self.parent().npcForegroundMaskAction.isChecked():
+            settings.setValue("mapeditor/MaskNPCsWithForeground", True)
+        else:
+            settings.setValue("mapeditor/MaskNPCsWithForeground", False)
             
+        self.update()
+    
     def toggleWarpIDs(self):
         settings = QSettings()
         if MapEditorWarp.warpIDsEnabled:
@@ -1816,16 +1859,6 @@ class MapEditorScene(QGraphicsScene):
         self.grid.setBrush(QBrush(QPixmap(f":/grids/{type}grid{id}.png")))
         settings.setValue("mapeditor/GridStyle", id)
         self._currentGrid = id
-            
-    def populateTiles(self):
-        # create tiles, but - and this is the trick for performance - don't render them
-        size = EBCoords(common.EBMAPWIDTH, common.EBMAPHEIGHT)
-        for r in range(size.coordsTile()[0]):
-            for c in range(size.coordsTile()[1]):
-                item = MapEditorTile(EBCoords.fromTile(r, c))
-                self.addItem(item)
-
-            QApplication.processEvents()
         
     def populateNPCs(self):
         for i in self.projectData.npcinstances:
@@ -1849,7 +1882,7 @@ class MapEditorScene(QGraphicsScene):
                 self.placedNPCsByUUID[i.uuid] = inst
                 self.addItem(inst)
             else:
-                logging.warn(f"Can't add an NPC twice! id: {i.uuid}")
+                logging.warning(f"Can't add an NPC twice! id: {i.uuid}")
             
             QApplication.processEvents()
 
@@ -1885,7 +1918,7 @@ class MapEditorScene(QGraphicsScene):
                 case trigger.TriggerSwitch:
                     trigger_.setPixmap(self.imgTriggerSwitch)
                 case _: # should never happen
-                    logging.warn(f"Unknown trigger type {i.typeData}")
+                    logging.warning(f"Unknown trigger type {i.typeData}")
 
             self.addItem(trigger_)
             self.placedTriggersByUUID[i.uuid] = trigger_

@@ -52,6 +52,8 @@ EBMAPHEIGHT = 10240
 BYTELIMIT = 0xFF
 WORDLIMIT = 0xFFFF
 
+MAXTILES = 960
+
 # TODO MULTIPLATFORM check if these sizes are universally ok
 DEFAULTEDITORWIDTH = 900
 DEFAULTEDITORHEIGHT = 620
@@ -248,6 +250,7 @@ def cap(val: float, min_: float, max_: float):
     return max(min(max_, val), min_)
 
 # https://stackoverflow.com/a/2267428
+# TODO remove. it is stupid. this is also accomplished by str(int(str(x), n))
 def baseN(num: int, base: int, numerals="0123456789abcdefghijklmnopqrstuvwxyz"):
     return ((num == 0) and numerals[0]) or (baseN(num // base, base, numerals).lstrip(numerals[0]) + numerals[num % base])
 
@@ -318,7 +321,7 @@ def openCCSFromLabel(label: str, dir: str):
                 break
         else:
             num = 0
-            logging.warn("Label not found in file, defaulting to start of file.")
+            logging.warning("Label not found in file, defaulting to start of file.")
     
     # start setting up the command
     process = QProcess()
@@ -347,7 +350,7 @@ def openCCSFromLabel(label: str, dir: str):
                     case "notepad.exe":
                         process.setArguments([path[0]]) # no goto-line support
                     case _:
-                        logging.warn(f'Unknown default editor "{editorName}", file name will be passed.')
+                        logging.warning(f'Unknown default editor "{editorName}", file name will be passed.')
                         process.setArguments([path[0]])
             case _:
                 return showErrorMsg("Error opening CCScript file",

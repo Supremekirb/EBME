@@ -7,7 +7,7 @@ from PySide6.QtGui import (QAction, QActionGroup, QGuiApplication, QImage,
                            QKeySequence, QPalette, QPixmap)
 from PySide6.QtWidgets import (QGraphicsPixmapItem, QGridLayout, QInputDialog,
                                QMenu, QProgressDialog, QSizePolicy, QTabWidget,
-                               QUndoView, QWidget)
+                               QWidget)
 
 import src.mapeditor.map.map_scene as map_scene
 import src.mapeditor.map.map_view as map_view
@@ -23,12 +23,13 @@ import src.mapeditor.sidebar.warp_sidebar as warp_sidebar
 import src.mapeditor.status_bar as status_bar
 import src.misc.common as common
 import src.misc.debug as debug
+import src.misc.icons as icons
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.dialogues import (AboutDialog, CoordsDialog, FindDialog,
                                 RenderDialog, SettingsDialog)
 from src.misc.map_music_editor import MapMusicEditor
-from src.misc.widgets import BaseChangerSpinbox
+from src.misc.widgets import BaseChangerSpinbox, UprightIconsWestTabWidget
 from src.objects.enemy import EnemyTile
 from src.objects.hotspot import Hotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
@@ -92,17 +93,6 @@ class MapEditor(QWidget):
             self.sidebarTile.tilesetSelect.setCurrentText(str(result[0]))
             self.sidebarTile.onTilesetSelect()
 
-            progressDialog.setValue(1)
-
-            progressDialog.setLabelText("Updating sectors...")
-            progressDialog.setMaximum(len(self.projectData.sectors) * len(self.projectData.sectors[0]))
-            progressDialog.setValue(0)
-            for y in self.projectData.sectors:
-                for s in y:
-                    if s.tileset == result[0]: # refresh all sectors that use the tileset
-                        self.scene.refreshSector(s.coords)
-                    progressDialog.setValue(progressDialog.value() + 1)
-
             progressDialog.setLabelText("Finalising...")
             progressDialog.setValue(2)
             progressDialog.setMaximum(3)
@@ -123,6 +113,8 @@ class MapEditor(QWidget):
 
             else:
                 progressDialog.setValue(3)
+            
+            self.update()
 
     def doFind(self):
         result = FindDialog.findObject(self, self.projectData)
@@ -179,35 +171,10 @@ class MapEditor(QWidget):
 
         self.status = status_bar.MapEditorStatus(self)
 
-        self.sidebar = QTabWidget()
+        self.sidebar = UprightIconsWestTabWidget()
         self.sidebar.currentChanged.connect(self.changeSidebarTab)
-       
-        # check the background color of the app, if it's dark use the dark mode icons
-        if QGuiApplication.palette().color(QPalette.ColorGroup.Normal, QPalette.ColorRole.Base).lightness() < 128:
-            iconTile = QPixmap(":/ui/modeTileDark.png")
-            iconSector = QPixmap(":/ui/modeSectorDark.png")
-            iconNPC = QPixmap(":/ui/modeNPCDark.png")
-            iconDoor = QPixmap(":/ui/modeDoorDark.png")
-            iconEnemy = QPixmap(":/ui/modeEnemyDark.png")
-            iconHotspot = QPixmap(":/ui/modeHotspotDark.png")
-            iconWarp = QPixmap(":/ui/modeWarpDark.png")
-            iconAll = QPixmap(":/ui/modeAllDark.png")
-            iconGame = QPixmap(":/ui/modeGameDark.png")
-        else:
-            iconTile = QPixmap(":/ui/modeTile.png")
-            iconSector = QPixmap(":/ui/modeSector.png")
-            iconNPC = QPixmap(":/ui/modeNPC.png")
-            iconDoor = QPixmap(":/ui/modeDoor.png")
-            iconEnemy = QPixmap(":/ui/modeEnemy.png")
-            iconHotspot = QPixmap(":/ui/modeHotspot.png")
-            iconWarp = QPixmap(":/ui/modeWarp.png")
-            iconAll = QPixmap(":/ui/modeAll.png")
-            iconGame = QPixmap(":/ui/modeGame.png")
 
         # future modes / features
-        # warps
-        # psi teleport
-        # map_music hierachy editor? doesnt exactly apply to map
         # map_changes
 
         self.sidebarTile = tile_sidebar.SidebarTile(self, self.state, self, self.projectData)
@@ -220,45 +187,45 @@ class MapEditor(QWidget):
         self.sidebarAll = all_sidebar.SidebarAll(self, self.state, self, self.projectData)
         self.sidebarGame = game_sidebar.SidebarGame(self, self.state, self, self.projectData)
 
-        self.sidebar.addTab(self.sidebarTile, iconTile, "Tile")
-        self.sidebar.addTab(self.sidebarSector, iconSector, "Sector")
-        self.sidebar.addTab(self.sidebarNPC, iconNPC, "NPC")
-        self.sidebar.addTab(self.sidebarTrigger, iconDoor, "Trigger")
-        self.sidebar.addTab(self.sidebarEnemy, iconEnemy, "Enemy")
-        self.sidebar.addTab(self.sidebarHotspot, iconHotspot, "Hotspot")
-        self.sidebar.addTab(self.sidebarWarp, iconWarp, "Warp && TP")
-        self.sidebar.addTab(self.sidebarAll, iconAll, "View All")
-        self.sidebar.addTab(self.sidebarGame, iconGame, "View Game")
+        self.sidebar.addTab(self.sidebarTile, icons.EBICON_TILE, "Tile")
+        self.sidebar.addTab(self.sidebarSector, icons.EBICON_SECTOR, "Sector")
+        self.sidebar.addTab(self.sidebarNPC, icons.EBICON_NPC, "NPC")
+        self.sidebar.addTab(self.sidebarTrigger, icons.EBICON_TRIGGER, "Trigger")
+        self.sidebar.addTab(self.sidebarEnemy, icons.EBICON_ENEMY, "Enemy")
+        self.sidebar.addTab(self.sidebarHotspot, icons.EBICON_HOTSPOT, "Hotspot")
+        self.sidebar.addTab(self.sidebarWarp, icons.EBICON_WARP, "Warp && TP")
+        self.sidebar.addTab(self.sidebarAll, icons.EBICON_ALL, "View All")
+        self.sidebar.addTab(self.sidebarGame, icons.EBICON_GAME, "View Game")
         self.sidebar.setTabPosition(QTabWidget.TabPosition.West)
             
         self.menuFile = QMenu("&File")
-        self.saveAction = QAction("&Save", shortcut=QKeySequence("Ctrl+S"))
+        self.saveAction = QAction(icons.ICON_SAVE, "&Save", shortcut=QKeySequence("Ctrl+S"))
         self.saveAction.triggered.connect(self.parent().projectWin.saveAction.trigger)
-        self.openAction = QAction("&Open", shortcut=QKeySequence("Ctrl+O"))
+        self.openAction = QAction(icons.ICON_LOAD, "&Open", shortcut=QKeySequence("Ctrl+O"))
         self.openAction.triggered.connect(self.parent().projectWin.openAction.trigger)
-        self.reloadAction = QAction("&Reload", shortcut=QKeySequence("Ctrl+R"))
+        self.reloadAction = QAction(icons.ICON_RELOAD, "&Reload", shortcut=QKeySequence("Ctrl+R"))
         self.reloadAction.triggered.connect(self.parent().projectWin.reloadAction.trigger)
-        self.openSettingsAction = QAction("Settings...")
+        self.openSettingsAction = QAction(icons.ICON_SETTINGS, "Settings...")
         self.openSettingsAction.triggered.connect(lambda: SettingsDialog.openSettings(self))
         self.menuFile.addActions([self.saveAction, self.openAction, self.reloadAction])
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.openSettingsAction)        
 
         self.menuEdit = QMenu("&Edit")
-        self.deleteAction = QAction("&Delete", shortcut=QKeySequence(Qt.Key.Key_Delete))
+        self.deleteAction = QAction(icons.ICON_DELETE, "&Delete", shortcut=QKeySequence(Qt.Key.Key_Delete))
         self.deleteAction.triggered.connect(self.scene.onDelete)
-        self.copyAction = QAction("&Copy", shortcut=QKeySequence("Ctrl+C"))
+        self.copyAction = QAction(icons.ICON_COPY, "&Copy", shortcut=QKeySequence("Ctrl+C"))
         self.copyAction.triggered.connect(self.scene.onCopy)
-        self.cutAction = QAction("Cu&t", shortcut=QKeySequence("Ctrl+X"))
+        self.cutAction = QAction(icons.ICON_CUT, "Cu&t", shortcut=QKeySequence("Ctrl+X"))
         self.cutAction.triggered.connect(self.scene.onCut)
-        self.pasteAction = QAction("&Paste", shortcut=QKeySequence("Ctrl+V"))
+        self.pasteAction = QAction(icons.ICON_PASTE, "&Paste", shortcut=QKeySequence("Ctrl+V"))
         self.pasteAction.triggered.connect(self.scene.onPaste)
-        self.undoAction = QAction("&Undo", shortcut=QKeySequence("Ctrl+Z"))
+        self.undoAction = QAction(icons.ICON_UNDO, "&Undo", shortcut=QKeySequence("Ctrl+Z"))
         self.undoAction.triggered.connect(self.scene.onUndo)
-        self.redoAction = QAction("&Redo")
+        self.redoAction = QAction(icons.ICON_REDO, "&Redo")
         self.redoAction.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
         self.redoAction.triggered.connect(self.scene.onRedo)
-        self.cancelAction = QAction("C&ancel")
+        self.cancelAction = QAction(icons.ICON_CANCEL, "C&ancel")
         self.cancelAction.setShortcuts([QKeySequence("Esc"), QKeySequence("Ctrl+D")])
         self.cancelAction.triggered.connect(self.scene.onCancel)
         self.menuEdit.addActions([self.deleteAction, self.cutAction, self.copyAction, self.pasteAction])
@@ -268,11 +235,11 @@ class MapEditor(QWidget):
         self.menuEdit.addAction(self.cancelAction)
         
         # hidden actions for sectors
-        self.copyShiftAction = QAction("Copy", shortcut=QKeySequence("Ctrl+Shift+C"))
+        self.copyShiftAction = QAction(icons.ICON_COPY, "Copy", shortcut=QKeySequence("Ctrl+Shift+C"))
         self.addAction(self.copyShiftAction)
         self.copyShiftAction.triggered.connect(self.scene.copySelectedSectorAttributes)
         
-        self.copyAltShiftAction = QAction("Copy", shortcut=QKeySequence("Ctrl+Alt+Shift+C"))
+        self.copyAltShiftAction = QAction(icons.ICON_COPY, "Copy", shortcut=QKeySequence("Ctrl+Alt+Shift+C"))
         self.addAction(self.copyAltShiftAction)
         self.copyAltShiftAction.triggered.connect(self.scene.copySelectedSectorPalettes)
         
@@ -280,11 +247,11 @@ class MapEditor(QWidget):
 
         self.menuView = QMenu("&View")
         settings = QSettings()
-        self.zoomInAction = QAction("Zoom in")
+        self.zoomInAction = QAction(icons.ICON_ZOOM_IN, "Zoom in")
         self.zoomInAction.setShortcuts([QKeySequence.StandardKey.ZoomIn, QKeySequence("Ctrl+=")])
         self.zoomInAction.triggered.connect(self.view.zoomIn)
         
-        self.zoomOutAction = QAction("Zoom out", shortcut=QKeySequence.ZoomOut)
+        self.zoomOutAction = QAction(icons.ICON_ZOOM_OUT, "Zoom out", shortcut=QKeySequence.ZoomOut)
         self.zoomOutAction.triggered.connect(self.view.zoomOut)
 
         self.hexAction = QAction("Use &hexadecimal", shortcut=QKeySequence("Ctrl+H"))
@@ -298,11 +265,12 @@ class MapEditor(QWidget):
         self.gridAction = QAction("Show &grid", shortcut=QKeySequence("Ctrl+G"))
         self.gridAction.setCheckable(True)
         self.gridAction.changed.connect(self.scene.toggleGrid) # ehhh... could this go somewhere else?
-        if settings.value("ShowGrid") == "true":
+        if settings.value("ShowGrid", type=bool):
             self.gridAction.setChecked(True)
             self.scene.grid.show()
 
         self.gridMenu = QMenu("Grid &style...")
+        self.gridMenu.setIcon(icons.ICON_GRID)
         self.gridStyleActionGroup = QActionGroup(self.gridMenu)
         self.gridStyle0Action = QAction("&Solid")
         self.gridStyle0Action.setCheckable(True)
@@ -338,31 +306,37 @@ class MapEditor(QWidget):
         self.tileIDAction = QAction("Show &tile IDs", shortcut=QKeySequence("Ctrl+T"))
         self.tileIDAction.setCheckable(True)
         self.tileIDAction.changed.connect(self.scene.toggleTileIDs)
-        if settings.value("ShowTileIDs") == "true":
+        if settings.value("ShowTileIDs", type=bool):
             self.tileIDAction.trigger()
 
         self.npcIDAction = QAction("Show &NPC IDs", shortcut=QKeySequence("Ctrl+N"))
         self.npcIDAction.setCheckable(True)
-        if settings.value("ShowNPCIDs") == "true":
+        if settings.value("ShowNPCIDs", type=bool):
             self.npcIDAction.setChecked(True)
             MapEditorNPC.showNPCIDs()
         self.npcIDAction.changed.connect(self.scene.toggleNPCIDs)
 
         self.npcVisualBoundsAction = QAction("Show NPC &visual bounds")
         self.npcVisualBoundsAction.setCheckable(True)
-        if settings.value("ShowNPCVisualBounds") == "true":
+        if settings.value("ShowNPCVisualBounds", type=bool):
             self.npcVisualBoundsAction.setChecked(True)
             MapEditorNPC.showVisualBounds()
         self.npcVisualBoundsAction.changed.connect(self.scene.toggleNPCVisualBounds)
 
         self.npcCollisionBoundsAction = QAction("Show NPC &collision bounds")
         self.npcCollisionBoundsAction.setCheckable(True)
-        if settings.value("ShowNPCCollisionBounds") == "true":
+        if settings.value("ShowNPCCollisionBounds", type=bool):
             self.npcCollisionBoundsAction.setChecked(True)
             MapEditorNPC.showCollisionBounds()
         self.npcCollisionBoundsAction.changed.connect(self.scene.toggleNPCCollisionBounds)
+        
+        self.npcForegroundMaskAction = QAction("Show &foreground in front of NPCs")
+        self.npcForegroundMaskAction.setCheckable(True)
+        if settings.value("MaskNPCsWithForeground", type=bool):
+            self.npcForegroundMaskAction.setChecked(True)
+        self.npcForegroundMaskAction.changed.connect(self.scene.toggleNPCForegroundMask)
 
-        self.warpIDAction = QAction("Show &warp && teleport  IDs")
+        self.warpIDAction = QAction("Show &warp && teleport IDs")
         self.warpIDAction.setCheckable(True)
         if settings.value("ShowWarpIDs") == "true":
             self.warpIDAction.setChecked(True)
@@ -380,28 +354,29 @@ class MapEditor(QWidget):
         self.menuView.addSeparator()
         self.menuView.addActions([self.tileIDAction])
         self.menuView.addSeparator()
-        self.menuView.addActions([self.npcIDAction, self.npcVisualBoundsAction, self.npcCollisionBoundsAction])
+        self.menuView.addActions([self.npcIDAction, self.npcVisualBoundsAction,
+                                  self.npcCollisionBoundsAction, self.npcForegroundMaskAction])
         self.menuView.addSeparator()
         self.menuView.addActions([self.warpIDAction])
         
         self.menuMode = QMenu("&Mode")
-        self.modeTileAction = QAction("&Tile", shortcut=QKeySequence("F1"))
+        self.modeTileAction = QAction(icons.EBICON_TILE, "&Tile", shortcut=QKeySequence("F1"))
         self.modeTileAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.TILE))
-        self.modeSectorAction = QAction("&Sector", shortcut=QKeySequence("F2"))
+        self.modeSectorAction = QAction(icons.EBICON_SECTOR, "&Sector", shortcut=QKeySequence("F2"))
         self.modeSectorAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.SECTOR))
-        self.modeNPCAction = QAction("&NPC", shortcut=QKeySequence("F3"))
+        self.modeNPCAction = QAction(icons.EBICON_NPC, "&NPC", shortcut=QKeySequence("F3"))
         self.modeNPCAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.NPC))
-        self.modeTriggerAction = QAction("&Trigger", shortcut=QKeySequence("F4"))
+        self.modeTriggerAction = QAction(icons.EBICON_TRIGGER, "&Trigger", shortcut=QKeySequence("F4"))
         self.modeTriggerAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.TRIGGER))
-        self.modeEnemyAction = QAction("&Enemy", shortcut=QKeySequence("F5"))
+        self.modeEnemyAction = QAction(icons.EBICON_ENEMY, "&Enemy", shortcut=QKeySequence("F5"))
         self.modeEnemyAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.ENEMY))
-        self.modeHotspotAction = QAction("&Hotspot", shortcut=QKeySequence("F6"))
+        self.modeHotspotAction = QAction(icons.EBICON_HOTSPOT, "&Hotspot", shortcut=QKeySequence("F6"))
         self.modeHotspotAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.HOTSPOT))
-        self.modeWarpAction = QAction("&Warp && TP", shortcut=QKeySequence("F7"))
+        self.modeWarpAction = QAction(icons.EBICON_WARP, "&Warp && TP", shortcut=QKeySequence("F7"))
         self.modeWarpAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.WARP))
-        self.modeAllAction = QAction("&All", shortcut=QKeySequence("F8"))
+        self.modeAllAction = QAction(icons.EBICON_ALL, "&All", shortcut=QKeySequence("F8"))
         self.modeAllAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.ALL))
-        self.modeGameAction = QAction("&Game", shortcut=QKeySequence("F9"))
+        self.modeGameAction = QAction(icons.EBICON_GAME, "&Game", shortcut=QKeySequence("F9"))
         self.modeGameAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.GAME))
         
         self.menuMode.addActions([self.modeTileAction, self.modeSectorAction, self.modeNPCAction, self.modeTriggerAction,
@@ -409,34 +384,34 @@ class MapEditor(QWidget):
                                   self.modeAllAction, self.modeGameAction])
         
         self.menuGoto = QMenu("&Go to")
-        self.gotoGenericAction = QAction("&Find...", shortcut=QKeySequence.Find)
+        self.gotoGenericAction = QAction(icons.ICON_FIND, "&Find...", shortcut=QKeySequence.Find)
         self.gotoGenericAction.triggered.connect(self.doFind)
-        self.gotoCoordsAction = QAction("Go to &coordinates...", shortcut=QKeySequence("Ctrl+Shift+G"))
+        self.gotoCoordsAction = QAction(icons.ICON_COORDS, "Go to &coordinates...", shortcut=QKeySequence("Ctrl+Shift+G"))
         self.gotoCoordsAction.triggered.connect(self.doGoto)
-        self.gotoSectorAction = QAction("Go to &sector...")
+        self.gotoSectorAction = QAction(icons.ICON_RECT, "Go to &sector...")
         self.gotoSectorAction.triggered.connect(self.doGotoSector)
 
         self.menuGoto.addActions([self.gotoGenericAction, self.gotoCoordsAction, self.gotoSectorAction])
 
 
         self.menuTools = QMenu("&Tools")
-        self.renderMapAction = QAction("&Render image of map...")
+        self.renderMapAction = QAction(icons.ICON_RENDER_IMG, "&Render image of map...")
         self.renderMapAction.triggered.connect(self.renderMap)
-        self.png2ftsAction = QAction("&Import PNG with png2fts...")
+        self.png2ftsAction = QAction(icons.ICON_IMPORT_IMG, "&Import PNG with png2fts...")
         self.png2ftsAction.triggered.connect(self.dopng2fts)
-        self.clearAction = QAction("&Clear map...")
+        self.clearAction = QAction(icons.ICON_CLEAR, "&Clear map...")
         self.clearAction.triggered.connect(self.scene.onClear)
-        self.mapMusicAction = QAction("&Map music editor...")
+        self.mapMusicAction = QAction(icons.ICON_MUSIC_LIST, "&Map music editor...")
         self.mapMusicAction.triggered.connect(lambda: MapMusicEditor.openMapMusicEditor(self, self.projectData))
         self.menuTools.addActions([self.renderMapAction, self.png2ftsAction, self.clearAction, self.mapMusicAction])
 
         self.menuHelp = QMenu("&Help")
-        self.aboutAction = QAction("&About EBME...")
+        self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")
         self.aboutAction.triggered.connect(lambda: AboutDialog.showAbout(self))
         self.menuHelp.addAction(self.aboutAction)
         
         if not debug.SYSTEM_OUTPUT:
-            self.openDebugAction = QAction("Debug output")
+            self.openDebugAction = QAction(icons.ICON_DEBUG, "Debug output")
             self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
             self.menuHelp.addAction(self.openDebugAction)
 

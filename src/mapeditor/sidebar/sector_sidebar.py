@@ -13,6 +13,7 @@ from src.objects.sector import Sector
 
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState
+    
 
 class SidebarSector(QWidget):
     """Sidebar for sector mode"""

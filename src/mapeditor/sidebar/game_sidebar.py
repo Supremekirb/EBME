@@ -5,10 +5,10 @@ from PySide6.QtGui import QPolygon
 from PySide6.QtWidgets import (QCheckBox, QFormLayout, QGroupBox, QLabel,
                                QPushButton, QSlider, QVBoxLayout, QWidget)
 
+from src.coilsnake.project_data import ProjectData
+
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState
-
-from src.coilsnake.project_data import ProjectData
 
 
 class SidebarGame(QWidget):

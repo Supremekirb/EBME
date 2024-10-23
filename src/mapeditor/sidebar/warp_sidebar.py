@@ -15,6 +15,7 @@ from src.objects.warp import Teleport, Warp
 
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState
+    
 
 class SidebarWarp(QWidget):
     def __init__(self, parent, state: "MapEditorState", mapeditor: "MapEditor", projectData: ProjectData):

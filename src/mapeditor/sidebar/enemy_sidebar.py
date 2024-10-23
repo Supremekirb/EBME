@@ -11,15 +11,15 @@ from PySide6.QtWidgets import (QFormLayout, QGraphicsItem, QGraphicsPixmapItem,
                                QSpinBox, QTableWidget, QTableWidgetItem,
                                QTabWidget, QVBoxLayout, QWidget)
 
-if TYPE_CHECKING:
-    from mapeditor.map_editor import MapEditor, MapEditorState
-
 import src.misc.common as common
 from src.actions.enemy_actions import ActionUpdateEnemyMapGroup
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.widgets import ColourButton, FlagInput
-from src.objects.enemy import EnemyGroup, EnemyMapGroup, EnemyTile
+
+if TYPE_CHECKING:
+    from mapeditor.map_editor import MapEditor, MapEditorState
+
 
 WHITEBRUSH = QBrush(Qt.white)
 

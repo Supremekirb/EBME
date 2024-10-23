@@ -11,6 +11,7 @@ from src.misc.coords import EBCoords
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
+    
 
 WHITEBRUSH = QBrush(Qt.GlobalColor.white)
 BLACKBRUSH = QBrush(Qt.GlobalColor.black)

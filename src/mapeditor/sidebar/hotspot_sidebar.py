@@ -8,13 +8,13 @@ import src.misc.common as common
 from src.actions.hotspot_actions import (ActionChangeHotspotColour,
                                          ActionChangeHotspotComment,
                                          ActionChangeHotspotLocation)
+from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.widgets import ColourButton, CoordsInput, HSeparator
 
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState
-
-from src.coilsnake.project_data import ProjectData
+    
     
 class SidebarHotspot(QWidget):
     def __init__(self, parent, state: "MapEditorState", mapeditor: "MapEditor", projectData: ProjectData):

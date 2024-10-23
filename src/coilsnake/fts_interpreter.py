@@ -45,21 +45,21 @@ class FullTileset:
         for i in self.paletteGroups:
             if i.groupID == groupID:
                 return i
-        return -1
+        raise ValueError(f"No palette group found with ID {groupID}")
 
     def getPalette(self, groupID, paletteID):
         """From a palette group ID and palette ID, get a Palette object\n\nReturns -1 if no match was found"""
         for i in self.palettes:
             if (i.groupID == groupID) and (i.paletteID == paletteID):
                 return i
-        return -1
+        raise ValueError(f"No palette found with group ID {groupID} and palette ID {paletteID}")
             
     def getTilesetFromPaletteGroup(self, groupID):
         """From a palette group ID, get a Tileset ID\n\nReturns -1 if no match was found"""
         for i in self.paletteGroups:
             if i.groupID == groupID:
                 return self.id
-        return -1
+        raise ValueError(f"No tileset found with palette group ID {groupID}")
 
     def interpretMinitiles(self, fts):
         """From an .fts file, read the data of all 512 minitiles.
@@ -124,7 +124,7 @@ class FullTileset:
            `tiles` - a list of Tile ob6jects"""
         tiles: list[Tile] = []
         # verify tiles
-        for i in range(self.tileOffset, self.tileOffset+960):
+        for i in range(self.tileOffset, self.tileOffset+common.MAXTILES):
             self.verify_hex(fts[i])
             tiles.append(Tile(fts[i]))
 
@@ -132,10 +132,10 @@ class FullTileset:
 
     def interpretFTS(self):
         """Collection of functions to initialise fts content - minitiles, palettes, and tiles."""
-        self.minitiles = self.interpretMinitiles(self.contents)
-        self.palettes = self.interpretPalettes(self.contents)
-        self.paletteGroups = self.buildPaletteGroups()
-        self.tiles = self.interpretTiles(self.contents)
+        self.minitiles: list[Minitile] = self.interpretMinitiles(self.contents)
+        self.palettes: list[Palette] = self.interpretPalettes(self.contents)
+        self.paletteGroups: list[PaletteGroup] = self.buildPaletteGroups()
+        self.tiles: list[Tile] = self.interpretTiles(self.contents)
 
 
 class PaletteGroup:
@@ -261,26 +261,30 @@ class Tile:
             build.append(subbuild)
         return build
     
-    def toImage(self, palette, fts):
+    def toImage(self, palette: Palette, fts: FullTileset, fgOnly=False, bgOnly=False):
         """Convert to a PIL Image"""
         # seems a little weird to pass the entire fts file, but it means we can cache it, which is significantly better for performance..!
-        img = Image.new("RGB", (32, 32))
+        if fgOnly:
+            img = Image.new("RGBA", (32, 32))
+        else: img = Image.new("RGB", (32, 32))
+        
         x = 0
         y = 0
-        for i in self.getMinitileDataList():
-            minitile = fts.minitiles[i[0]].BothToImage(palette.subpalettes[i[1]])
-            
-            # debugging: check if the image contains (0, 248, 0)
-            if (0, 248, 0, 255) in list(minitile.getdata()):
-                pass
+        for id, subpalette, hflip, vflip, collision in self.getMinitileDataList():
+            if fgOnly:
+                minitile = fts.minitiles[id].ForegroundToImage(palette.subpalettes[subpalette])
+            elif bgOnly:
+                minitile = fts.minitiles[id].BackgroundToImage(palette.subpalettes[subpalette])
+            else:
+                minitile = fts.minitiles[id].BothToImage(palette.subpalettes[subpalette])
             
             if x == 32:
                 x = 0
                 y += 8
 
-            if i[2] == True:
+            if hflip:
                 minitile = ImageOps.mirror(minitile)
-            if i[3] == True:
+            if vflip:
                 minitile = ImageOps.flip(minitile)
             img.paste(minitile, (x, y))
 

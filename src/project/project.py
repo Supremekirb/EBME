@@ -16,6 +16,7 @@ import src.coilsnake.save as save
 import src.mapeditor.map_editor as map_editor
 import src.misc.common as common
 import src.misc.debug as debug
+import src.misc.icons as icons
 import src.tileeditor.tile_editor as tile_editor
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import AboutDialog, SettingsDialog
@@ -36,6 +37,8 @@ class Project(QWidget):
         self.disableReload()
         self.disableEditors()
         self.projectInfo.setDisabled(True)
+        
+        self.isSaving = False
 
     def enableOpen(self):
         self.openProjectButton.setEnabled(True)
@@ -150,7 +153,7 @@ class Project(QWidget):
                     except Exception as e:
                         common.showErrorMsg(title="Error loading map editor", text="An error occurred while loading the map editor.", info=str(e))
                         self.updateStatusLabel("Error loading map editor.")
-                        logging.warn(f"Error loading map editor: {traceback.format_exc()}")
+                        logging.warning(f"Error loading map editor: {traceback.format_exc()}")
                         raise
                     
                     self.updateStatusLabel("Loading tile editor...")
@@ -160,7 +163,7 @@ class Project(QWidget):
                     except Exception as e:
                         common.showErrorMsg(title="Error loading tile editor", text="An error occurred while loading the tile editor.", info=str(e))
                         self.updateStatusLabel("Error loading tile editor.")
-                        logging.warn(f"Error loading tile editor: {traceback.format_exc()}")
+                        logging.warning(f"Error loading tile editor: {traceback.format_exc()}")
                         raise
                 
                 except: pass # we've already shown an error message and logged it, so just continue
@@ -182,7 +185,7 @@ class Project(QWidget):
             except Exception as e:
                 common.showErrorMsg(title="Error loading project", text="An error occurred while loading the project.", info=str(e))
                 self.updateStatusLabel("Error loading project.")
-                logging.warn(f"Error loading project: {traceback.format_exc()}")
+                logging.warning(f"Error loading project: {traceback.format_exc()}")
             
         else: # returns error data if failed
             self.disableSave()
@@ -199,6 +202,7 @@ class Project(QWidget):
         self.loadingProgress.setValue(-1)
     
     def saveProject(self):
+        self.isSaving = True
         logging.info(f"Saving project to {self.projectData.dir}")
         self.disableOpen()
         self.disableSave()
@@ -225,6 +229,7 @@ class Project(QWidget):
 
     def finishedProjectSave(self, result):
         self.workerThread.quit()
+        self.isSaving = False
 
         if isinstance(result, bool) and result == True:
             self.updateStatusLabel("Project saved.")
@@ -318,25 +323,25 @@ class Project(QWidget):
 
     def setupUI(self):
         self.menuFile = QMenu("&File")
-        self.openAction = QAction("&Open", shortcut=QKeySequence("Ctrl+O"))
+        self.openAction = QAction(icons.ICON_LOAD, "&Open", shortcut=QKeySequence("Ctrl+O"))
         self.openAction.triggered.connect(self.openDirectory)
-        self.saveAction = QAction("&Save", shortcut=QKeySequence("Ctrl+S"))
+        self.saveAction = QAction(icons.ICON_SAVE, "&Save", shortcut=QKeySequence("Ctrl+S"))
         self.saveAction.triggered.connect(self.saveProject)
-        self.reloadAction = QAction("&Reload", shortcut=QKeySequence("Ctrl+R"))
+        self.reloadAction = QAction(icons.ICON_RELOAD, "&Reload", shortcut=QKeySequence("Ctrl+R"))
         self.reloadAction.triggered.connect(lambda: self.openDirectory(self.projectData.dir))
         self.menuFile.addActions([self.openAction, self.saveAction, self.reloadAction])
         self.menuFile.addSeparator()
-        self.openSettingsAction = QAction("&Settings...")
+        self.openSettingsAction = QAction(icons.ICON_SETTINGS, "&Settings...")
         self.openSettingsAction.triggered.connect(lambda: SettingsDialog.openSettings(self))
         self.menuFile.addAction(self.openSettingsAction)
 
         self.menuHelp = QMenu("&Help")
-        self.aboutAction = QAction("&About EBME...")
+        self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")
         self.aboutAction.triggered.connect(lambda: AboutDialog.showAbout(self))
         self.menuHelp.addAction(self.aboutAction)
         
         if not debug.SYSTEM_OUTPUT:
-            self.openDebugAction = QAction("Debug output")
+            self.openDebugAction = QAction(icons.ICON_DEBUG, "Debug output")
             self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
             self.menuHelp.addAction(self.openDebugAction)
 

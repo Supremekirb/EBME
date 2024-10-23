@@ -35,27 +35,27 @@ class MainApplication(QMainWindow):
         try:
             QFontDatabase.addApplicationFont(common.absolutePath("assets/fonts/EBMain.ttf"))
         except Exception as _:
-            logging.warn("Couldn't initialise EB font! Trying default")
+            logging.warning("Couldn't initialise EB font! Trying default")
 
         try:
             QFontDatabase.addApplicationFont(common.absolutePath("assets/fonts/apple_kid.ttf"))
         except Exception as _:
-            logging.warn("Couldn't initialise EB display font!")
+            logging.warning("Couldn't initialise EB display font!")
 
         try:
             QFontDatabase.addApplicationFont(common.absolutePath("assets/fonts/statusplz.ttf"))
         except Exception as _:
-            logging.warn("Couldn't initialise EB mini font!")
+            logging.warning("Couldn't initialise EB mini font!")
 
         try:
             QFontDatabase.addApplicationFont(common.absolutePath("assets/fonts/onett.ttf"))
         except Exception as _:
-            logging.warn("Couldn't initialise EB header font!")
+            logging.warning("Couldn't initialise EB header font!")
 
         try:
             QFontDatabase.addApplicationFont(common.absolutePath("assets/fonts/saturn_boing.ttf"))
         except Exception as _:
-            logging.warn("Couldn't initialise Mr. Saturn font!")
+            logging.warning("Couldn't initialise Mr. Saturn font!")
 
     def onTabSwitch(self):
         # So there are some weird garbage collection things
@@ -81,7 +81,7 @@ class MainApplication(QMainWindow):
 
     def closeEvent(self, event):
         if isinstance(self.mapWin, MapEditor):
-            if not self.projectWin.saveAction.isEnabled():
+            if self.projectWin.isSaving:
                 msg = QMessageBox(self)
                 msg.setText("The program shouldn't be closed while it's saving.")
                 msg.setInformativeText("Please wait and try again, or close the program anyway (may be unsafe).")

@@ -8,10 +8,7 @@ from src.misc.coords import EBCoords
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
-    from src.objects.trigger import (Trigger, TriggerDoor, TriggerEscalator,
-                                     TriggerLadder, TriggerObject,
-                                     TriggerPerson, TriggerRope,
-                                     TriggerStairway, TriggerSwitch)
+    from src.objects.trigger import Trigger
 
 
 class ActionMoveTrigger(QUndoCommand):
@@ -138,14 +135,14 @@ class ActionAddTrigger(QUndoCommand):
             case trigger.TriggerSwitch:
                 placement.setPixmap(self.scene.imgTriggerSwitch)
             case _: # should never happen
-                logging.warn(f"Unknown trigger type {self.trigger.typeData}")
+                logging.warning(f"Unknown trigger type {self.trigger.typeData}")
                 placement.setPixmap(self.scene.imgTriggerDoor)
                 
         if not self.trigger in self.scene.projectData.triggers:
             self.scene.projectData.triggers.append(self.trigger)
             
         else:
-            logging.warn(f"Can't add a trigger multiple times! (UUID: {self.trigger.uuid})")
+            logging.warning(f"Can't add a trigger multiple times! (UUID: {self.trigger.uuid})")
             self.setObsolete(True)
             return
         
@@ -154,7 +151,7 @@ class ActionAddTrigger(QUndoCommand):
             placement.setSelected(True)
             self.scene.addItem(placement)
         else:
-            logging.warn(f"Can't add a trigger multiple times! (UUID: {self.trigger.uuid})")
+            logging.warning(f"Can't add a trigger multiple times! (UUID: {self.trigger.uuid})")
             self.setObsolete(True)
             
     def undo(self):

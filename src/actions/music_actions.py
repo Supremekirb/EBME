@@ -1,10 +1,8 @@
 from PySide6.QtGui import QUndoCommand
+from PySide6.QtWidgets import QTreeWidget
 
 import src.misc.common as common
 from src.objects.music import MapMusicEntryListItem, MapMusicHierarchyListItem
-
-
-from PySide6.QtWidgets import QTreeWidget
 
 # these ones are a little different because we actually only
 # modify the visual representation of the music hierarchy.

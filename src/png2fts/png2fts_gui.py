@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (QDialog, QFileDialog, QFormLayout, QHBoxLayout,
 
 import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
+from src.misc.dialogues import png2ftsLicenseDialog
 from src.png2fts.ebme_png2fts import EBME_png2fts
 
 
@@ -105,6 +106,8 @@ class png2ftsMapEditorGui(QDialog):
         self.doneButton.setDisabled(True)
 
         self.credits = QLabel("png2fts by CataLatas & Cooper Harasyn (cooprocks123e)")
+        self.openLicenseButton = QPushButton("View license...")
+        self.openLicenseButton.clicked.connect(lambda: png2ftsLicenseDialog.showLicense(self))
 
         layout = QVBoxLayout()
         formLayout = QFormLayout()
@@ -117,6 +120,7 @@ class png2ftsMapEditorGui(QDialog):
         formLayout.addRow(self.placeOnMapButton)
         formLayout.addRow(self.doneButton)
         formLayout.addRow(self.credits)
+        formLayout.addRow(self.openLicenseButton)
 
         layout.addLayout(formLayout)
         self.setLayout(layout)

@@ -10,22 +10,25 @@ from PySide6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
 
 import src.misc.common as common
 import src.misc.debug as debug
+import src.misc.icons as icons
 from src.actions.fts_actions import (ActionChangeArrangement,
                                      ActionChangeBitmap, ActionChangeCollision,
                                      ActionChangeSubpaletteColour,
                                      ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
+from src.coilsnake.fts_interpreter import Minitile, Tile
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AutoMinitileRearrangerDialog,
-                                SettingsDialog, TileEditorAboutDialog)
-from src.misc.widgets import AspectRatioWidget, HorizontalGraphicsView
+                                SettingsDialog)
+from src.misc.widgets import (AspectRatioWidget, HorizontalGraphicsView,
+                              TilesetDisplayGraphicsScene)
 from src.tileeditor.arrangement_editor import TileArrangementWidget
 from src.tileeditor.collision_editor import (CollisionPresetList,
                                              TileCollisionWidget)
 from src.tileeditor.graphics_editor import (MinitileEditorWidget,
                                             PaletteSelector)
 from src.tileeditor.minitile_selector import MinitileScene, MinitileView
-from src.tileeditor.tile_selector import TileScene
+from src.tileeditor.palette_manager import PaletteManagerDialog
 
 if TYPE_CHECKING:
     from src.main.main import MainApplication
@@ -61,8 +64,6 @@ class TileEditor(QWidget):
         self.setupUI()
         self.tilesetSelect.setCurrentIndex(0)
         self.tilesetSelect.activated.emit(0)
-        
-        self.tileScene.selectTile(0)
     
     def onUndo(self):
         command = self.undoStack.command(self.undoStack.index()-1)
@@ -96,10 +97,13 @@ class TileEditor(QWidget):
         for c in commands:
             if isinstance(c, ActionChangeBitmap):
                 actionType = "bitmap"
+                self.updateMinitile(c.minitile)
             elif isinstance(c, ActionChangeArrangement):
                 actionType = "arrangement"
+                self.updateTile(c.tile)
             elif isinstance(c, ActionChangeSubpaletteColour):
                 actionType = "colour"
+                self.onColourEdit()
             elif isinstance(c, ActionChangeCollision):
                 actionType = "collision"
             elif isinstance(c, ActionSwapMinitiles):
@@ -140,6 +144,8 @@ class TileEditor(QWidget):
         self.collisionScene.loadTile(tileset.tiles[self.state.currentTile])
         self.collisionScene.loadTileset(tileset)
         
+        self.tileScene.currentTileset = value
+        
         self.onPaletteGroupSelect()
         self.paletteGroupSelect.blockSignals(False)
         
@@ -150,6 +156,8 @@ class TileEditor(QWidget):
         self.paletteSelect.clear()
         self.paletteSelect.addItems(str(i.paletteID) for i in self.projectData.getTileset(
             self.state.currentTileset).getPaletteGroup(value).palettes)
+        
+        self.tileScene.currentPaletteGroup = value 
         
         self.onPaletteSelect()
         self.paletteSelect.blockSignals(False)    
@@ -165,7 +173,8 @@ class TileEditor(QWidget):
         self.collisionScene.loadPalette(palette)
         self.paletteView.loadPalette(palette)
         
-        self.tileScene.renderTileset(self.state.currentTileset, self.state.currentPaletteGroup, self.state.currentPalette)
+        self.tileScene.currentPalette = value
+        self.tileScene.update()
         
     def onSubpaletteSelect(self):
         value = self.paletteView.currentSubpaletteIndex
@@ -177,16 +186,29 @@ class TileEditor(QWidget):
     
         self.selectMinitile(self.state.currentMinitile)
     
-    def onTileSelect(self):
-        self.state.currentTile = self.tileScene.currentTile
-        tile = self.projectData.getTileset(
+    def onTileSelect(self, tile: int):
+        self.state.currentTile = tile
+        tileObj = self.projectData.getTileset(
             self.state.currentTileset).tiles[self.state.currentTile]
-        self.arrangementScene.loadTile(tile)
-        self.collisionScene.loadTile(tile)
-        self.presetList.verifyTileCollision(tile)
+        self.arrangementScene.loadTile(tileObj)
+        self.collisionScene.loadTile(tileObj)
+        self.presetList.verifyTileCollision(tileObj)
     
     def onColourEdit(self):
-        ...
+        self.projectData.clearTileGraphicsCache()
+        for i in self.projectData.getTileset(self.state.currentTileset).minitiles:
+            i.BothToImage.cache_clear()
+            
+
+        self.minitileScene.renderTileset(self.state.currentTileset,
+                                         self.state.currentPaletteGroup,
+                                         self.state.currentPalette,
+                                         self.state.currentSubpalette)
+        self.tileScene.update()
+        self.arrangementScene.update()
+        self.collisionScene.update()
+        self.fgScene.update()
+        self.bgScene.update()
         
     def selectMinitile(self, minitile: int):
         self.state.currentMinitile = minitile
@@ -249,6 +271,39 @@ class TileEditor(QWidget):
                                              self.state.currentSubpalette)
             self.selectMinitile(self.state.currentMinitile)
         
+    def updateTile(self, tile: Tile|int):
+        if isinstance(tile, Tile):
+            tile = self.projectData.getTileset(self.state.currentTileset).tiles.index(tile)
+        self.projectData.clearTileGraphicsCache()
+        self.tileScene.update()
+        self.arrangementScene.update()
+        self.collisionScene.update()
+        
+    def updateMinitile(self, minitile: Minitile|int):
+        if isinstance(minitile, int):
+            minitile = self.projectData.getTileset(self.state.currentTileset).minitiles[minitile]
+        
+        minitile.BothToImage.cache_clear() 
+        # TODO fix the following:
+        # the three instances of clearTileGraphicsCache() in this file should be more specific.
+        # however, if the current tileset/palette group/palette/subpalette doesn't match the
+        # one we *should* be undoing (ie. it was changed), then cached graphics aren't invalidated.
+        # in other words, we don't know the context of the change.
+        # right now, I've just bitten the bullet and clobbered the entire cache each time.
+        # it's less than ideal, but it doesn't seem to have too much of a performance impact.
+        # Still... I'd like to do it properly. But I don't know where this data will go.
+        # (the function does support specification as per definition and documentation)
+        
+        self.projectData.clearTileGraphicsCache()
+        
+        self.tileScene.update()
+        self.arrangementScene.update()
+        self.collisionScene.update()
+        self.minitileScene.renderTileset(self.state.currentTileset,
+                                         self.state.currentPaletteGroup,
+                                         self.state.currentPalette,
+                                         self.state.currentSubpalette)
+        
     def setupUI(self):
         contentLayout = QVBoxLayout()
         splitter = QSplitter()
@@ -294,11 +349,11 @@ class TileEditor(QWidget):
         self.minitileScene = MinitileScene(self, self.projectData)
         self.minitileView = MinitileView(self.minitileScene)
         
-        self.tileScene = TileScene(self, self.projectData)
+        self.tileScene = TilesetDisplayGraphicsScene(self.projectData, True, 5)
         self.tileScene.tileSelected.connect(self.onTileSelect)
         self.tileView = HorizontalGraphicsView(self.tileScene)
         self.tileView.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        self.tileView.setFixedHeight(32*TileScene.TILE_HEIGHT+1+self.tileView.horizontalScrollBar().sizeHint().height())
+        self.tileView.setFixedHeight(32*self.tileScene.rowSize+1+self.tileView.horizontalScrollBar().sizeHint().height())
         # self.tileView.setMaximumWidth(32*12)
         self.tileView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.tileView.centerOn(0, 0)
@@ -356,15 +411,15 @@ class TileEditor(QWidget):
         drawingLayout.addWidget(self.minitileFgWarning)
         drawingLayout.addWidget(self.fgAspectRatioContainer)
         self.bgToFgButton = QToolButton()
-        self.bgToFgButton.setArrowType(Qt.ArrowType.UpArrow)
+        self.bgToFgButton.setIcon(icons.ICON_UP)
         self.bgToFgButton.setToolTip("Copy background to foreground")
         self.bgToFgButton.clicked.connect(self.copyBgToFg)
         self.swapBgAndFgButton = QToolButton()
-        self.swapBgAndFgButton.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_BrowserReload))
+        self.swapBgAndFgButton.setIcon(icons.ICON_SWAP)
         self.swapBgAndFgButton.setToolTip("Swap foreground and background")
         self.swapBgAndFgButton.clicked.connect(self.swapBgAndFg)
         self.fgToBgButton = QToolButton()
-        self.fgToBgButton.setArrowType(Qt.ArrowType.DownArrow)
+        self.fgToBgButton.setIcon(icons.ICON_DOWN)
         self.fgToBgButton.setToolTip("Copy foreground to background")
         self.fgToBgButton.clicked.connect(self.copyFgToBg)
         swapperButtonLayout.addWidget(self.bgToFgButton)
@@ -398,42 +453,40 @@ class TileEditor(QWidget):
         
         
         self.menuFile = QMenu("&File")
-        self.saveAction = QAction("&Save", shortcut=QKeySequence("Ctrl+S"))
+        self.saveAction = QAction(icons.ICON_SAVE, "&Save", shortcut=QKeySequence("Ctrl+S"))
         self.saveAction.triggered.connect(self.parent().projectWin.saveAction.trigger)
-        self.openAction = QAction("&Open", shortcut=QKeySequence("Ctrl+O"))
+        self.openAction = QAction(icons.ICON_LOAD, "&Open", shortcut=QKeySequence("Ctrl+O"))
         self.openAction.triggered.connect(self.parent().projectWin.openAction.trigger)
-        self.reloadAction = QAction("&Reload", shortcut=QKeySequence("Ctrl+R"))
+        self.reloadAction = QAction(icons.ICON_RELOAD, "&Reload", shortcut=QKeySequence("Ctrl+R"))
         self.reloadAction.triggered.connect(self.parent().projectWin.reloadAction.trigger)
-        self.openSettingsAction = QAction("Settings...")
+        self.openSettingsAction = QAction(icons.ICON_SETTINGS, "Settings...")
         self.openSettingsAction.triggered.connect(lambda: SettingsDialog.openSettings(self))
         self.menuFile.addActions([self.saveAction, self.openAction, self.reloadAction])
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.openSettingsAction)
         
         self.menuEdit = QMenu("&Edit")
-        self.undoAction = QAction("&Undo", shortcut=QKeySequence("Ctrl+Z"))
+        self.undoAction = QAction(icons.ICON_UNDO, "&Undo", shortcut=QKeySequence("Ctrl+Z"))
         self.undoAction.triggered.connect(self.onUndo)
-        self.redoAction = QAction("&Redo")
+        self.redoAction = QAction(icons.ICON_REDO, "&Redo")
         self.redoAction.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
         self.redoAction.triggered.connect(self.onRedo)
         self.menuEdit.addActions([self.undoAction, self.redoAction])
         
         self.menuTools = QMenu("&Tools")
-        self.autoRearrangeAction = QAction("&Auto minitile rearranger...")
+        self.autoRearrangeAction = QAction(icons.ICON_AUTO_REARRANGE, "&Auto minitile rearranger...")
         self.autoRearrangeAction.triggered.connect(self.onAutoRearrange)
-        self.menuTools.addActions([self.autoRearrangeAction,])
+        self.paletteManagerAction = QAction(icons.ICON_PALETTE, "&Palette manager...")
+        self.paletteManagerAction.triggered.connect(lambda: PaletteManagerDialog(self.projectData, self).exec())
+        self.menuTools.addActions([self.autoRearrangeAction, self.paletteManagerAction])
         
-        self.menuHelp = QMenu("&Help")
-        self.aboutTileEditorAction = QAction("About the &tile editor...")
-        self.aboutTileEditorAction.triggered.connect(lambda: TileEditorAboutDialog.showAbout(self))
-        self.menuHelp.addAction(self.aboutTileEditorAction)
-        
-        self.aboutAction = QAction("&About EBME...")
+        self.menuHelp = QMenu("&Help")        
+        self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")
         self.aboutAction.triggered.connect(lambda: AboutDialog.showAbout(self))
         self.menuHelp.addAction(self.aboutAction)
         
         if not debug.SYSTEM_OUTPUT:
-            self.openDebugAction = QAction("Debug output")
+            self.openDebugAction = QAction(icons.ICON_DEBUG, "Debug output")
             self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
             self.menuHelp.addAction(self.openDebugAction)
         

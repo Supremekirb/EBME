@@ -1,13 +1,10 @@
-import logging
+import math
 import uuid
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from src.mapeditor.map.map_scene import MapEditorScene
-
-from PySide6.QtCore import Qt
-from PySide6.QtGui import (QBrush, QImage, QKeySequence, QPainterPath, QPen,
-                           QPixmap)
+from PySide6.QtCore import QSettings, Qt
+from PySide6.QtGui import (QBitmap, QBrush, QImage, QKeySequence, QPainter,
+                           QPainterPath, QPen, QPixmap, QRegion)
 from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
                                QGraphicsRectItem,
                                QGraphicsSceneContextMenuEvent,
@@ -17,6 +14,12 @@ from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
 import src.misc.common as common
 from src.actions.npc_actions import ActionMoveNPCInstance
 from src.misc.coords import EBCoords
+from src.objects.tile import MapTile
+import src.misc.icons as icons
+
+if TYPE_CHECKING:
+    from src.mapeditor.map.map_scene import MapEditorScene
+    
 
 WHITEBRUSH = QBrush(Qt.GlobalColor.white)
 BLACKBRUSH = QBrush(Qt.GlobalColor.black)
@@ -225,26 +228,74 @@ class MapEditorNPC(QGraphicsPixmapItem):
         self.collisionBounds.setY(offsetY)
     
     # reimplementing function to highlight the border as that obscures the vanilla Qt selection border
-    def paint(self, painter, option, a):
+    def paint(self, painter: QPainter, option, a):        
         if QStyle.StateFlag.State_Selected in option.state:
             self.visualBounds.setPen(YELLOWPEN)
             self.collisionBounds.setPen(BLUEPEN)
         else:
             self.visualBounds.setPen(REDPEN)
             self.collisionBounds.setPen(CYANPEN)
+            
+        super().paint(painter, option, a)
         
-        return super().paint(painter, option, a)
+        if QSettings().value("mapeditor/MaskNPCsWithForeground", type=bool):
+        # get the mask based on tiles we intersect with
+        # what we actually do is just kinda paint on top. a real mask would be nice...
+        # BUG masks can overlap with other NPCs, looks weird
+        # QRegion mask?
+        
+            topLeft = self.boundingRect().topLeft()
+            bottomRight = self.boundingRect().bottomRight()
+            topLeft = self.mapToScene(topLeft)
+            bottomRight = self.mapToScene(bottomRight)
+            
+            # get the tiles we intersect with
+            x0, y0 = EBCoords(int(topLeft.x()), int(topLeft.y())).coordsTile()
+            x1, y1 = EBCoords(int(bottomRight.x()), int(bottomRight.y())).coordsTile()
+            tiles: list[MapTile] = []
+            for y in range(y0, y1+1):
+                for x in range(x0, x1+1):
+                    tiles.append(self.scene().projectData.getTile(EBCoords.fromTile(x, y)))
+
+            grid = self.scene().grid
+            if grid.isVisible():
+                brush = grid.brush()
+            else:
+                brush = None
+                    
+            for tile in tiles:
+                graphic = self.scene().projectData.getTileGraphic(tile.tileset,
+                                                                tile.palettegroup,
+                                                                tile.palette,
+                                                                tile.tile)
+                
+                if not graphic.hasRenderedFg:
+                    graphic.renderFg(self.scene().projectData.getTileset(tile.tileset))
+                
+                target = (tile.coords.x - math.ceil(topLeft.x()) + self.offset().x(),
+                        tile.coords.y - math.ceil(topLeft.y()) + self.offset().y())
+
+                pixmap = graphic.renderedFg.copy() # seems inefficient but doesn't appear to have an actual impact?
+                if brush:
+                    gridPainter = QPainter(pixmap)
+                    gridPainter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceAtop)
+                    gridPainter.setBrush(brush)
+                    gridPainter.setPen(Qt.GlobalColor.transparent)
+                    gridPainter.drawRect(0, 0, 32, 32)
+                    gridPainter.end()
+                
+                painter.drawPixmap(*target, pixmap)
         
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
         if (not self.isDummy) and self.scene().state.mode == common.MODEINDEX.NPC:
             menu = QMenu()
-            menu.addAction("New NPC",
+            menu.addAction(icons.ICON_NEW, "New NPC",
                         lambda: self.scene().newNPC(EBCoords(event.scenePos().x(), event.scenePos().y())))
-            menu.addAction("Delete", self.scene().deleteSelectedNPCs, shortcut=QKeySequence(Qt.Key.Key_Delete))
+            menu.addAction(icons.ICON_DELETE, "Delete", self.scene().deleteSelectedNPCs, shortcut=QKeySequence(Qt.Key.Key_Delete))
             menu.addSeparator()
-            menu.addAction("Cut", self.scene().onCut)
-            menu.addAction("Copy", self.scene().onCopy)
-            menu.addAction("Paste", self.scene().onPaste)
+            menu.addAction(icons.ICON_CUT, "Cut", self.scene().onCut)
+            menu.addAction(icons.ICON_COPY, "Copy", self.scene().onCopy)
+            menu.addAction(icons.ICON_PASTE, "Paste", self.scene().onPaste)
             menu.exec(event.screenPos())
             super().contextMenuEvent(event)
             

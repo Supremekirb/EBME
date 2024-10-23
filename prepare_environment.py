@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import sys
 
+
 def update_pip():
     subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
 
@@ -28,6 +29,10 @@ def collect_png2fts():
 
     r = requests.get("https://raw.githubusercontent.com/charasyn/eb-png2fts/with-map-data/palettepacker.py")
     with open("eb-png2fts/palettepacker.py", "w") as f:
+        f.write(r.text)
+        
+    r = requests.get("https://raw.githubusercontent.com/charasyn/eb-png2fts/with-map-data/LICENSE")
+    with open("eb-png2fts/LICENSE", "w") as f:
         f.write(r.text)
 
 def compile_resources():

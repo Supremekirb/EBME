@@ -1,19 +1,21 @@
 import logging
 
 from PySide6.QtCore import QFile, Qt
-from PySide6.QtGui import QUndoStack, QAction
+from PySide6.QtGui import QAction, QUndoStack
 from PySide6.QtWidgets import (QComboBox, QCompleter, QDialog, QFileDialog,
                                QFormLayout, QGroupBox, QHBoxLayout,
-                               QHeaderView, QPushButton, QSizePolicy,
-                               QTreeWidget, QVBoxLayout, QMessageBox)
+                               QHeaderView, QMessageBox, QPushButton,
+                               QSizePolicy, QTreeWidget, QVBoxLayout)
 
+import src.misc.icons as icons
 from src.actions.music_actions import (ActionAddMapMusicTrack,
                                        ActionChangeMapMusicTrack,
                                        ActionDeleteMapMusicTrack,
                                        ActionMoveMapMusicTrack)
 from src.coilsnake.project_data import ProjectData
 from src.misc.widgets import FlagInput
-from src.objects.music import MapMusicEntry, MapMusicHierarchy, MapMusicEntryListItem, MapMusicHierarchyListItem
+from src.objects.music import (MapMusicEntry, MapMusicEntryListItem,
+                               MapMusicHierarchy, MapMusicHierarchyListItem)
 
 
 def parseMetadata(path: str) -> dict:
@@ -37,7 +39,7 @@ def parseMetadata(path: str) -> dict:
                 name = (" ".join(i.split(" ")[2:])).strip()
                 substitutions[id] = name
             except Exception:
-                logging.warn(f"Invalid metadata line: {i}")
+                logging.warning(f"Invalid metadata line: {i}")
     return substitutions  
 
 

@@ -1,5 +1,6 @@
 from src.misc.coords import EBCoords
 
+
 class Sector:
     """Instance of a sector on the map."""
     def __init__(self, id: int, item: int, music: int, palette: int, palettegroup: int, tileset: int, setting: str, teleport: str,

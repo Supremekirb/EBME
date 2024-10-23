@@ -168,6 +168,7 @@ class MinitileEditorWidget(MinitileGraphicsWidget):
             self._painting = False
             action = ActionChangeBitmap(self.currentMinitile, self._scratchBitmap, self.isForeground)
             self.state.tileEditor.undoStack.push(action)
+            self.state.tileEditor.updateMinitile(self.currentMinitile)
             
         return super().mouseReleaseEvent(event)
     
@@ -228,6 +229,7 @@ class MinitileEditorWidget(MinitileGraphicsWidget):
         
         action = ActionChangeBitmap(self.currentMinitile, self._scratchBitmap, self.isForeground)
         self.state.tileEditor.undoStack.push(action)
+        self.state.tileEditor.updateMinitile(self.currentMinitile)
         
         self.update()
                 

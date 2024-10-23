@@ -1,5 +1,6 @@
-from PySide6.QtCore import Signal, QObject
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QTextEdit
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtWidgets import QDialog, QTextEdit, QVBoxLayout
+
 
 class Stream(QObject):
     logged = ""

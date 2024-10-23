@@ -1,7 +1,8 @@
 from PySide6.QtGui import QUndoCommand
 
 import src.misc.common as common
-from src.objects.enemy import EnemyTile, EnemyMapGroup
+from src.objects.enemy import EnemyMapGroup, EnemyTile
+
 
 class ActionPlaceEnemyTile(QUndoCommand):
     def __init__(self, enemytile: EnemyTile, group: int):
