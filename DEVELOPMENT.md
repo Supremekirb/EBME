@@ -9,6 +9,8 @@ You should run `prepare_environment.py` periodically in case of changes to `ebme
 
 ## Build Instructions
 
+Note that it's not necessary to build to use EBME. You can also run `ebme.py` when in the correct environment. Setting up a script to do this for you will be easier than building. But if you still want to:
+
 1. Open a console in the folder (make sure you have the correct Python version and env here!)
 2. Run `pyside6-deploy -c embe.spec`
 3. The program will be built to `ebme.exe`

@@ -41,7 +41,7 @@ jobs:
         run: pyside6-deploy -c ebme.spec -f
       - name: Set short SHA for artifact name
         id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $env:GITHUB_OUTPUT
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:

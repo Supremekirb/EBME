@@ -24,6 +24,7 @@ Edits [CoilSnake](https://github.com/pk-hack/CoilSnake) projects.
 ## Downloads
 
 Stable release executables for Windows are available in the [releases tab](https://githubD.com/Supremekirb/EBME/releases).
-MacOS and Linux users will have to download the source code themselves. See `DEVELOPMENT.md`.
+Development builds for Linux are also available, with releases available starting at 1.0.0.
+MacOS users will have to download the source code themselves. See `DEVELOPMENT.md`.
 
 If you want development builds, you can get the latest one [from nightly.link here](https://nightly.link/Supremekirb/EBME/workflows/build_push/main). Note that these may contain bugs and unfinished features! You can also access development builds [on GitHub here](https://github.com/Supremekirb/EBME/actions) by opening the workflow run you want.
