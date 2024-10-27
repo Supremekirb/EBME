@@ -2,7 +2,7 @@
 
 ## Preresiquites
 
-EBME uses Python 3.10.11. I highly recommend using `pyenv` to manage multiple Python versions.
+EBME uses Python 3.12.3. I highly recommend using `pyenv` to manage multiple Python versions.
 You should create a virtual environment, or PySide6 will complain at you. Use `venv` or `virtualenv` for this.
 Once you've created the virtual environment, you should run `prepare_environment.py` to install modules and unpack .spec files.
 You should run `prepare_environment.py` periodically in case of changes to `ebme.spec.TEMPLATE` and png2fts.
@@ -25,9 +25,3 @@ EBME modifies CoilSnake-generated `.yml`, `.fts`, and `.map` files. Nothing will
 * Several `.yml` files gain new fields `EBME_Comment` and/or `EBME_Colour`. These store data about comments and colours associated with those objects.
 * Several `.yml` files are organised in a more compact style for readability. This does not affect how `.yml` interpreters read the file.
 * No hexadecimal values are saved, they will be decimal integers. Use Hex Mode (in View) to edit with hexadecimal values if that's your thing.
-
-## Some Known Issues on Linux
-
-You might need to install Numpy 1.26.4 for compatibility with Linux systems. I don't know why this is, and Numpy 1.26.4 breaks some things on Windows, which is why I've left it at 1.24.3 (the only version I found to work, but I haven't tested them all.)
-
-Also, I haven't yet tried building it.

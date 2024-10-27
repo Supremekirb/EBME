@@ -10,6 +10,8 @@ input_file = ebme.py
 exec_directory = .
 # path to .pyproject project file
 project_file = 
+# icon
+icon = assets/logos/icon.ico
 
 [python]
 # python path
@@ -17,7 +19,7 @@ python_path =
 # python packages to install
 # ordered-set = increase compile time performance of nuitka packaging
 # zstandard = provides final executable size optimization
-packages = nuitka==1.5.4,ordered_set,zstandard,numpy==1.24.3,pillow,pyyaml
+packages = nuitka,ordered_set,zstandard,numpy,pillow,pyyaml
 # buildozer = for deploying Android application
 android_packages = buildozer==1.5.0,cython==0.29.33
 
@@ -37,9 +39,7 @@ plugins = platforms_qtforandroid
 [nuitka]
 # (str) specify any extra nuitka arguments
 # eg = extra_args = --show-modules --follow-stdlib
-###  extra args for deployment: --disable-console ### I feel like there should be more??
-# --include-data-dir=./assets/=assets
-extra_args = --disable-console --quiet --noinclude-qt-translations=True --nofollow-import-to=tkinter --include-data-dir=./assets/fonts=assets/fonts --include-data-file=./eb-png2fts/eb_png2fts.py=eb-png2fts/eb_png2fts.py --include-data-file=./eb-png2fts/image_cropper.py=eb-png2fts/image_cropper.py --include-data-file=./eb-png2fts/palettepacker.py=eb-png2fts/palettepacker.py --include-data-file=./eb-png2fts/LICENSE=eb-png2fts/LICENSE --windows-icon-from-ico=./assets/logos/icon.ico --static-libpython=no --assume-yes-for-downloads
+extra_args = --windows-console-mode=disable --quiet --noinclude-qt-translations  --include-data-dir=./assets/fonts=assets/fonts --include-data-file=./eb-png2fts/eb_png2fts.py=eb-png2fts/eb_png2fts.py --include-data-file=./eb-png2fts/image_cropper.py=eb-png2fts/image_cropper.py --include-data-file=./eb-png2fts/palettepacker.py=eb-png2fts/palettepacker.py --include-data-file=./eb-png2fts/LICENSE=eb-png2fts/LICENSE --windows-icon-from-ico=./assets/logos/icon.ico --static-libpython=no --assume-yes-for-downloads
 
 [buildozer]
 # build mode

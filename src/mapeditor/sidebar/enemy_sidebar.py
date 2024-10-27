@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 
-from numpy import isin
 from PySide6.QtCore import QEvent, QObject, QPoint, Signal
 from PySide6.QtGui import QBrush, QColor, QIntValidator, QPixmap, Qt
 from PySide6.QtWidgets import (QFormLayout, QGraphicsItem, QGraphicsPixmapItem,
