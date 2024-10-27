@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10.11' 
+          python-version: '3.12.7' 
           cache: 'pip'
       - name: Prepare environment
         run: python prepare_environment.py
@@ -26,4 +26,25 @@ jobs:
         with:
           name: EBME Preview (Windows) - ${{ steps.vars.outputs.sha_short }}
           path: ebme.exe
+          if-no-files-found: error
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.7' 
+          cache: 'pip'
+      - name: Prepare environment
+        run: python prepare_environment.py
+      - name: Build EBME
+        run: pyside6-deploy -c ebme.spec -f
+      - name: Set short SHA for artifact name
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $env:GITHUB_OUTPUT
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: EBME Preview (Linux) - ${{ steps.vars.outputs.sha_short }}
+          path: ebme.bin
           if-no-files-found: error
