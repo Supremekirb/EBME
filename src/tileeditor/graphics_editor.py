@@ -7,79 +7,17 @@ from PySide6.QtWidgets import QGridLayout, QLabel, QSizePolicy, QWidget
 from src.actions.fts_actions import (ActionChangeBitmap,
                                      ActionChangeSubpaletteColour)
 from src.coilsnake.fts_interpreter import Palette
-from src.misc.widgets import ColourButton, MinitileGraphicsWidget
+from src.misc.widgets import (ColourButton, MinitileGraphicsWidget,
+                              PaletteSelector)
 
 if TYPE_CHECKING:
     from tile_editor import TileEditorState
     
-class PaletteSelector(QWidget):
-    colourChanged = Signal(int)
-    subpaletteChanged = Signal(int)
-    colourEdited = Signal()
-    
+class GraphicsEditorPaletteSelector(PaletteSelector):    
     def __init__(self, state: "TileEditorState"):
         super().__init__()
+        
         self.state = state
-        
-        layout = QGridLayout()
-        self.setLayout(layout)
-        
-        self.buttons: list[list[ColourButton]] = [[], [], [], [], [], []]
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-
-        self.arrowIndicatorLabels: list[QLabel] = []
-        self.subpaletteLabels: list[QLabel] = []
-        
-        for i in range(6):
-            label = QLabel(str(i))
-            label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-            label.setTextFormat(Qt.TextFormat.RichText)
-            layout.addWidget(label, i, 1)
-            
-            indicator = QLabel("")
-            if i == 0: 
-                label.setText(f"<b>{i}</b>")
-                indicator.setText("▶")
-            layout.addWidget(indicator, i, 0)
-            
-            self.subpaletteLabels.append(label)
-            self.arrowIndicatorLabels.append(indicator)
-            
-            for j in range(16):                
-                button = ColourButton(self)
-                button.setCheckable(True)
-                button.clicked.disconnect()
-                button.colourChanged.connect(self.onColourEdited)
-                button.clicked.connect(self.onColourChanged)
-                button.setAutoExclusive(True)
-                button.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
-                button.setFixedSize(24, 24)
-                layout.addWidget(button, i, j+2)
-                self.buttons[i].append(button)
-            
-        self.buttons[0][0].setChecked(True)
-        self.currentSubpaletteIndex = 0
-        self.currentColour = self.buttons[0][0].chosenColour
-        self.currentColourIndex = 0
-        
-        self.currentPalette: Palette = None
-        
-        self.onColourChanged()
-            
-    def onColourChanged(self):
-        for subpalette, list in enumerate(self.buttons):
-            for index, button in enumerate(list):
-                if button.isChecked():
-                    self.currentColour = button.chosenColour
-                    if subpalette != self.currentSubpaletteIndex:
-                        self.currentSubpaletteIndex = subpalette
-                        self.subpaletteChanged.emit(subpalette)
-                        self.updateSubpaletteLabels()
-                    if index != self.currentColourIndex:
-                        self.currentColourIndex = index
-                        self.colourChanged.emit(index)
-                    return
                 
     def onColourEdited(self):
         for subpalette in self.buttons:
@@ -93,46 +31,9 @@ class PaletteSelector(QWidget):
                         self.currentColourIndex, new.toTuple()[:3]) # :3
                     
                     self.state.tileEditor.undoStack.push(action)
-                    self.colourEdited.emit()
                     return
-        
-    def setColourIndex(self, index: int):
-        self.currentColourIndex = index
-        self.buttons[self.currentSubpaletteIndex][index].setChecked(True)
-        
-    def setSubpaletteIndex(self, subpalette: int):
-        self.currentSubpaletteIndex = subpalette
-        self.buttons[subpalette][self.currentColourIndex].setChecked(True)
-        self.updateSubpaletteLabels()
-    
-    def updateSubpaletteLabels(self):
-        for id, label in enumerate(self.subpaletteLabels):
-            if id == self.currentSubpaletteIndex:
-                label.setText(f"<b>{id}</b>")
-                self.arrowIndicatorLabels[id].setText("▶")
-            else:
-                label.setText(str(id))
-                self.arrowIndicatorLabels[id].setText("")
-        
-    def openEditor(self):
-        # maybe new implementation later,
-        # but right now just open the dialog of the selected button
-        for subpaletteButtons in self.buttons:
-            for button in subpaletteButtons:
-                if button.isChecked():
-                    button.openColourDialog()
-                    return
-            
-    def loadPalette(self, palette: Palette):
-        for index, subpalette in enumerate(palette.subpalettes):
-            for colour, button in enumerate(self.buttons[index]):
-                button.blockSignals(True)
-                button.setColour(QColor.fromRgb(*subpalette.subpaletteRGBA[colour]))
-                button.blockSignals(False)
-            
-        self.currentPalette = palette 
-        
-        self.onColourChanged()
+                
+        super().onColourEdited()
         
 class MinitileEditorWidget(MinitileGraphicsWidget):
     colourPicked = Signal(int)

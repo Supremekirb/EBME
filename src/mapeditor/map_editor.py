@@ -397,7 +397,7 @@ class MapEditor(QWidget):
         self.menuTools = QMenu("&Tools")
         self.renderMapAction = QAction(icons.ICON_RENDER_IMG, "&Render image of map...")
         self.renderMapAction.triggered.connect(self.renderMap)
-        self.png2ftsAction = QAction(icons.ICON_IMPORT_IMG, "&Import PNG with png2fts...")
+        self.png2ftsAction = QAction(icons.ICON_IMPORT, "&Import PNG with png2fts...")
         self.png2ftsAction.triggered.connect(self.dopng2fts)
         self.clearAction = QAction(icons.ICON_CLEAR, "&Clear map...")
         self.clearAction.triggered.connect(self.scene.onClear)

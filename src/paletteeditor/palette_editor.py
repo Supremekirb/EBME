@@ -1,27 +1,39 @@
-from PySide6.QtGui import QColor
-from PySide6.QtWidgets import (QDialog, QFormLayout, QGroupBox, QHBoxLayout,
-                               QLabel, QPushButton, QSpinBox, QToolButton,
-                               QTreeWidget, QTreeWidgetItem, QVBoxLayout,
-                               QWidget)
+from typing import TYPE_CHECKING
 
+from PySide6.QtGui import QAction, QColor, QKeySequence, QUndoStack
+from PySide6.QtWidgets import (QFormLayout, QGroupBox, QHBoxLayout, QMenu,
+                               QPushButton, QSpinBox, QToolButton, QTreeWidget,
+                               QTreeWidgetItem, QVBoxLayout, QWidget)
+
+import src.misc.common as common
+import src.misc.debug as debug
 import src.misc.icons as icons
 from src.coilsnake.project_data import ProjectData
-from src.misc.widgets import ColourButton, FlagInput, IconLabel
+from src.misc.dialogues import (AboutDialog, CopyEventPaletteDialog, EditEventPaletteDialog,
+                                SettingsDialog)
+from src.misc.widgets import (ColourButton, FlagInput, IconLabel,
+                              PaletteListItem, PaletteTreeWidget,
+                              SubpaletteListItem)
 from src.objects.palette_settings import PaletteSettings
 
+if TYPE_CHECKING:
+    from src.main.main import MainApplication
 
-class PaletteManagerDialog(QDialog):
+
+class PaletteEditor(QWidget):
     def __init__(self, projectData: ProjectData, parent: QWidget|None = None):
         super().__init__(parent)
         self.projectData = projectData
-        
-        self.setWindowTitle("Palette Manager (NO FUNCTIONALITY YET)")
         
         self.subpalette1Buttons: list[ColourButton] = []
         self.subpalette2Buttons: list[ColourButton] = []
         self.subpaletteTransferButtons: list[QToolButton] = [] # only for iterating, order is NOT reliable
         
+        self.undoStack = QUndoStack()
+        self.undoStack.cleanChanged.connect(self.parent().updateTitle)
+        
         self.setupUI()
+        self.selection1.setCurrentItem(self.selection1.topLevelItem(0), 0)
         
     def transferColourUp(self, index: int):
         ...
@@ -91,11 +103,20 @@ class PaletteManagerDialog(QDialog):
         settings = new.settings
         
         if self.paletteSettingsTree.topLevelItem(0) == new:
-            self.paletteSettingsColorsWarning.show()
-            self.paletteSettingsColorsEdit.hide()
+            self.paletteSettingsColoursWarning.show()
+            self.paletteSettingsColoursEdit.hide()
+            self.paletteSettingsColoursCopy.hide()
         else:
-            self.paletteSettingsColorsWarning.hide()
-            self.paletteSettingsColorsEdit.show()
+            self.paletteSettingsColoursWarning.hide()
+            self.paletteSettingsColoursEdit.show()
+            self.paletteSettingsColoursCopy.show()
+            
+        if settings.child:
+            self.paletteSettingsAddChild.setDisabled(True)
+            self.paletteSettingsRemoveChild.setEnabled(True)
+        else:
+            self.paletteSettingsAddChild.setEnabled(True)
+            self.paletteSettingsRemoveChild.setDisabled(True)
         
         self.paletteSettingsFlag.setValue(settings.flag)
         self.paletteSettingsFlashEffect.setValue(settings.flashEffect)
@@ -117,7 +138,16 @@ class PaletteManagerDialog(QDialog):
                 self.paletteSettingsChildWarning.setText("Valid configuration")
                 
     def onEditEventPalette(self):
-        ...
+        palette = self.paletteSettingsTree.currentItem().settings.palette
+        if palette:
+            actions = EditEventPaletteDialog.editEventPalette(self, palette)
+            if actions:
+                self.undoStack.push(actions)
+    
+    def onCopyEventPalette(self):
+        palette = self.paletteSettingsTree.currentItem().settings.palette
+        if palette:
+            CopyEventPaletteDialog.copyEventPalette(self, palette, self.projectData)
              
     def on2CurrentChanged(self, new: QTreeWidgetItem):
         if isinstance(new, SubpaletteListItem):
@@ -241,8 +271,10 @@ class PaletteManagerDialog(QDialog):
         
         self.paletteSettingsFlashEffect = QSpinBox()
         self.paletteSettingsFlashEffect.setToolTip("Palette animation, such as in Stonehenge Base. Currently uneditable in CoilSnake. Only values 0-8 have data in vanilla.")
+        self.paletteSettingsFlashEffect.setMaximum(common.BYTELIMIT)
         self.paletteSettingsSpritePalette = QSpinBox()
         self.paletteSettingsSpritePalette.setToolTip("Subpalette for sprites of palette 4 to use.")
+        self.paletteSettingsSpritePalette.setMaximum(5)
         self.paletteSettingsFlag = FlagInput()
         self.paletteSettingsFlag.spinbox.setToolTip("If this flag is set, use these settings, if not, use the elsewise settings. Set to 0 to always occur and therefore terminate the chain.")
         
@@ -256,12 +288,16 @@ class PaletteManagerDialog(QDialog):
         self.paletteSettingsChildWarning = IconLabel()
         
         eventPaletteLayout = QHBoxLayout()
-        self.paletteSettingsColorsWarning = IconLabel("Top level uses existing palette", icons.ICON_INFO)
-        self.paletteSettingsColorsWarning.hide()
-        self.paletteSettingsColorsEdit = QPushButton("Edit...")
-        self.paletteSettingsColorsEdit.clicked.connect(self.onEditEventPalette)
-        eventPaletteLayout.addWidget(self.paletteSettingsColorsWarning)
-        eventPaletteLayout.addWidget(self.paletteSettingsColorsEdit)
+        self.paletteSettingsColoursWarning = IconLabel("Top level uses existing palette", icons.ICON_INFO)
+        self.paletteSettingsColoursWarning.hide()
+        self.paletteSettingsColoursEdit = QPushButton("Edit...")
+        self.paletteSettingsColoursEdit.clicked.connect(self.onEditEventPalette)
+        self.paletteSettingsColoursWarning.setMinimumHeight(self.paletteSettingsColoursEdit.sizeHint().height())
+        self.paletteSettingsColoursCopy = QPushButton("Copy from...")
+        self.paletteSettingsColoursCopy.clicked.connect(self.onCopyEventPalette)
+        eventPaletteLayout.addWidget(self.paletteSettingsColoursWarning)
+        eventPaletteLayout.addWidget(self.paletteSettingsColoursEdit)
+        eventPaletteLayout.addWidget(self.paletteSettingsColoursCopy)
             
         childOptionsLayout.addWidget(self.paletteSettingsAddChild)
         childOptionsLayout.addWidget(self.paletteSettingsRemoveChild)
@@ -277,65 +313,34 @@ class PaletteManagerDialog(QDialog):
         
         layout.addWidget(self.selection1)
         layout.addLayout(editorsLayout)
-    
-
-class PaletteTreeWidget(QTreeWidget):
-    def __init__(self, projectData: ProjectData, parent: QWidget|None=None):
-        super().__init__(parent)
         
-        self.projectData = projectData
+        self.menuFile = QMenu("&File")
+        self.saveAction = QAction(icons.ICON_SAVE, "&Save", shortcut=QKeySequence("Ctrl+S"))
+        self.saveAction.triggered.connect(self.parent().projectWin.saveAction.trigger)
+        self.openAction = QAction(icons.ICON_LOAD, "&Open", shortcut=QKeySequence("Ctrl+O"))
+        self.openAction.triggered.connect(self.parent().projectWin.openAction.trigger)
+        self.reloadAction = QAction(icons.ICON_RELOAD, "&Reload", shortcut=QKeySequence("Ctrl+R"))
+        self.reloadAction.triggered.connect(self.parent().projectWin.reloadAction.trigger)
+        self.openSettingsAction = QAction(icons.ICON_SETTINGS, "Settings...")
+        self.openSettingsAction.triggered.connect(lambda: SettingsDialog.openSettings(self))
+        self.menuFile.addActions([self.saveAction, self.openAction, self.reloadAction])
+        self.menuFile.addSeparator()
+        self.menuFile.addAction(self.openSettingsAction)
         
-        self.setColumnCount(1)
-        self.setHeaderHidden(True)
         
-        for tileset in self.projectData.tilesets:
-            tilesetWidget = TilesetListItem(tileset.id, [f"Tileset {tileset.id}"])
-            self.addTopLevelItem(tilesetWidget)
-            for paletteGroup in tileset.paletteGroups:
-                paletteGroupWidget = PaletteGroupListItem(paletteGroup.groupID, tilesetWidget, [f"Palette Group {paletteGroup.groupID}"])
-                tilesetWidget.addChild(paletteGroupWidget)
-                for palette in paletteGroup.palettes:
-                    paletteWidget = PaletteListItem(palette.paletteID, paletteGroupWidget, [f"Palette {palette.paletteID}"])
-                    paletteGroupWidget.addChild(paletteWidget)
-                    for subpalette in range(0, 6):
-                        subpaletteWidget = SubpaletteListItem(subpalette, paletteWidget, [f"Subpalette {subpalette}"])
-                        paletteWidget.addChild(subpaletteWidget)
-
-class TilesetListItem(QTreeWidgetItem):
-    def __init__(self, tileset: int, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.tileset = tileset
+        self.menuHelp = QMenu("&Help")        
+        self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")
+        self.aboutAction.triggered.connect(lambda: AboutDialog.showAbout(self))
+        self.menuHelp.addAction(self.aboutAction)
         
-        self.setIcon(0, icons.ICON_TILESET)
-
-class PaletteGroupListItem(QTreeWidgetItem):
-    def __init__(self, palettegroup: int, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.paletteGroup = palettegroup
+        if not debug.SYSTEM_OUTPUT:
+            self.openDebugAction = QAction(icons.ICON_DEBUG, "Debug output")
+            self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
+            self.menuHelp.addAction(self.openDebugAction)
         
-        self.setIcon(0, icons.ICON_PALETTE_GROUP)
-    
-    def parent(self) -> TilesetListItem:
-        return super().parent()
-
-class PaletteListItem(QTreeWidgetItem):
-    def __init__(self, palette: int, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.palette = palette
+        self.menuItems = (self.menuFile, self.menuHelp)
         
-        self.setIcon(0, icons.ICON_PALETTE)
-    
-    def parent(self) -> PaletteGroupListItem:
-        return super().parent()
-
-class SubpaletteListItem(QTreeWidgetItem):
-    def __init__(self, subpalette: int, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.subpalette = subpalette
-        
-        self.setIcon(0, icons.ICON_SUBPALETTE)
-
-    def parent(self) -> PaletteListItem:
+    def parent(self) -> "MainApplication": # for typing
         return super().parent()
     
 class PaletteSettingsTreeWidget(QTreeWidget):
@@ -382,6 +387,9 @@ class PaletteSettingsTreeWidget(QTreeWidget):
             settings = settings.child
             
         self.expandAll()
+    
+    def currentItem(self) -> "PaletteSettingsTreeItem":
+        return super().currentItem()
 
 class PaletteSettingsTreeItem(QTreeWidgetItem):
     def __init__(self, settings: PaletteSettings, *args, **kwargs):

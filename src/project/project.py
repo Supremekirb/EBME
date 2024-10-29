@@ -21,6 +21,7 @@ import src.tileeditor.tile_editor as tile_editor
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import AboutDialog, SettingsDialog
 from src.misc.worker import Worker
+from src.paletteeditor.palette_editor import PaletteEditor
 
 if TYPE_CHECKING:
     from src.main.main import MainApplication
@@ -67,10 +68,12 @@ class Project(QWidget):
     def enableEditors(self):
         self.mainWin.mainTabWin.setTabEnabled(1, True)
         self.mainWin.mainTabWin.setTabEnabled(2, True)
+        self.mainWin.mainTabWin.setTabEnabled(3, True)
 
     def disableEditors(self):
         self.mainWin.mainTabWin.setTabEnabled(1, False)
         self.mainWin.mainTabWin.setTabEnabled(2, False)
+        self.mainWin.mainTabWin.setTabEnabled(3, False)
 
     def openDirectory(self, dir: str=None):
         """Open a project at `dir` and initialise data. (If the user cancels, don't do anything)
@@ -165,14 +168,26 @@ class Project(QWidget):
                         self.updateStatusLabel("Error loading tile editor.")
                         logging.warning(f"Error loading tile editor: {traceback.format_exc()}")
                         raise
-                
+                    
+                    self.updateStatusLabel("Loading palette editor...")
+                    self.statusLabel.repaint()
+                    try:
+                        self.mainWin.paletteWin = PaletteEditor(self.projectData, self.mainWin)
+                    except Exception as e:
+                        common.showErrorMsg(title="Error loading palette manager", text="An error occured while loading the palette editor.", info=str(e))
+                        self.updateStatusLabel("Error loading palette editor.")
+                        logging.warning(f"Error loading palette editor: {traceback.format_exc()}")
+                        raise
+                    
                 except: pass # we've already shown an error message and logged it, so just continue
                 
                 else:
+                    self.mainWin.mainTabWin.removeTab(3)
                     self.mainWin.mainTabWin.removeTab(2)
                     self.mainWin.mainTabWin.removeTab(1)
                     self.mainWin.mainTabWin.addTab(self.mainWin.mapWin, "Map Editor")
                     self.mainWin.mainTabWin.addTab(self.mainWin.tileWin, "Tile Editor")
+                    self.mainWin.mainTabWin.addTab(self.mainWin.paletteWin, "Palette Editor")
                     
                     self.updateStatusLabel(f"Project: {self.projectData.getProjectName()}")
                     self.enableEditors()

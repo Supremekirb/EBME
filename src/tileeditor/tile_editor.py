@@ -25,15 +25,13 @@ from src.misc.widgets import (AspectRatioWidget, HorizontalGraphicsView,
 from src.tileeditor.arrangement_editor import TileArrangementWidget
 from src.tileeditor.collision_editor import (CollisionPresetList,
                                              TileCollisionWidget)
-from src.tileeditor.graphics_editor import (MinitileEditorWidget,
-                                            PaletteSelector)
+from src.tileeditor.graphics_editor import (GraphicsEditorPaletteSelector,
+                                            MinitileEditorWidget)
 from src.tileeditor.minitile_selector import MinitileScene, MinitileView
-from src.tileeditor.palette_manager import PaletteManagerDialog
 
 if TYPE_CHECKING:
     from src.main.main import MainApplication
 
-# TODO refresh graphics stuff
 class TileEditorState():
     def __init__(self, tileeditor: "TileEditor"):
         
@@ -232,7 +230,7 @@ class TileEditor(QWidget):
         
         self.minitileScene.moveCursorToMinitile(minitile)
         
-    def selectColour(self, index: int):
+    def selectColour(self, subpalette: int, index: int):
         self.state.currentColourIndex = index
         self.paletteView.setColourIndex(index)
         
@@ -379,7 +377,7 @@ class TileEditor(QWidget):
         self.bgScene.colourPicked.connect(self.selectColour)
         self.bgAspectRatioContainer = AspectRatioWidget(self.bgScene)
         
-        self.paletteView = PaletteSelector(self.state)
+        self.paletteView = GraphicsEditorPaletteSelector(self.state)
         self.paletteView.colourChanged.connect(self.selectColour)
         self.paletteView.colourEdited.connect(self.onColourEdit)
         self.paletteView.subpaletteChanged.connect(self.onSubpaletteSelect)
@@ -476,9 +474,7 @@ class TileEditor(QWidget):
         self.menuTools = QMenu("&Tools")
         self.autoRearrangeAction = QAction(icons.ICON_AUTO_REARRANGE, "&Auto minitile rearranger...")
         self.autoRearrangeAction.triggered.connect(self.onAutoRearrange)
-        self.paletteManagerAction = QAction(icons.ICON_PALETTE, "&Palette manager...")
-        self.paletteManagerAction.triggered.connect(lambda: PaletteManagerDialog(self.projectData, self).exec())
-        self.menuTools.addActions([self.autoRearrangeAction, self.paletteManagerAction])
+        self.menuTools.addActions([self.autoRearrangeAction])
         
         self.menuHelp = QMenu("&Help")        
         self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")

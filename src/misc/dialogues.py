@@ -1,5 +1,6 @@
 import logging
 import traceback
+from re import L
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QFile, QRectF, QSettings, Qt
@@ -13,13 +14,17 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                                QUndoView, QVBoxLayout, QWidget)
 
 import src.misc.common as common
+import src.misc.icons as icons
 import src.misc.quotes as quotes
-from src.actions.fts_actions import ActionSwapMinitiles
+from src.actions.fts_actions import (ActionChangeSubpaletteColour,
+                                     ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
-from src.coilsnake.fts_interpreter import Minitile
+from src.coilsnake.fts_interpreter import Minitile, Palette
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
-from src.misc.widgets import ColourButton, CoordsInput, HSeparator
+from src.misc.widgets import (ColourButton, CoordsInput, HSeparator, IconLabel,
+                              PaletteListItem, PaletteSelector,
+                              PaletteTreeWidget, SubpaletteListItem)
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
@@ -597,10 +602,10 @@ class ClearDialog(QDialog):
         self.clearEnemies = QCheckBox("Clear enemies")
         
         self.buttons = QDialogButtonBox(Qt.Orientation.Horizontal)
-        self.buttons.addButton("Apply", QDialogButtonBox.ButtonRole.AcceptRole)
-        self.buttons.addButton("Cancel", QDialogButtonBox.ButtonRole.RejectRole)
+        self.buttons.addButton(QDialogButtonBox.StandardButton.Apply)
+        self.buttons.addButton(QDialogButtonBox.StandardButton.Cancel)
         
-        self.buttons.accepted.connect(self.accept)
+        self.buttons.button(QDialogButtonBox.StandardButton.Apply).clicked.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         
         layout.addWidget(self.clearTiles)
@@ -718,10 +723,10 @@ class AutoMinitileRearrangerDialog(QDialog):
         layout.addRow("Tileset", self.tilesetInput)
         
         self.buttons = QDialogButtonBox()
-        self.buttons.addButton("Apply", QDialogButtonBox.ButtonRole.AcceptRole)
+        self.buttons.addButton(QDialogButtonBox.StandardButton.Apply)
         self.buttons.addButton(QDialogButtonBox.StandardButton.Close)
         
-        self.buttons.accepted.connect(self.rearrange)
+        self.buttons.button(QDialogButtonBox.StandardButton.Apply).clicked.connect(self.rearrange)
         self.buttons.rejected.connect(self.reject)
         layout.addRow(self.buttons)
         
@@ -776,3 +781,115 @@ class AutoMinitileRearrangerDialog(QDialog):
         dialog.exec()
         return dialog.action
         
+        
+class EditEventPaletteDialog(QDialog):
+    def __init__(self, parent, palette: Palette):
+        super().__init__(parent)
+        
+        self.setWindowTitle("Editing Event Palette")
+        
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        
+        self.paletteSelector = PaletteSelector()
+        self.paletteSelector.loadPalette(palette)
+        layout.addWidget(self.paletteSelector)
+        
+        self.buttons = QDialogButtonBox()
+        self.buttons.addButton(QDialogButtonBox.StandardButton.Apply)
+        self.buttons.addButton(QDialogButtonBox.StandardButton.Cancel)
+        
+        self.buttons.button(QDialogButtonBox.StandardButton.Apply).clicked.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        
+        layout.addWidget(self.buttons)
+    
+    @staticmethod
+    def editEventPalette(parent, palette: Palette):
+        dialog = EditEventPaletteDialog(parent, palette)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            actions = []
+            for subpalette in range(0, 6):
+                for colour in range(0, 16):
+                    action = ActionChangeSubpaletteColour(palette.subpalettes[subpalette], colour,
+                                dialog.paletteSelector.buttons[subpalette][colour].chosenColour.toTuple()[:3])
+                    if not action.isObsolete():
+                        actions.append(action)
+            
+            if len(actions) > 0:
+                return MultiActionWrapper(actions, "Edit event palette")
+
+class CopyEventPaletteDialog(QDialog):
+    def __init__(self, parent, palette: Palette, projectData: ProjectData):
+        super().__init__(parent)
+        self.setWindowTitle("Copy Palette to Event Palette")
+        self.projectData = projectData
+        
+        layout = QVBoxLayout()
+        contentLayout = QHBoxLayout()
+        layout.addLayout(contentLayout)
+        self.setLayout(layout)
+        
+        self.currentPalette: Palette = None
+        
+        self.copyFromSelector = PaletteTreeWidget(projectData)
+        self.copyFromSelector.currentItemChanged.connect(self.onSelectorCurrentItemChanged)
+        contentLayout.addWidget(self.copyFromSelector)
+        
+        compareLayout = QVBoxLayout()
+        
+        compareLayout.addWidget(IconLabel("Copying from this palette", icons.ICON_EXPORT))
+        self.copyFromPaletteSelector = PaletteSelector()
+        self.copyFromPaletteSelector.setViewOnly(True)
+        self.copyFromPaletteSelector.setDisabled(True)
+        compareLayout.addWidget(self.copyFromPaletteSelector)
+        
+        labelLayout = QHBoxLayout()
+        labelLayout.addStretch()
+        labelLayout.addWidget(IconLabel(icon=icons.ICON_DOWN))
+        compareLayout.addLayout(labelLayout)
+        
+        compareLayout.addWidget(IconLabel("Overwriting this event palette", icons.ICON_IMPORT))
+        self.copyToPaletteSelector = PaletteSelector()
+        self.copyToPaletteSelector.loadPalette(palette)
+        self.copyToPaletteSelector.setViewOnly(True)
+        compareLayout.addWidget(self.copyToPaletteSelector)
+        
+        contentLayout.addLayout(compareLayout)
+        
+        self.buttons = QDialogButtonBox()
+        self.buttons.addButton(QDialogButtonBox.StandardButton.Apply)
+        self.buttons.addButton(QDialogButtonBox.StandardButton.Cancel)
+        self.buttons.button(QDialogButtonBox.StandardButton.Apply).setDisabled(True)
+        
+        self.buttons.button(QDialogButtonBox.StandardButton.Apply).clicked.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        
+        layout.addWidget(self.buttons)
+        
+    def onSelectorCurrentItemChanged(self, new):
+        if isinstance(new, SubpaletteListItem):
+            new = new.parent()
+            
+        if isinstance(new, PaletteListItem):
+            self.currentPalette = self.projectData.getTileset(new.parent().parent().tileset).getPalette(
+                new.parent().paletteGroup,
+                new.palette
+            )
+            self.copyFromPaletteSelector.setEnabled(True)
+            self.copyFromPaletteSelector.loadPalette(self.currentPalette)
+            self.buttons.button(QDialogButtonBox.StandardButton.Apply).setEnabled(True)
+            
+        else:
+            self.copyFromPaletteSelector.setDisabled(True)
+            self.buttons.button(QDialogButtonBox.StandardButton.Apply).setEnabled(False)
+            
+    def accept(self):
+        if not self.currentPalette:
+            return
+        return super().accept()
+        
+    @staticmethod
+    def copyEventPalette(parent, palette: Palette, projectData: ProjectData):
+        if CopyEventPaletteDialog(parent, palette, projectData).exec() == QDialog.DialogCode.Accepted:
+            ...

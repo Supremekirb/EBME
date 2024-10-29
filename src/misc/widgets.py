@@ -8,10 +8,12 @@ from PySide6.QtGui import (QBrush, QColor, QGuiApplication, QIcon, QMouseEvent,
 from PySide6.QtWidgets import (QBoxLayout, QCheckBox, QColorDialog, QFrame,
                                QGraphicsPixmapItem, QGraphicsScene,
                                QGraphicsSceneMouseEvent, QGraphicsView,
-                               QHBoxLayout, QLabel, QPushButton, QSizePolicy,
-                               QSpacerItem, QSpinBox, QTabWidget, QWidget)
+                               QGridLayout, QHBoxLayout, QLabel, QPushButton,
+                               QSizePolicy, QSpacerItem, QSpinBox, QTabWidget,
+                               QTreeWidget, QTreeWidgetItem, QWidget)
 
 import src.misc.common as common
+import src.misc.icons as icons
 from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
                                            Subpalette, Tile)
 from src.coilsnake.project_data import ProjectData
@@ -174,8 +176,11 @@ class ColourButton(QPushButton):
     """A coloured "button" that opens a colour dialog when clicked"""
     colourChanged = Signal()
     
-    def __init__(self, parent: QWidget | None = None, initialColour: QColor = QColor(255, 255, 255)):
+    def __init__(self, parent: QWidget | None = None, initialColour: QColor = QColor(255, 255, 255), viewOnly: bool = False):
         super().__init__(parent)
+        
+        self.viewOnly = viewOnly
+        self.setToolTip("Double-click to edit")
         
         if QGuiApplication.palette().color(QPalette.ColorGroup.Normal, QPalette.ColorRole.Base).lightness() < 128:
             self._border = "#FFFFFF"
@@ -188,14 +193,30 @@ class ColourButton(QPushButton):
     
         self.chosenColour = None
         self.clicked.connect(self.openColourDialog)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        if not self.viewOnly:
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
         
         self.setColour(initialColour)
         
+    def setViewOnly(self, viewOnly: bool):
+        self.viewOnly = viewOnly
+        if not self.viewOnly:
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
+            self.setAutoExclusive(True)
+            self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+            self.setToolTip("Double-click to edit")
+        else:
+            self.unsetCursor()
+            self.setAutoExclusive(False)
+            self.setChecked(False)
+            self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            self.setToolTip("")
+        
     def openColourDialog(self):
-        colour = QColorDialog.getColor(self.chosenColour, self, "Choose a colour")
-        if colour.isValid():
-            self.setColour(colour)
+        if not self.viewOnly:
+            colour = QColorDialog.getColor(self.chosenColour, self, "Choose a colour")
+            if colour.isValid():
+                self.setColour(colour)
             
     def setColour(self, colour: QColor):
         colour.setAlpha(255)
@@ -207,10 +228,19 @@ class ColourButton(QPushButton):
             self._thickPen.setColor("#000000")
         self.repaint()
         
+    def mousePressEvent(self, event: QMouseEvent):
+        if not self.viewOnly:
+            return super().mousePressEvent(event)
+    
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if not self.viewOnly:
+            return super().mouseReleaseEvent(event)
+    
     def mouseDoubleClickEvent(self, event: QMouseEvent):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.openColourDialog()
-        return super().mouseDoubleClickEvent(event)
+        if not self.viewOnly:
+            if event.button() == Qt.MouseButton.LeftButton:
+                self.openColourDialog()
+            return super().mouseDoubleClickEvent(event)
     
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -232,6 +262,16 @@ class ColourButton(QPushButton):
         painter.setBrush(brush)
         painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
         painter.end()
+
+    def setDisabled(self, disabled: bool):
+        if disabled:
+            self.setToolTip("")
+        return super().setDisabled(disabled)
+    
+    def setEnabled(self, enabled: bool):
+        if enabled:
+            self.setToolTip("Double-click to edit")
+        return super().setEnabled(enabled)
 
 # https://stackoverflow.com/a/49851646
 class AspectRatioWidget(QWidget):
@@ -592,3 +632,187 @@ class IconLabel(QWidget):
     
     def setText(self, text: str):
         self.textLabel.setText(text)
+        
+        
+class PaletteSelector(QWidget):
+    colourChanged = Signal(int, int)
+    subpaletteChanged = Signal(int)
+    colourEdited = Signal(int, int)
+    
+    def __init__(self):
+        super().__init__()
+        
+        layout = QGridLayout()
+        self.setLayout(layout)
+        
+        self.buttons: list[list[ColourButton]] = [[], [], [], [], [], []]
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        self.arrowIndicatorLabels: list[QLabel] = []
+        self.subpaletteLabels: list[QLabel] = []
+        self.viewOnly: bool = False
+        
+        for i in range(6):
+            label = QLabel(str(i))
+            label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            label.setTextFormat(Qt.TextFormat.RichText)
+            layout.addWidget(label, i, 1)
+            
+            indicator = QLabel("")
+            if i == 0: 
+                label.setText(f"<b>{i}</b>")
+                indicator.setText("▶")
+            layout.addWidget(indicator, i, 0)
+            
+            self.subpaletteLabels.append(label)
+            self.arrowIndicatorLabels.append(indicator)
+            
+            for j in range(16):                
+                button = ColourButton(self)
+                button.setCheckable(True)
+                button.clicked.disconnect()
+                button.colourChanged.connect(self.onColourEdited)
+                button.clicked.connect(self.onColourChanged)
+                button.setAutoExclusive(True)
+                button.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
+                button.setFixedSize(24, 24)
+                layout.addWidget(button, i, j+2)
+                self.buttons[i].append(button)
+            
+        self.buttons[0][0].setChecked(True)
+        self.currentSubpaletteIndex = 0
+        self.currentColour = self.buttons[0][0].chosenColour
+        self.currentColourIndex = 0
+        
+        self.currentPalette: Palette = None
+        
+        self.onColourChanged()
+            
+    def onColourChanged(self):
+        for subpalette, list in enumerate(self.buttons):
+            for index, button in enumerate(list):
+                if button.isChecked():
+                    self.currentColour = button.chosenColour
+                    if subpalette != self.currentSubpaletteIndex:
+                        self.currentSubpaletteIndex = subpalette
+                        self.subpaletteChanged.emit(subpalette)
+                        self.updateSubpaletteLabels()
+                    if index != self.currentColourIndex:
+                        self.currentColourIndex = index
+                        self.colourChanged.emit(subpalette, index)
+                    return
+                
+    def onColourEdited(self):
+        for subpalette in self.buttons:
+            for button in subpalette:
+                if button.isChecked():
+                    self.colourEdited.emit(self.buttons.index(subpalette), subpalette.index(button))
+                    return
+        
+    def setColourIndex(self, index: int):
+        self.currentColourIndex = index
+        self.buttons[self.currentSubpaletteIndex][index].setChecked(True)
+        
+    def setSubpaletteIndex(self, subpalette: int):
+        self.currentSubpaletteIndex = subpalette
+        self.buttons[subpalette][self.currentColourIndex].setChecked(True)
+        self.updateSubpaletteLabels()
+    
+    def updateSubpaletteLabels(self):
+        for id, label in enumerate(self.subpaletteLabels):
+            if id == self.currentSubpaletteIndex and not self.viewOnly:
+                label.setText(f"<b>{id}</b>")
+                self.arrowIndicatorLabels[id].setText("▶")
+            else:
+                label.setText(str(id))
+                self.arrowIndicatorLabels[id].setText("")
+        
+    def openEditor(self):
+        # maybe new implementation later,
+        # but right now just open the dialog of the selected button
+        if not self.viewOnly:
+            for subpaletteButtons in self.buttons:
+                for button in subpaletteButtons:
+                    if button.isChecked():
+                        button.openColourDialog()
+                        return
+            
+    def loadPalette(self, palette: Palette):
+        for index, subpalette in enumerate(palette.subpalettes):
+            for colour, button in enumerate(self.buttons[index]):
+                button.blockSignals(True)
+                button.setColour(QColor.fromRgb(*subpalette.subpaletteRGBA[colour]))
+                button.blockSignals(False)
+            
+        self.currentPalette = palette 
+        
+        self.onColourChanged()
+        
+    def setViewOnly(self, viewOnly: bool):
+        self.viewOnly = viewOnly
+        self.updateSubpaletteLabels()
+        
+        for subpal in self.buttons:
+            for button in subpal:
+                button.setViewOnly(viewOnly)
+            
+        
+class PaletteTreeWidget(QTreeWidget):
+    def __init__(self, projectData: ProjectData, parent: QWidget|None=None):
+        super().__init__(parent)
+        
+        self.projectData = projectData
+        
+        self.setColumnCount(1)
+        self.setHeaderHidden(True)
+        
+        for tileset in self.projectData.tilesets:
+            tilesetWidget = TilesetListItem(tileset.id, [f"Tileset {tileset.id}"])
+            self.addTopLevelItem(tilesetWidget)
+            for paletteGroup in tileset.paletteGroups:
+                paletteGroupWidget = PaletteGroupListItem(paletteGroup.groupID, tilesetWidget, [f"Palette Group {paletteGroup.groupID}"])
+                tilesetWidget.addChild(paletteGroupWidget)
+                for palette in paletteGroup.palettes:
+                    paletteWidget = PaletteListItem(palette.paletteID, paletteGroupWidget, [f"Palette {palette.paletteID}"])
+                    paletteGroupWidget.addChild(paletteWidget)
+                    for subpalette in range(0, 6):
+                        subpaletteWidget = SubpaletteListItem(subpalette, paletteWidget, [f"Subpalette {subpalette}"])
+                        paletteWidget.addChild(subpaletteWidget)
+
+class TilesetListItem(QTreeWidgetItem):
+    def __init__(self, tileset: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tileset = tileset
+        
+        self.setIcon(0, icons.ICON_TILESET)
+
+class PaletteGroupListItem(QTreeWidgetItem):
+    def __init__(self, palettegroup: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.paletteGroup = palettegroup
+        
+        self.setIcon(0, icons.ICON_PALETTE_GROUP)
+    
+    def parent(self) -> TilesetListItem:
+        return super().parent()
+
+class PaletteListItem(QTreeWidgetItem):
+    def __init__(self, palette: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.palette = palette
+        
+        self.setIcon(0, icons.ICON_PALETTE)
+    
+    def parent(self) -> PaletteGroupListItem:
+        return super().parent()
+
+class SubpaletteListItem(QTreeWidgetItem):
+    def __init__(self, subpalette: int, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.subpalette = subpalette
+        
+        self.setIcon(0, icons.ICON_SUBPALETTE)
+
+    def parent(self) -> PaletteListItem:
+        return super().parent()

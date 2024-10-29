@@ -315,10 +315,10 @@ class MapEditorScene(QGraphicsScene):
                                                                        trigger.TriggerRope())))
                     menu.addAction(icons.ICON_PASTE, "Paste", self.onPaste)
                 case common.MODEINDEX.HOTSPOT:
-                    menu.addAction(icons.ICON_MOVE_TO, "&Move hotspot here...", lambda: self.moveHotspot(EBCoords(x, y)))
+                    menu.addAction(icons.ICON_EXPORT, "&Move hotspot here...", lambda: self.moveHotspot(EBCoords(x, y)))
                 case common.MODEINDEX.WARP:
-                    menu.addAction(icons.ICON_MOVE_TO, "Move &warp here...", lambda: self.moveWarp(EBCoords(x, y)))
-                    menu.addAction(icons.ICON_MOVE_TO, "Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
+                    menu.addAction(icons.ICON_EXPORT, "Move &warp here...", lambda: self.moveWarp(EBCoords(x, y)))
+                    menu.addAction(icons.ICON_EXPORT, "Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
                 case _:
                     return super().contextMenuEvent(event)
             menu.exec(event.screenPos())          

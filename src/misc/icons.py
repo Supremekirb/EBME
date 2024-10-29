@@ -1,5 +1,5 @@
+from PySide6.QtGui import QGuiApplication, QIcon, QPalette
 from qtawesome import icon
-from PySide6.QtGui import QGuiApplication, QPalette, QIcon
 
 # https://phosphoricons.com/
 # (icons > v1.3 are not usable)
@@ -92,16 +92,13 @@ def init_icons():
     ICON_DOWN_DOUBLE = icon("ph.caret-double-down")
     
     global ICON_SWAP
-    ICON_SWAP = icon("ph.arrows-down-up")
+    ICON_SWAP = icon("ph.arrows-down-up", hflip=True) # to match copy arrows in tile editor
     
     global ICON_NEW
     ICON_NEW = icon("ph.plus")
     
     global ICON_EDIT
     ICON_EDIT = icon("ph.pencil-line")
-    
-    global ICON_MOVE_TO
-    ICON_MOVE_TO = icon("ph.arrow-square-out")
     
     global ICON_CANCEL
     ICON_CANCEL = icon("ph.x")
@@ -112,14 +109,17 @@ def init_icons():
     global ICON_RENDER_IMG
     ICON_RENDER_IMG = icon("ph.image")
     
-    global ICON_IMPORT_IMG
-    ICON_IMPORT_IMG = icon("ph.arrow-square-in")
-    
     global ICON_ZOOM_IN
     ICON_ZOOM_IN = icon("ph.magnifying-glass-plus")
     
     global ICON_ZOOM_OUT
     ICON_ZOOM_OUT = icon("ph.magnifying-glass-minus")
+    
+    global ICON_IMPORT
+    ICON_IMPORT = icon("ph.arrow-square-in")
+    
+    global ICON_EXPORT
+    ICON_EXPORT = icon("ph.arrow-square-out")
     
     global ICON_WARNING
     ICON_WARNING = icon("ph.warning")
