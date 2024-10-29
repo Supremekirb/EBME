@@ -1,6 +1,5 @@
 import logging
 import traceback
-from re import L
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QFile, QRectF, QSettings, Qt

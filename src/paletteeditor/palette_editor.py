@@ -1,16 +1,21 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtGui import QAction, QColor, QKeySequence, QUndoStack
-from PySide6.QtWidgets import (QFormLayout, QGroupBox, QHBoxLayout, QMenu,
-                               QPushButton, QSpinBox, QToolButton, QTreeWidget,
+from PySide6.QtGui import (QAction, QColor, QKeySequence, QUndoCommand,
+                           QUndoStack)
+from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
+                               QHBoxLayout, QMenu, QMessageBox, QPushButton,
+                               QSpinBox, QToolButton, QTreeWidget,
                                QTreeWidgetItem, QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.debug as debug
 import src.misc.icons as icons
+from src.actions.fts_actions import ActionChangeSubpaletteColour, ActionReplacePalette
+from src.actions.misc_actions import MultiActionWrapper
+from src.coilsnake.fts_interpreter import Palette
 from src.coilsnake.project_data import ProjectData
-from src.misc.dialogues import (AboutDialog, CopyEventPaletteDialog, EditEventPaletteDialog,
-                                SettingsDialog)
+from src.misc.dialogues import (AboutDialog, CopyEventPaletteDialog,
+                                EditEventPaletteDialog, SettingsDialog)
 from src.misc.widgets import (ColourButton, FlagInput, IconLabel,
                               PaletteListItem, PaletteTreeWidget,
                               SubpaletteListItem)
@@ -35,6 +40,55 @@ class PaletteEditor(QWidget):
         self.setupUI()
         self.selection1.setCurrentItem(self.selection1.topLevelItem(0), 0)
         
+    def onUndo(self):
+        command = self.undoStack.command(self.undoStack.index()-1)
+
+        if command:
+            self.undoStack.undo()
+            self.onUndoRedoCommon(command)
+
+    def onRedo(self):
+        command = self.undoStack.command(self.undoStack.index())
+
+        if command:
+            self.undoStack.redo()
+            self.onUndoRedoCommon(command)
+    
+    def onUndoRedoCommon(self, command: QUndoCommand):
+        actionType = None
+        commands = []
+
+        count = command.childCount()
+        if count > 0: # handle macros
+            for c in range(command.childCount()):
+                commands.append(command.child(c))
+                        
+        elif isinstance(command, MultiActionWrapper): # handle multis (which should not have children)
+            for c in command.commands:
+                commands.append(c)
+                
+        else: # otherwise we are just a standalone
+            commands.append(command)
+            
+        for c in commands:
+            if isinstance(c, ActionChangeSubpaletteColour):
+                actionType = "subpalette"
+            if isinstance(c, ActionReplacePalette):
+                actionType = "palette"
+                
+        match actionType:
+            case "subpalette":
+                self.refreshSubpaletteDisplay()
+                # see gfx editor for why we don't/can't specify what to clobber :(
+                self.projectData.clearTileGraphicsCache()
+            case "palette":
+                self.refreshSubpaletteDisplay()
+                self.projectData.clearTileGraphicsCache()
+                
+    def refreshSubpaletteDisplay(self):
+        self.on1CurrentChanged(self.selection1.currentItem())
+        self.on2CurrentChanged(self.selection2.currentItem())
+        
     def transferColourUp(self, index: int):
         ...
         
@@ -46,6 +100,28 @@ class PaletteEditor(QWidget):
         
     def transferAllColoursDown(self):
         ...
+    
+    def onTopColourChanged(self, colour: int):
+        current = self.selection1.currentItem()
+        if isinstance(current, SubpaletteListItem):
+            subpalette = self.projectData.getTileset(current.parent().parent().parent().tileset).getPalette(
+                current.parent().parent().paletteGroup, current.parent().palette
+            ).subpalettes[current.subpalette]
+            
+            newColour = self.subpalette1Buttons[colour].chosenColour.toTuple()[:3]
+            
+            self.undoStack.push(ActionChangeSubpaletteColour(subpalette, colour, newColour))
+        
+    def onBottomColourChanged(self, colour: int):
+        current = self.selection2.currentItem()
+        if isinstance(current, SubpaletteListItem):
+            subpalette = self.projectData.getTileset(current.parent().parent().parent().tileset).getPalette(
+                current.parent().parent().paletteGroup, current.parent().palette
+            ).subpalettes[current.subpalette]
+            
+            newColour = self.subpalette2Buttons[colour].chosenColour.toTuple()[:3]
+            
+            self.undoStack.push(ActionChangeSubpaletteColour(subpalette, colour, newColour))
         
     def on1CurrentChanged(self, new: QTreeWidgetItem):        
         if isinstance(new, SubpaletteListItem):
@@ -172,6 +248,65 @@ class PaletteEditor(QWidget):
                 i.setDisabled(True)
             for i in self.subpaletteTransferButtons:
                 i.setDisabled(True)
+                
+    def renderPaletteImage(self):
+        ...
+        
+    def exportPalette(self):
+        current = self.selection1.currentItem()
+        if isinstance(current, SubpaletteListItem):
+            current = current.parent()
+        if not isinstance(current, PaletteListItem):
+            return common.showErrorMsg("Cannot export palette",
+                                       "Please select a palette to export from.",
+                                       icon = QMessageBox.Icon.Warning)
+        
+        path, _ = QFileDialog.getSaveFileName(self,
+                                           "Export palette",
+                                           self.projectData.dir,
+                                           "*.ebpal")
+        if path:
+            try:
+                with open(path, "w", encoding="utf-8") as file:
+                    palette = self.projectData.getTileset(current.parent().parent().tileset).getPalette(
+                        current.parent().paletteGroup, current.palette
+                    )
+                    file.write(palette.toRaw())
+            except Exception as e:
+                common.showErrorMsg("Cannot export palette",
+                                    "An error occured when exporting the palette.",
+                                    str(e))
+                raise
+        
+    def importPalette(self):
+        current = self.selection1.currentItem()
+        if isinstance(current, SubpaletteListItem):
+            current = current.parent()
+        if not isinstance(current, PaletteListItem):
+            return common.showErrorMsg("Cannot import palette",
+                                       "Please select a palette to import over.",
+                                       icon = QMessageBox.Icon.Warning)
+        
+        path, _ = QFileDialog.getOpenFileName(self,
+                                           "Import palette",
+                                           self.projectData.dir,
+                                           "*.ebpal")
+        if path:
+            try:
+                with open(path, encoding="utf-8") as file:
+                    oldPalette = self.projectData.getTileset(current.parent().parent().tileset).getPalette(
+                        current.parent().paletteGroup, current.palette
+                    )
+                    
+                    newPalette = Palette(file.read())
+                    
+                    self.undoStack.push(ActionReplacePalette(newPalette, oldPalette))
+                    
+            except Exception as e:
+                common.showErrorMsg("Cannot import palette",
+                                    "An error occured when importing the palette.",
+                                    str(e))
+                raise
         
     def setupUI(self):
         layout = QHBoxLayout()
@@ -212,6 +347,7 @@ class PaletteEditor(QWidget):
         for i in range(0, 16):
             button = ColourButton()
             button.setFixedSize(24, 24)
+            button.colourChanged.connect(lambda i=i: self.onTopColourChanged(i)) # bypass a rather curious lambda-in-loop side effect with i=i
             self.subpalette1Buttons.append(button)
             editTopRowLayout.addWidget(button)
             
@@ -219,7 +355,7 @@ class PaletteEditor(QWidget):
             button = QToolButton()
             button.setIcon(icons.ICON_UP)
             button.setToolTip("Copy from bottom to top")
-            button.clicked.connect(lambda: self.transferColourUp(i))
+            button.clicked.connect(lambda i=i: self.transferColourUp(i))
             button.setDisabled(True)
             self.subpaletteTransferButtons.append(button)
             tempCopyButtonsLayout.addWidget(button)
@@ -227,7 +363,7 @@ class PaletteEditor(QWidget):
             button = QToolButton()
             button.setIcon(icons.ICON_DOWN)
             button.setToolTip("Copy from top to bottom")
-            button.clicked.connect(lambda: self.transferColourDown(i))
+            button.clicked.connect(lambda i=i: self.transferColourDown(i))
             button.setDisabled(True)
             self.subpaletteTransferButtons.append(button)
             tempCopyButtonsLayout.addWidget(button)
@@ -236,6 +372,7 @@ class PaletteEditor(QWidget):
             
             button = ColourButton()
             button.setFixedSize(24, 24)
+            button.colourChanged.connect(lambda i=i: self.onBottomColourChanged(i))
             self.subpalette2Buttons.append(button)
             editBottomRowLayout.addWidget(button)
         
@@ -327,6 +464,22 @@ class PaletteEditor(QWidget):
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.openSettingsAction)
         
+        self.menuEdit = QMenu("&Edit")
+        self.undoAction = QAction(icons.ICON_UNDO, "&Undo", shortcut=QKeySequence("Ctrl+Z"))
+        self.undoAction.triggered.connect(self.onUndo)
+        self.redoAction = QAction(icons.ICON_REDO, "&Redo")
+        self.redoAction.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
+        self.redoAction.triggered.connect(self.onRedo)
+        self.menuEdit.addActions([self.undoAction, self.redoAction])
+
+        self.menuTools = QMenu("&Tools")
+        self.renderPaletteAction = QAction(icons.ICON_RENDER_IMG, "&Render image of palette...")
+        self.renderPaletteAction.triggered.connect(self.renderPaletteImage)
+        self.exportPaletteAction = QAction(icons.ICON_EXPORT, "&Export palette...")
+        self.exportPaletteAction.triggered.connect(self.exportPalette)
+        self.importPaletteAction = QAction(icons.ICON_IMPORT, "&Import palette...")
+        self.importPaletteAction.triggered.connect(self.importPalette)
+        self.menuTools.addActions([self.renderPaletteAction, self.exportPaletteAction, self.importPaletteAction])
         
         self.menuHelp = QMenu("&Help")        
         self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")
@@ -338,7 +491,7 @@ class PaletteEditor(QWidget):
             self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
             self.menuHelp.addAction(self.openDebugAction)
         
-        self.menuItems = (self.menuFile, self.menuHelp)
+        self.menuItems = (self.menuFile, self.menuEdit, self.menuTools, self.menuHelp)
         
     def parent(self) -> "MainApplication": # for typing
         return super().parent()

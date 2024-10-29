@@ -3,7 +3,7 @@ from copy import copy
 from PySide6.QtGui import QUndoCommand
 
 import src.misc.common as common
-from src.coilsnake.fts_interpreter import FullTileset, Minitile, Tile, Subpalette
+from src.coilsnake.fts_interpreter import FullTileset, Minitile, Palette, Tile, Subpalette
 
 
 class ActionChangeBitmap(QUndoCommand):
@@ -188,3 +188,25 @@ class ActionSwapMinitiles(QUndoCommand):
 
     def id(self):
         return common.ACTIONINDEX.MINITILESWAP
+    
+class ActionReplacePalette(QUndoCommand):
+    def __init__(self, new: Palette, old: Palette):
+        super().__init__()
+        self.setText("Replace palette")
+        
+        self.new = new
+        self.old = old
+        
+        self._oldSubpalettes = copy(old.subpalettes)
+        
+    def redo(self):
+        self.old.subpalettes = self.new.subpalettes
+    
+    def undo(self):
+        self.old.subpalettes = self._oldSubpalettes
+        
+    def mergeWith(self, other: QUndoCommand):
+        return False
+    
+    def id(self):
+        return common.ACTIONINDEX.REPLACEPALETTE
