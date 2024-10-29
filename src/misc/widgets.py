@@ -5,12 +5,13 @@ from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, QSize, Qt, Signal
 from PySide6.QtGui import (QBrush, QColor, QGuiApplication, QIcon, QMouseEvent,
                            QPainter, QPaintEvent, QPalette, QPen, QPixmap,
                            QResizeEvent, QTransform, QWheelEvent)
-from PySide6.QtWidgets import (QBoxLayout, QCheckBox, QColorDialog, QFrame,
-                               QGraphicsPixmapItem, QGraphicsScene,
-                               QGraphicsSceneMouseEvent, QGraphicsView,
-                               QGridLayout, QHBoxLayout, QLabel, QPushButton,
-                               QSizePolicy, QSpacerItem, QSpinBox, QTabWidget,
-                               QTreeWidget, QTreeWidgetItem, QWidget)
+from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox,
+                               QColorDialog, QFrame, QGraphicsPixmapItem,
+                               QGraphicsScene, QGraphicsSceneMouseEvent,
+                               QGraphicsView, QGridLayout, QHBoxLayout, QLabel,
+                               QPushButton, QSizePolicy, QSpacerItem, QSpinBox,
+                               QTabWidget, QTreeWidget, QTreeWidgetItem,
+                               QWidget)
 
 import src.misc.common as common
 import src.misc.icons as icons
@@ -180,7 +181,7 @@ class ColourButton(QPushButton):
         super().__init__(parent)
         
         self.viewOnly = viewOnly
-        self.setToolTip("Double-click to edit")
+        self.setToolTip("Click to edit, right click to copy hex code")
         
         if QGuiApplication.palette().color(QPalette.ColorGroup.Normal, QPalette.ColorRole.Base).lightness() < 128:
             self._border = "#FFFFFF"
@@ -204,12 +205,15 @@ class ColourButton(QPushButton):
             self.setCursor(Qt.CursorShape.PointingHandCursor)
             self.setAutoExclusive(True)
             self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-            self.setToolTip("Double-click to edit")
+            self.setToolTip("Click to edit, right click to copy hex code")
         else:
             self.unsetCursor()
             self.setAutoExclusive(False)
             self.setChecked(False)
             self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            self.setToolTip("Right click to copy hex code")
+        
+        if not self.isEnabled():
             self.setToolTip("")
         
     def openColourDialog(self):
@@ -229,6 +233,9 @@ class ColourButton(QPushButton):
         self.repaint()
         
     def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.RightButton:
+            QApplication.clipboard().setText("#{0:02x}{1:02x}{2:02x}".format(*self.chosenColour.toTuple()))
+            
         if not self.viewOnly:
             return super().mousePressEvent(event)
     
@@ -269,8 +276,10 @@ class ColourButton(QPushButton):
         return super().setDisabled(disabled)
     
     def setEnabled(self, enabled: bool):
-        if enabled:
-            self.setToolTip("Double-click to edit")
+        if self.viewOnly:
+            self.setToolTip("Right click to copy hex code")
+        else:
+            self.setToolTip("Click to edit, right click to copy hex code")
         return super().setEnabled(enabled)
 
 # https://stackoverflow.com/a/49851646
@@ -677,6 +686,7 @@ class PaletteSelector(QWidget):
                 button.setAutoExclusive(True)
                 button.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
                 button.setFixedSize(24, 24)
+                button.setToolTip("Double click to edit, right click to copy hex code")
                 layout.addWidget(button, i, j+2)
                 self.buttons[i].append(button)
             
