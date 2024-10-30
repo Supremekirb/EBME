@@ -516,12 +516,14 @@ class TileGraphicsWidget(QWidget):
 class TilesetDisplayGraphicsScene(QGraphicsScene):
     tileSelected = Signal(int)
         
-    def __init__(self, projectData: ProjectData, horizontal: bool = False, rowSize: int = 6):
+    def __init__(self, projectData: ProjectData, horizontal: bool = False, rowSize: int = 6, forcedPalette: Palette|None=None):
         super().__init__()
         
         self.projectData = projectData
         self.horizontal = horizontal
         self.rowSize = rowSize
+        self.forcedPalette = forcedPalette
+        self.forcedPaletteCache: dict[int, QPixmap] = {}
         
         self.selectionIndicator = QGraphicsPixmapItem(QPixmap(":/ui/selectTile.png"))
         
@@ -565,15 +567,30 @@ class TilesetDisplayGraphicsScene(QGraphicsScene):
                 tileID = self.posToTileIndex(x, y)
                 if tileID >= common.MAXTILES or tileID < 0:
                     continue
-                tileGfx = self.projectData.getTileGraphic(self.currentTileset,
-                                                          self.currentPaletteGroup,
-                                                          self.currentPalette,
-                                                          tileID)
-                if not tileGfx.hasRendered:
-                    tileGfx.render(tileset)
-                    tileGfx.hasRendered = True
+                
+                if not self.forcedPalette:
+                    tileGfx = self.projectData.getTileGraphic(self.currentTileset,
+                                                            self.currentPaletteGroup,
+                                                            self.currentPalette,
+                                                            tileID)
+                    if not tileGfx.hasRendered:
+                        tileGfx.render(tileset)
+                        tileGfx.hasRendered = True
+                        
+                    painter.drawPixmap(x*32, y*32, tileGfx.rendered)
                     
-                painter.drawPixmap(x*32, y*32, tileGfx.rendered)
+                else:
+                    try:
+                        pixmap = self.forcedPaletteCache[tileID]
+                    except KeyError:
+                        tileset = self.projectData.getTileset(self.currentTileset)
+                        tile = tileset.tiles[tileID]
+                        self.forcedPaletteCache[tileID] = QPixmap.fromImage(ImageQt.ImageQt(
+                            tile.toImage(self.forcedPalette, tileset)
+                        ))
+                        pixmap = self.forcedPaletteCache[tileID]
+                    
+                    painter.drawPixmap(x*32, y*32, pixmap)
                 
         if QSettings().value("mapeditor/ShowTileIDs", False, bool):
             painter.setFont("EBMain")
@@ -669,6 +686,7 @@ class PaletteSelector(QWidget):
             layout.addWidget(label, i, 1)
             
             indicator = QLabel("")
+            indicator.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             if i == 0: 
                 label.setText(f"<b>{i}</b>")
                 indicator.setText("▶")

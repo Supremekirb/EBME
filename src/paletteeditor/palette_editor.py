@@ -3,14 +3,16 @@ from typing import TYPE_CHECKING
 from PySide6.QtGui import (QAction, QColor, QKeySequence, QUndoCommand,
                            QUndoStack)
 from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
-                               QHBoxLayout, QMenu, QMessageBox, QPushButton,
-                               QSpinBox, QToolButton, QTreeWidget,
-                               QTreeWidgetItem, QVBoxLayout, QWidget)
+                               QHBoxLayout, QListWidget, QListWidgetItem,
+                               QMenu, QMessageBox, QPushButton, QSpinBox,
+                               QToolButton, QTreeWidget, QTreeWidgetItem,
+                               QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.debug as debug
 import src.misc.icons as icons
-from src.actions.fts_actions import (ActionChangeSubpaletteColour,
+from src.actions.fts_actions import (ActionChangePaletteSettings,
+                                     ActionChangeSubpaletteColour,
                                      ActionReplacePalette)
 from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.fts_interpreter import Palette
@@ -85,6 +87,8 @@ class PaletteEditor(QWidget):
                 actionType = "subpalette"
             if isinstance(c, ActionReplacePalette):
                 actionType = "palette"
+            if isinstance(c, ActionChangePaletteSettings):
+                actionType = "settings"
                 
         match actionType:
             case "subpalette":
@@ -96,6 +100,9 @@ class PaletteEditor(QWidget):
                 self.refreshSubpaletteDisplay()
                 self.projectData.clobberTileGraphicsCache()
                 self.clobberAllCachedMinitiles()
+            case "settings":
+                self.onPaletteSettingsListCurrentChanged(self.paletteSettingsList.currentItem())
+                self.paletteSettingsList.updateLabels()
                 
     def refreshSubpaletteDisplay(self):
         self.on1CurrentChanged(self.selection1.currentItem())
@@ -231,24 +238,28 @@ class PaletteEditor(QWidget):
         
         settings = self.projectData.paletteSettings[paletteGroup][palette]
         
-        if settings != self.paletteSettingsTree.lastSettings:
-            self.paletteSettingsTree.blockSignals(True)
-            self.paletteSettingsTree.populateSettings(settings)
-            self.paletteSettingsTree.blockSignals(False)
+        if settings != self.paletteSettingsList.lastSettings:
+            self.paletteSettingsList.blockSignals(True)
+            self.paletteSettingsList.populateSettings(settings)
+            self.paletteSettingsList.blockSignals(False)
             
-            self.paletteSettingsTree.setCurrentItem(self.paletteSettingsTree.topLevelItem(0))
+            self.paletteSettingsList.setCurrentItem(self.paletteSettingsList.item(0))
     
-    def onPaletteSettingsTreeCurrentChanged(self, new: "PaletteSettingsTreeItem"):
+    def onPaletteSettingsListCurrentChanged(self, new: "PaletteSettingsListItem"):
         settings = new.settings
         
-        if self.paletteSettingsTree.topLevelItem(0) == new:
+        if self.paletteSettingsList.item(0) == new:
             self.paletteSettingsColoursWarning.show()
             self.paletteSettingsColoursEdit.hide()
             self.paletteSettingsColoursCopy.hide()
+            self.paletteSettingsColoursExport.hide()
+            self.paletteSettingsColoursImport.hide()
         else:
             self.paletteSettingsColoursWarning.hide()
             self.paletteSettingsColoursEdit.show()
             self.paletteSettingsColoursCopy.show()
+            self.paletteSettingsColoursExport.show()
+            self.paletteSettingsColoursImport.show()
             
         if settings.child:
             self.paletteSettingsAddChild.setDisabled(True)
@@ -277,16 +288,20 @@ class PaletteEditor(QWidget):
                 self.paletteSettingsChildWarning.setText("Valid configuration")
                 
     def onEditEventPalette(self):
-        palette = self.paletteSettingsTree.currentItem().settings.palette
+        palette = self.paletteSettingsList.currentItem().settings.palette
         if palette:
-            actions = EditEventPaletteDialog.editEventPalette(self, palette)
+            actions = EditEventPaletteDialog.editEventPalette(self, palette,
+                                                              self.selection1.getCurrentTileset().tileset,
+                                                              self.projectData)
             if actions:
                 self.undoStack.push(actions)
     
     def onCopyEventPalette(self):
-        palette = self.paletteSettingsTree.currentItem().settings.palette
+        palette = self.paletteSettingsList.currentItem().settings.palette
         if palette:
-            CopyEventPaletteDialog.copyEventPalette(self, palette, self.projectData)
+            action = CopyEventPaletteDialog.copyEventPalette(self, palette, self.projectData)
+            if action:
+                self.undoStack.push(action)
              
     def on2CurrentChanged(self, new: QTreeWidgetItem):
         if isinstance(new, SubpaletteListItem):
@@ -312,6 +327,16 @@ class PaletteEditor(QWidget):
             for i in self.subpaletteTransferButtons:
                 i.setDisabled(True)
                 
+    def toPaletteSettings(self):
+        current = self.paletteSettingsList.currentItem()
+        action = ActionChangePaletteSettings(current.settings,
+                                             self.paletteSettingsFlag.value(),
+                                             self.paletteSettingsFlashEffect.value(),
+                                             self.paletteSettingsSpritePalette.value())
+        self.undoStack.push(action)
+        self.onPaletteSettingsListCurrentChanged(current)
+        self.paletteSettingsList.updateLabels()
+                
     def renderPaletteImage(self):
         ...
         
@@ -336,6 +361,27 @@ class PaletteEditor(QWidget):
             except Exception as e:
                 common.showErrorMsg("Cannot export palette",
                                     "An error occured when exporting the palette.",
+                                    str(e))
+                raise
+    
+    def exportEventPalette(self):
+        palette = self.paletteSettingsList.currentItem().settings.palette
+        if not palette:
+            return common.showErrorMsg("Cannot export event palette",
+                                       "Please select palette settings with a palette to export from.",
+                                       icon = QMessageBox.Icon.Warning)
+        
+        path, _ = QFileDialog.getSaveFileName(self,
+                                           "Export event palette",
+                                           self.projectData.dir,
+                                           "*.ebpal")
+        if path:
+            try:
+                with open(path, "w", encoding="utf-8") as file:
+                    file.write(palette.toRaw())
+            except Exception as e:
+                common.showErrorMsg("Cannot export palette",
+                                    "An error occured when exporting the event palette.",
                                     str(e))
                 raise
         
@@ -370,6 +416,30 @@ class PaletteEditor(QWidget):
             except Exception as e:
                 common.showErrorMsg("Cannot import palette",
                                     "An error occured when importing the palette.",
+                                    str(e))
+                raise
+    
+    def importEventPalette(self):
+        palette = self.paletteSettingsList.currentItem().settings.palette
+        if not palette:
+            return common.showErrorMsg("Cannot import event palette",
+                                       "Please select palette settings with an event palette to import over.",
+                                       icon = QMessageBox.Icon.Warning)
+        
+        path, _ = QFileDialog.getOpenFileName(self,
+                                           "Import event palette",
+                                           self.projectData.dir,
+                                           "*.ebpal")
+        if path:
+            try:
+                with open(path, encoding="utf-8") as file:                    
+                    newPalette = Palette(file.read())
+                    
+                    self.undoStack.push(ActionReplacePalette(newPalette, palette))
+                    
+            except Exception as e:
+                common.showErrorMsg("Cannot import event palette",
+                                    "An error occured when importing the event palette.",
                                     str(e))
                 raise
         
@@ -463,10 +533,10 @@ class PaletteEditor(QWidget):
         settingsGroupBoxLayout = QHBoxLayout()
         self.paletteSettingsGroupBox.setLayout(settingsGroupBoxLayout)
         
-        self.paletteSettingsTree = PaletteSettingsTreeWidget(self.projectData)
-        self.paletteSettingsTree.currentItemChanged.connect(self.onPaletteSettingsTreeCurrentChanged)
-        self.paletteSettingsTree.setMaximumWidth(self.paletteSettingsTree.sizeHint().width())
-        settingsGroupBoxLayout.addWidget(self.paletteSettingsTree)
+        self.paletteSettingsList = PaletteSettingsTreeWidget(self.projectData)
+        self.paletteSettingsList.currentItemChanged.connect(self.onPaletteSettingsListCurrentChanged)
+        self.paletteSettingsList.setMaximumWidth(self.paletteSettingsList.sizeHint().width())
+        settingsGroupBoxLayout.addWidget(self.paletteSettingsList)
         
         settingsGroupBoxEditLayout = QFormLayout()
         settingsGroupBoxLayout.addLayout(settingsGroupBoxEditLayout)
@@ -474,11 +544,17 @@ class PaletteEditor(QWidget):
         self.paletteSettingsFlashEffect = QSpinBox()
         self.paletteSettingsFlashEffect.setToolTip("Palette animation, such as in Stonehenge Base. Currently uneditable in CoilSnake. Only values 0-8 have data in vanilla.")
         self.paletteSettingsFlashEffect.setMaximum(common.BYTELIMIT)
+        self.paletteSettingsFlashEffect.editingFinished.connect(self.toPaletteSettings)
+        
         self.paletteSettingsSpritePalette = QSpinBox()
         self.paletteSettingsSpritePalette.setToolTip("Subpalette for sprites of palette 4 to use.")
         self.paletteSettingsSpritePalette.setMaximum(5)
+        self.paletteSettingsSpritePalette.editingFinished.connect(self.toPaletteSettings)
+        
         self.paletteSettingsFlag = FlagInput()
         self.paletteSettingsFlag.spinbox.setToolTip("If this flag is set, use these settings, if not, use the elsewise settings. Set to 0 to always occur and therefore terminate the chain.")
+        self.paletteSettingsFlag.editingFinished.connect(self.toPaletteSettings)
+        self.paletteSettingsFlag.inverted.connect(self.toPaletteSettings)
         
         childOptionsLayout = QHBoxLayout()
         self.paletteSettingsAddChild = QToolButton()
@@ -497,9 +573,20 @@ class PaletteEditor(QWidget):
         self.paletteSettingsColoursWarning.setMinimumHeight(self.paletteSettingsColoursEdit.sizeHint().height())
         self.paletteSettingsColoursCopy = QPushButton("Copy from...")
         self.paletteSettingsColoursCopy.clicked.connect(self.onCopyEventPalette)
+        self.paletteSettingsColoursExport = QToolButton()
+        self.paletteSettingsColoursExport.setIcon(icons.ICON_EXPORT)
+        self.paletteSettingsColoursExport.clicked.connect(self.exportEventPalette)
+        self.paletteSettingsColoursExport.setToolTip("Export")
+        self.paletteSettingsColoursImport = QToolButton()
+        self.paletteSettingsColoursImport.setIcon(icons.ICON_IMPORT)
+        self.paletteSettingsColoursImport.clicked.connect(self.importEventPalette)
+        self.paletteSettingsColoursImport.setToolTip("Import")
+        
         eventPaletteLayout.addWidget(self.paletteSettingsColoursWarning)
         eventPaletteLayout.addWidget(self.paletteSettingsColoursEdit)
         eventPaletteLayout.addWidget(self.paletteSettingsColoursCopy)
+        eventPaletteLayout.addWidget(self.paletteSettingsColoursExport)
+        eventPaletteLayout.addWidget(self.paletteSettingsColoursImport)
             
         childOptionsLayout.addWidget(self.paletteSettingsAddChild)
         childOptionsLayout.addWidget(self.paletteSettingsRemoveChild)
@@ -561,15 +648,11 @@ class PaletteEditor(QWidget):
     def parent(self) -> "MainApplication": # for typing
         return super().parent()
     
-class PaletteSettingsTreeWidget(QTreeWidget):
+class PaletteSettingsTreeWidget(QListWidget):
     def __init__(self, projectData: ProjectData, parent: QWidget|None=None):
         super().__init__(parent)
         
         self.projectData = projectData
-        
-        self.setColumnCount(1)
-        self.setHeaderLabels(["Palette Settings Hierachy"])
-        
         self.lastSettings: PaletteSettings = None
     
     def populateSettings(self, settings: PaletteSettings):
@@ -577,7 +660,7 @@ class PaletteSettingsTreeWidget(QTreeWidget):
         
         self.lastSettings = settings
         
-        previous: PaletteSettingsTreeItem|None = None
+        previous: PaletteSettingsListItem|None = None
         while settings != None:
             if settings.flag == 0 and previous:
                 string = "Settings if nothing else"
@@ -592,24 +675,35 @@ class PaletteSettingsTreeWidget(QTreeWidget):
                     string = f"Settings if flag {settings.flag}"
                 icon = icons.ICON_SPLIT
             
-            if isinstance(previous, PaletteSettingsTreeItem):
-                item = PaletteSettingsTreeItem(settings, [string])
-                previous.addChild(item)    
-            else: 
-                item = PaletteSettingsTreeItem(settings, previous, [string])
-                self.addTopLevelItem(item)
+            item = PaletteSettingsListItem(settings, icon, string)
+            self.addItem(item)  
             
-            item.setIcon(0, icon)
-                
             previous = item
             settings = settings.child
-            
-        self.expandAll()
     
-    def currentItem(self) -> "PaletteSettingsTreeItem":
+    def updateLabels(self):
+        for i in [self.item(j) for j in range(self.count())]:
+            i: PaletteSettingsListItem
+            if i.settings.flag == 0:
+                if self.item(0) == i:
+                    string = "Settings always"
+                else:
+                    string = "Settings if nothing else"
+                icon = icons.ICON_DIAMOND
+            else:
+                if i.settings.flag >= 0x8000:
+                    string = f"Settings if not flag {i.settings.flag-0x8000}"
+                else:
+                    string = f"Settings if flag {i.settings.flag}"
+                icon = icons.ICON_SPLIT
+            
+            i.setText(string)
+            i.setIcon(icon)
+    
+    def currentItem(self) -> "PaletteSettingsListItem":
         return super().currentItem()
 
-class PaletteSettingsTreeItem(QTreeWidgetItem):
+class PaletteSettingsListItem(QListWidgetItem):
     def __init__(self, settings: PaletteSettings, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.settings = settings

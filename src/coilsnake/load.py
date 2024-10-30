@@ -237,7 +237,7 @@ def readPaletteSettings(data: ProjectData):
                                                 childSettings["Flash Effect"],
                                                 childSettings["Sprite Palette"])
                         try:
-                            paletteObj = Palette(str(int(str(paletteGroup), 32)) + str(int(str(palette), 32))
+                            paletteObj = Palette(common.baseN(paletteGroup, 32) + common.baseN(palette, 32)
                                               + childSettings["Colors"])
                             parent.addChild(child, paletteObj)
                         except KeyError as e:

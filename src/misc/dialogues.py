@@ -15,15 +15,17 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
 import src.misc.common as common
 import src.misc.icons as icons
 import src.misc.quotes as quotes
-from src.actions.fts_actions import (ActionChangeSubpaletteColour,
+from src.actions.fts_actions import (ActionChangeSubpaletteColour, ActionReplacePalette,
                                      ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
-from src.coilsnake.fts_interpreter import Minitile, Palette
+from src.coilsnake.fts_interpreter import FullTileset, Minitile, Palette
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
-from src.misc.widgets import (ColourButton, CoordsInput, HSeparator, IconLabel,
+from src.misc.widgets import (ColourButton, CoordsInput,
+                              HorizontalGraphicsView, HSeparator, IconLabel,
                               PaletteListItem, PaletteSelector,
-                              PaletteTreeWidget, SubpaletteListItem)
+                              PaletteTreeWidget, SubpaletteListItem,
+                              TilesetDisplayGraphicsScene)
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
@@ -782,17 +784,35 @@ class AutoMinitileRearrangerDialog(QDialog):
         
         
 class EditEventPaletteDialog(QDialog):
-    def __init__(self, parent, palette: Palette):
+    def __init__(self, parent, palette: Palette, tileset: int, projectData: ProjectData):
         super().__init__(parent)
         
         self.setWindowTitle("Editing Event Palette")
+        
+        self.paletteCopy = Palette(palette.toRaw())
+        self.projectData = projectData
+        self.tileset = tileset
         
         layout = QVBoxLayout()
         self.setLayout(layout)
         
         self.paletteSelector = PaletteSelector()
         self.paletteSelector.loadPalette(palette)
+        self.paletteSelector.colourEdited.connect(self.onPaletteEdited)
         layout.addWidget(self.paletteSelector)
+        
+        self.tilesetDisplay = TilesetDisplayGraphicsScene(projectData, horizontal=True, forcedPalette=self.paletteCopy)
+        self.tilesetDisplay.selectionIndicator.hide()
+        self.tilesetDisplay.currentTileset = tileset
+        self.tilesetDisplay.currentPaletteGroup = palette.groupID
+        self.tilesetDisplay.currentPalette = palette.paletteID
+        self.tilesetDisplayView = HorizontalGraphicsView(self.tilesetDisplay)
+        self.tilesetDisplayView.setFixedHeight(self.tilesetDisplay.rowSize*32 + self.tilesetDisplayView.horizontalScrollBar().sizeHint().height())
+        self.tilesetDisplayView.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+        self.tilesetDisplayView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.tilesetDisplayView.centerOn(0, 0)
+        
+        layout.addWidget(self.tilesetDisplayView)
         
         self.buttons = QDialogButtonBox()
         self.buttons.addButton(QDialogButtonBox.StandardButton.Apply)
@@ -802,10 +822,21 @@ class EditEventPaletteDialog(QDialog):
         self.buttons.rejected.connect(self.reject)
         
         layout.addWidget(self.buttons)
+        
+    def onPaletteEdited(self, subpalette: int, index: int):
+        ActionChangeSubpaletteColour(self.paletteCopy.subpalettes[subpalette], index,
+                                    self.paletteSelector.buttons[subpalette][index].chosenColour.toTuple()[:3]
+                                    ).redo()
+        
+        for i in self.projectData.getTileset(self.tileset).minitiles:
+            i.BothToImage.cache_clear()
+            
+        self.tilesetDisplay.forcedPaletteCache = {}
+        self.tilesetDisplay.update()
     
     @staticmethod
-    def editEventPalette(parent, palette: Palette):
-        dialog = EditEventPaletteDialog(parent, palette)
+    def editEventPalette(parent, palette: Palette, tileset: int, projectData: ProjectData):
+        dialog = EditEventPaletteDialog(parent, palette, tileset, projectData)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             actions = []
             for subpalette in range(0, 6):
@@ -890,5 +921,7 @@ class CopyEventPaletteDialog(QDialog):
         
     @staticmethod
     def copyEventPalette(parent, palette: Palette, projectData: ProjectData):
-        if CopyEventPaletteDialog(parent, palette, projectData).exec() == QDialog.DialogCode.Accepted:
-            ...
+        dialog = CopyEventPaletteDialog(parent, palette, projectData)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            return ActionReplacePalette(dialog.copyFromPaletteSelector.currentPalette, palette)
+            

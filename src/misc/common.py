@@ -134,6 +134,7 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "SUBPALETTECHANGE", # can merge with itself if contents are identical
                                       "MINITILESWAP", # cannot merge with itself
                                       "REPLACEPALETTE", # cannot merge with itself
+                                      "PALETTESETTINGSUPDATE", # can merge with itself
                                       ])
 
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18
@@ -251,7 +252,6 @@ def cap(val: float, min_: float, max_: float):
     return max(min(max_, val), min_)
 
 # https://stackoverflow.com/a/2267428
-# TODO remove. it is stupid. this is also accomplished by str(int(str(x), n))
 def baseN(num: int, base: int, numerals="0123456789abcdefghijklmnopqrstuvwxyz"):
     return ((num == 0) and numerals[0]) or (baseN(num // base, base, numerals).lstrip(numerals[0]) + numerals[num % base])
 

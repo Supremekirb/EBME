@@ -3,7 +3,9 @@ from copy import copy
 from PySide6.QtGui import QUndoCommand
 
 import src.misc.common as common
-from src.coilsnake.fts_interpreter import FullTileset, Minitile, Palette, Tile, Subpalette
+from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
+                                           Subpalette, Tile)
+from src.objects.palette_settings import PaletteSettings
 
 
 class ActionChangeBitmap(QUndoCommand):
@@ -210,3 +212,50 @@ class ActionReplacePalette(QUndoCommand):
     
     def id(self):
         return common.ACTIONINDEX.REPLACEPALETTE
+    
+# not technically fts, but still...
+class ActionChangePaletteSettings(QUndoCommand):
+    def __init__(self, paletteSettings: PaletteSettings, flag: int, flashEffect: int, spritePalette: int):
+        super().__init__()
+        self.setText("Change palette settings")
+        
+        self.paletteSettings = paletteSettings
+        
+        self.flag = flag
+        self.flashEffect = flashEffect
+        self.spritePalette = spritePalette
+        
+        self._flag = paletteSettings.flag
+        self._flashEffect = paletteSettings.flashEffect
+        self._spritePalette = paletteSettings.spritePalette
+        
+        if flag == self._flag and \
+           flashEffect == self._flashEffect and \
+           spritePalette == self._spritePalette:
+               self.setObsolete(True)
+        
+    def redo(self):
+        self.paletteSettings.flag = self.flag
+        self.paletteSettings.flashEffect = self.flashEffect
+        self.paletteSettings.spritePalette = self.spritePalette
+        
+    def undo(self):
+        self.paletteSettings.flag = self._flag
+        self.paletteSettings.flashEffect = self._flashEffect
+        self.paletteSettings.spritePalette = self._spritePalette
+        
+    def mergeWith(self, other: QUndoCommand):
+        # wrong action type
+        if other.id() != common.ACTIONINDEX.PALETTESETTINGSUPDATE:
+            return False
+        # operates on wrong settings
+        if other.paletteSettings != self.paletteSettings:
+            return False
+        # success
+        self.flag = other.flag
+        self.flashEffect = other.flashEffect
+        self.spritePalette = other.spritePalette
+        return True
+
+    def id(self):
+        return common.ACTIONINDEX.PALETTESETTINGSUPDATE

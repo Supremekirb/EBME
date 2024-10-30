@@ -249,6 +249,8 @@ class Project(QWidget):
         if isinstance(result, bool) and result == True:
             self.updateStatusLabel("Project saved.")
             self.mainWin.mapWin.scene.undoStack.setClean()
+            self.mainWin.tileWin.undoStack.setClean()
+            self.mainWin.paletteWin.undoStack.setClean()
 
         else:
             common.showErrorMsg(title=result["title"], text=result["text"], info=result["info"])
