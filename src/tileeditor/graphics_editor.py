@@ -31,9 +31,9 @@ class GraphicsEditorPaletteSelector(PaletteSelector):
                         self.currentColourIndex, new.toTuple()[:3]) # :3
                     
                     self.state.tileEditor.undoStack.push(action)
-                    return
+                    return super().onColourEdited()
                 
-        super().onColourEdited()
+        return super().onColourEdited()
         
 class MinitileEditorWidget(MinitileGraphicsWidget):
     colourPicked = Signal(int)

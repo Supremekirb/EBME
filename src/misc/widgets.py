@@ -644,7 +644,7 @@ class IconLabel(QWidget):
         
         
 class PaletteSelector(QWidget):
-    colourChanged = Signal(int, int)
+    colourChanged = Signal(int)
     subpaletteChanged = Signal(int)
     colourEdited = Signal(int, int)
     
@@ -710,7 +710,7 @@ class PaletteSelector(QWidget):
                         self.updateSubpaletteLabels()
                     if index != self.currentColourIndex:
                         self.currentColourIndex = index
-                        self.colourChanged.emit(subpalette, index)
+                        self.colourChanged.emit(index)
                     return
                 
     def onColourEdited(self):
@@ -789,6 +789,42 @@ class PaletteTreeWidget(QTreeWidget):
                     for subpalette in range(0, 6):
                         subpaletteWidget = SubpaletteListItem(subpalette, paletteWidget, [f"Subpalette {subpalette}"])
                         paletteWidget.addChild(subpaletteWidget)
+    
+    def getCurrentSubpalette(self):
+        current = self.currentItem()
+        if isinstance(current, SubpaletteListItem):
+            return current
+        else: return None
+    
+    def getCurrentPalette(self):
+        current = self.currentItem()
+        if isinstance(current, SubpaletteListItem):
+            return current.parent()
+        elif isinstance(current, PaletteListItem):
+            return current
+        else: return None
+    
+    def getCurrentPaletteGroup(self):
+        current = self.currentItem()
+        if isinstance(current, SubpaletteListItem):
+            return current.parent().parent()
+        elif isinstance(current, PaletteListItem):
+            return current.parent()
+        elif isinstance(current, PaletteGroupListItem):
+            return current
+        else: return None
+        
+    def getCurrentTileset(self):
+        current = self.currentItem()
+        if isinstance(current, SubpaletteListItem):
+            return current.parent().parent().parent()
+        elif isinstance(current, PaletteListItem):
+            return current.parent().parent()
+        elif isinstance(current, PaletteGroupListItem):
+            return current.parent()
+        elif isinstance(current, TilesetListItem):
+            return current
+        else: return None
 
 class TilesetListItem(QTreeWidgetItem):
     def __init__(self, tileset: int, *args, **kwargs):

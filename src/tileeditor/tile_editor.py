@@ -193,10 +193,9 @@ class TileEditor(QWidget):
         self.presetList.verifyTileCollision(tileObj)
     
     def onColourEdit(self):
-        self.projectData.clearTileGraphicsCache()
+        self.projectData.clobberTileGraphicsCache()
         for i in self.projectData.getTileset(self.state.currentTileset).minitiles:
             i.BothToImage.cache_clear()
-            
 
         self.minitileScene.renderTileset(self.state.currentTileset,
                                          self.state.currentPaletteGroup,
@@ -230,7 +229,7 @@ class TileEditor(QWidget):
         
         self.minitileScene.moveCursorToMinitile(minitile)
         
-    def selectColour(self, subpalette: int, index: int):
+    def selectColour(self, index: int):
         self.state.currentColourIndex = index
         self.paletteView.setColourIndex(index)
         
@@ -272,7 +271,7 @@ class TileEditor(QWidget):
     def updateTile(self, tile: Tile|int):
         if isinstance(tile, Tile):
             tile = self.projectData.getTileset(self.state.currentTileset).tiles.index(tile)
-        self.projectData.clearTileGraphicsCache()
+        self.projectData.clobberTileGraphicsCache()
         self.tileScene.update()
         self.arrangementScene.update()
         self.collisionScene.update()
@@ -292,7 +291,7 @@ class TileEditor(QWidget):
         # Still... I'd like to do it properly. But I don't know where this data will go.
         # (the function does support specification as per definition and documentation)
         
-        self.projectData.clearTileGraphicsCache()
+        self.projectData.clobberTileGraphicsCache()
         
         self.tileScene.update()
         self.arrangementScene.update()

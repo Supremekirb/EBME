@@ -104,7 +104,7 @@ class ProjectData():
 
         self.tilesets[tilesetNumber] = newTileset
     
-        self.clearTileGraphicsCache(tilesetNumber)
+        self.clobberTileGraphicsCache(tilesetNumber)
 
     def resolveTileGraphic(self, tileset: int, palettegroup: int, palette: int, tile: int) -> MapTileGraphic:
         """Find the closest valid tile graphic if the requested one is invalid."""
@@ -128,7 +128,7 @@ class ProjectData():
                 
         return self.tilegfx[tileset][palettegroup][palette][tile]
     
-    def clearTileGraphicsCache(self, tileset: int|None=None, paletteGroup: int|None=None, palette: int|None=None, tile: int|None=None):
+    def clobberTileGraphicsCache(self, tileset: int|None=None, paletteGroup: int|None=None, palette: int|None=None, tile: int|None=None):
         """Clear cached tile graphics. Failing to specify an argument clears all graphics under that argument."""
         if tileset:
             if paletteGroup:
