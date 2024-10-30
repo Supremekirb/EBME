@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=EBME
+GenericName=EarthBound Map Editor
+Comment=EarthBound Map Editor
+Exec=&EXEC
+Icon=EBMEIcon
+Actions=dont-load-recent
+
+[Desktop Action dont-load-recent]
+Exec=&EXEC --no-autoload
+Icon=EBMEIcon
+Name=Open without loading project

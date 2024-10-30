@@ -65,6 +65,7 @@
     </qresource>
     <qresource prefix="misc">
         <file alias="songs.txt">assets/misc/songs.txt</file>
+        <file alias="EBME.desktop">assets/misc/EBME.desktop</file>
         <file alias="LICENSE">LICENSE</file>
     </qresource>
 </RCC>
