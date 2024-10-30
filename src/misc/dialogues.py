@@ -1,7 +1,9 @@
 import logging
 import traceback
+from math import ceil
 from typing import TYPE_CHECKING
 
+from PIL import ImageQt
 from PySide6.QtCore import QFile, QRectF, QSettings, Qt
 from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
@@ -15,10 +17,11 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
 import src.misc.common as common
 import src.misc.icons as icons
 import src.misc.quotes as quotes
-from src.actions.fts_actions import (ActionChangeSubpaletteColour, ActionReplacePalette,
-                                     ActionSwapMinitiles)
+from src.actions.fts_actions import (ActionChangeSubpaletteColour,
+                                     ActionReplacePalette, ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
-from src.coilsnake.fts_interpreter import FullTileset, Minitile, Palette
+from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
+                                           Subpalette)
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.widgets import (ColourButton, CoordsInput,
@@ -477,7 +480,7 @@ class SettingsDialog(QDialog):
         settings = SettingsDialog(parent)
         settings.exec_()
         
-class RenderDialog(QDialog):
+class RenderMapDialog(QDialog):
     def __init__(self, parent, scene: "MapEditorScene", x1=0, y1=0, x2=0, y2=0, immediate=False):
         super().__init__(parent)
         
@@ -579,14 +582,255 @@ class RenderDialog(QDialog):
         self.saveButton.setDisabled(False)
     
     def saveImage(self):
-        dir = QFileDialog.getSaveFileName(self, "Save image", "", "PNG Image (*.png)")
-        if dir != ".":
+        dir, _ = QFileDialog.getSaveFileName(self, "Save image", "", "PNG Image (*.png)")
+        if dir:
             self.previewImage.pixmap().save(dir[0], "PNG")
         
     @staticmethod
     def renderMap(parent=None, scene=QGraphicsScene, x1=0, y1=0, x2=0, y2=0, immediate=False):
-        dialog = RenderDialog(parent, scene, x1, y1, x2, y2, immediate)
+        dialog = RenderMapDialog(parent, scene, x1, y1, x2, y2, immediate)
         dialog.exec_()
+
+class RenderTilesDialog(QDialog):
+    def __init__(self, parent, tileset: FullTileset, palette: Palette):
+        super().__init__(parent)
+        self.setWindowTitle("Render Tiles")
+        self.tileset = tileset
+        self.paletteObj = palette # conflicts with qwidget method
+        form = QFormLayout()
+        self.setLayout(form)
+        
+        self.renderRows = QSpinBox()
+        self.renderRows.setMinimum(1)
+        self.renderRows.setMaximum(960)
+        self.renderRows.setValue(30)
+        
+        form.addRow("Rows", self.renderRows)
+        
+        self.renderWithGaps = QCheckBox()
+        form.addRow("Gap between tiles", self.renderWithGaps)
+        
+        self.renderCancelWidget = QWidget()
+        self.renderCancelLayout = QHBoxLayout()
+        self.renderButton = QPushButton("Render")
+        self.renderButton.clicked.connect(self.renderImage)
+        self.renderCancelLayout.addWidget(self.renderButton)
+
+        self.cancelButton = QPushButton("Cancel")
+        self.cancelButton.clicked.connect(self.reject)
+        self.renderCancelLayout.addWidget(self.cancelButton)
+        self.renderCancelWidget.setLayout(self.renderCancelLayout)
+        
+        form.addRow(self.renderCancelWidget)
+        
+        self.preview = QGroupBox("Output")
+        self.previewLayout = QHBoxLayout()
+        self.previewScrollArea = QScrollArea()
+        self.previewImage = QLabel("Render an image")
+        self.previewScrollArea.setWidget(self.previewImage)
+        self.previewLayout.addWidget(self.previewScrollArea)
+        self.preview.setLayout(self.previewLayout)
+        
+        form.addRow(self.preview)
+        
+        self.saveButton = QPushButton("Save")
+        self.saveButton.clicked.connect(self.saveImage)
+        self.saveButton.setDisabled(True)
+        
+        form.addRow(self.saveButton)
+    
+    def renderImage(self):
+        h = self.renderRows.value()
+        w = ceil(960/self.renderRows.value())
+        gaps = self.renderWithGaps.isChecked()
+        
+        image = QImage(w*32+(gaps*w), h*32+(gaps*h), QImage.Format.Format_ARGB32)
+        image.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(image)
+        
+        for id, tile in enumerate(self.tileset.tiles):
+            x = id % w
+            y = id // w
+            painter.drawImage(x*32+(gaps*x), y*32+(gaps*y), ImageQt.ImageQt(tile.toImage(self.paletteObj, self.tileset)))
+        
+        painter.end()
+        
+        self.previewImage = QLabel()
+        self.previewImage.setPixmap(QPixmap.fromImage(image))
+        self.previewScrollArea.setWidget(self.previewImage)
+        
+        self.saveButton.setDisabled(False)
+    
+    def saveImage(self):
+        dir, _ = QFileDialog.getSaveFileName(self, "Save image", "", "PNG Image (*.png)")
+        if dir:
+            self.previewImage.pixmap().save(dir[0], "PNG")
+    
+    @staticmethod
+    def renderTiles(parent, tileset: FullTileset, palette: Palette):
+        dialog = RenderTilesDialog(parent, tileset, palette)
+        dialog.exec_()
+        
+class RenderMinitilesDialog(QDialog):
+    def __init__(self, parent, tileset: FullTileset, subpalette: Subpalette):
+        super().__init__(parent)
+        self.setWindowTitle("Render Minitiles")
+        self.tileset = tileset
+        self.subpalette = subpalette
+        form = QFormLayout()
+        self.setLayout(form)
+        
+        self.renderRows = QSpinBox()
+        self.renderRows.setMinimum(1)
+        self.renderRows.setMaximum(512)
+        self.renderRows.setValue(16)
+        
+        form.addRow("Rows", self.renderRows)
+        
+        self.renderWithGaps = QCheckBox()
+        form.addRow("Gap between minitiles", self.renderWithGaps)
+        
+        self.renderCancelWidget = QWidget()
+        self.renderCancelLayout = QHBoxLayout()
+        self.renderButton = QPushButton("Render")
+        self.renderButton.clicked.connect(self.renderImage)
+        self.renderCancelLayout.addWidget(self.renderButton)
+
+        self.cancelButton = QPushButton("Cancel")
+        self.cancelButton.clicked.connect(self.reject)
+        self.renderCancelLayout.addWidget(self.cancelButton)
+        self.renderCancelWidget.setLayout(self.renderCancelLayout)
+        
+        form.addRow(self.renderCancelWidget)
+        
+        self.preview = QGroupBox("Output")
+        self.previewLayout = QHBoxLayout()
+        self.previewScrollArea = QScrollArea()
+        self.previewImage = QLabel("Render an image")
+        self.previewScrollArea.setWidget(self.previewImage)
+        self.previewLayout.addWidget(self.previewScrollArea)
+        self.preview.setLayout(self.previewLayout)
+        
+        form.addRow(self.preview)
+        
+        self.saveButton = QPushButton("Save")
+        self.saveButton.clicked.connect(self.saveImage)
+        self.saveButton.setDisabled(True)
+        
+        form.addRow(self.saveButton)
+    
+    def renderImage(self):
+        h = self.renderRows.value()
+        w = ceil(512/self.renderRows.value())
+        gaps = self.renderWithGaps.isChecked()
+        
+        image = QImage(w*8+(gaps*w), h*8+(gaps*h), QImage.Format.Format_ARGB32)
+        image.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(image)
+        
+        for id, minitile in enumerate(self.tileset.minitiles):
+            x = id % w
+            y = id // w
+            painter.drawImage(x*8+(gaps*x), y*8+(gaps*y), ImageQt.ImageQt(minitile.BothToImage(self.subpalette)))
+        
+        painter.end()
+        
+        self.previewImage = QLabel()
+        self.previewImage.setPixmap(QPixmap.fromImage(image))
+        self.previewScrollArea.setWidget(self.previewImage)
+        
+        self.saveButton.setDisabled(False)
+    
+    def saveImage(self):
+        dir, _ = QFileDialog.getSaveFileName(self, "Save image", "", "PNG Image (*.png)")
+        if dir:
+            self.previewImage.pixmap().save(dir[0], "PNG")
+    
+    @staticmethod
+    def renderMinitiles(parent, tileset: FullTileset, subpalette: Subpalette):
+        dialog = RenderMinitilesDialog(parent, tileset, subpalette)
+        dialog.exec_()
+        
+class RenderPaletteDialog(QDialog):
+    def __init__(self, parent, palette: Palette):
+        super().__init__(parent)
+        self.setWindowTitle("Render Palette")
+        self.paletteObj = palette # conflicts with qwidget method
+        form = QFormLayout()
+        self.setLayout(form)
+        
+        self.renderColourSize = QSpinBox()
+        self.renderColourSize.setMinimum(1)
+        self.renderColourSize.setMaximum(64)
+        self.renderColourSize.setValue(8)
+        form.addRow("Colour size", self.renderColourSize)
+        
+        self.renderWithGaps = QCheckBox()
+        form.addRow("Gap between colours", self.renderWithGaps)
+        
+        self.renderCancelWidget = QWidget()
+        self.renderCancelLayout = QHBoxLayout()
+        self.renderButton = QPushButton("Render")
+        self.renderButton.clicked.connect(self.renderImage)
+        self.renderCancelLayout.addWidget(self.renderButton)
+
+        self.cancelButton = QPushButton("Cancel")
+        self.cancelButton.clicked.connect(self.reject)
+        self.renderCancelLayout.addWidget(self.cancelButton)
+        self.renderCancelWidget.setLayout(self.renderCancelLayout)
+        
+        form.addRow(self.renderCancelWidget)
+        
+        self.preview = QGroupBox("Output")
+        self.previewLayout = QHBoxLayout()
+        self.previewScrollArea = QScrollArea()
+        self.previewImage = QLabel("Render an image")
+        self.previewScrollArea.setWidget(self.previewImage)
+        self.previewLayout.addWidget(self.previewScrollArea)
+        self.preview.setLayout(self.previewLayout)
+        
+        form.addRow(self.preview)
+        
+        self.saveButton = QPushButton("Save")
+        self.saveButton.clicked.connect(self.saveImage)
+        self.saveButton.setDisabled(True)
+        
+        form.addRow(self.saveButton)
+    
+    def renderImage(self):
+        colourSize = self.renderColourSize.value()
+        h = 6
+        w = 16
+        gaps = self.renderWithGaps.isChecked()
+        
+        image = QImage(w*colourSize+(gaps*w), h*colourSize+(gaps*h), QImage.Format.Format_ARGB32)
+        image.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(image)
+        painter.setPen(Qt.PenStyle.NoPen)
+        
+        for y, subpal in enumerate(self.paletteObj.subpalettes):
+            for x, colour in enumerate(subpal.subpaletteRGBA):
+                painter.setBrush(QColor.fromRgb(*colour[:3])) # no alpha on first index
+                painter.drawRect(x*colourSize+(gaps*x), y*colourSize+(gaps*y), colourSize, colourSize)
+        
+        painter.end()
+        
+        self.previewImage = QLabel()
+        self.previewImage.setPixmap(QPixmap.fromImage(image))
+        self.previewScrollArea.setWidget(self.previewImage)
+        
+        self.saveButton.setDisabled(False)
+    
+    def saveImage(self):
+        dir, _ = QFileDialog.getSaveFileName(self, "Save image", "", "PNG Image (*.png)")
+        if dir:
+            self.previewImage.pixmap().save(dir[0], "PNG")
+    
+    @staticmethod
+    def renderPalette(parent, palette: Palette):
+        dialog = RenderPaletteDialog(parent, palette)
+        dialog.exec_()
+        
         
 class ClearDialog(QDialog):
     def __init__(self, parent):

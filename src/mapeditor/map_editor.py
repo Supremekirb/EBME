@@ -27,7 +27,7 @@ import src.misc.icons as icons
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.dialogues import (AboutDialog, CoordsDialog, FindDialog,
-                                RenderDialog, SettingsDialog)
+                                RenderMapDialog, SettingsDialog)
 from src.misc.map_music_editor import MapMusicEditor
 from src.misc.widgets import BaseChangerSpinbox, UprightIconsWestTabWidget
 from src.objects.enemy import EnemyTile
@@ -163,7 +163,7 @@ class MapEditor(QWidget):
         self.view.autoCenterOn(sector.coords)
     
     def renderMap(self, x1 = 0, y1 = 0, x2 = 0, y2 = 0, immediate = False):
-        RenderDialog.renderMap(self, self.scene, x1, y1, x2, y2, immediate)
+        RenderMapDialog.renderMap(self, self.scene, x1, y1, x2, y2, immediate)
 
     def setupUI(self):
         self.view.setLayoutDirection(Qt.LayoutDirection.RightToLeft) # vert. scrollbar on left edge

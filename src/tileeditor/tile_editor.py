@@ -19,6 +19,7 @@ from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.fts_interpreter import Minitile, Tile
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AutoMinitileRearrangerDialog,
+                                RenderMinitilesDialog, RenderTilesDialog,
                                 SettingsDialog)
 from src.misc.widgets import (AspectRatioWidget, HorizontalGraphicsView,
                               TilesetDisplayGraphicsScene)
@@ -301,6 +302,16 @@ class TileEditor(QWidget):
                                          self.state.currentPalette,
                                          self.state.currentSubpalette)
         
+    def renderTiles(self):
+        tileset = self.projectData.getTileset(self.state.currentTileset)
+        palette = tileset.getPalette(self.state.currentPaletteGroup, self.state.currentPalette)
+        RenderTilesDialog.renderTiles(self, tileset, palette)
+    
+    def renderMiniiles(self):
+        tileset = self.projectData.getTileset(self.state.currentTileset)
+        palette = tileset.getPalette(self.state.currentPaletteGroup, self.state.currentPalette)
+        RenderMinitilesDialog.renderMinitiles(self, tileset, palette.subpalettes[self.state.currentSubpalette])
+        
     def setupUI(self):
         contentLayout = QVBoxLayout()
         splitter = QSplitter()
@@ -471,9 +482,13 @@ class TileEditor(QWidget):
         self.menuEdit.addActions([self.undoAction, self.redoAction])
         
         self.menuTools = QMenu("&Tools")
+        self.renderTilesAction = QAction(icons.ICON_RENDER_IMG, "Render image of &tiles...")
+        self.renderTilesAction.triggered.connect(self.renderTiles)
+        self.renderMinitilesAction = QAction(icons.ICON_RENDER_IMG, "Render image of &minitiles...")
+        self.renderMinitilesAction.triggered.connect(self.renderMiniiles)
         self.autoRearrangeAction = QAction(icons.ICON_AUTO_REARRANGE, "&Auto minitile rearranger...")
         self.autoRearrangeAction.triggered.connect(self.onAutoRearrange)
-        self.menuTools.addActions([self.autoRearrangeAction])
+        self.menuTools.addActions([self.renderTilesAction, self.renderMinitilesAction, self.autoRearrangeAction])
         
         self.menuHelp = QMenu("&Help")        
         self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")

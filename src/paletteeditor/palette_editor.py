@@ -18,7 +18,7 @@ from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.fts_interpreter import Palette
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, CopyEventPaletteDialog,
-                                EditEventPaletteDialog, SettingsDialog)
+                                EditEventPaletteDialog, RenderPaletteDialog, SettingsDialog)
 from src.misc.widgets import (ColourButton, FlagInput, IconLabel,
                               PaletteListItem, PaletteTreeWidget,
                               SubpaletteListItem)
@@ -338,7 +338,15 @@ class PaletteEditor(QWidget):
         self.paletteSettingsList.updateLabels()
                 
     def renderPaletteImage(self):
-        ...
+        palette = self.selection1.getCurrentPalette()
+        if not palette:
+            return common.showErrorMsg("Cannot render palette",
+                                       "Please select a palette to render.",
+                                       icon = QMessageBox.Icon.Warning)
+        else:
+            palette = self.projectData.getTileset(palette.parent().parent().tileset
+            ).getPalette(palette.parent().paletteGroup, palette.palette)
+            RenderPaletteDialog.renderPalette(self, palette)
         
     def exportPalette(self):
         current = self.selection1.getCurrentPalette()
