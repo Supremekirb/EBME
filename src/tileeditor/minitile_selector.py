@@ -5,8 +5,8 @@ from PySide6.QtCore import QEvent, QPoint, QRectF, Qt
 from PySide6.QtGui import QColor, QMouseEvent, QPixmap
 from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsRectItem,
                                QGraphicsScene, QGraphicsSceneMouseEvent,
-                               QGraphicsView, QLabel, QSizePolicy, QVBoxLayout,
-                               QWidget)
+                               QGraphicsView, QHBoxLayout, QLabel, QSizePolicy,
+                               QVBoxLayout, QWidget)
 
 import src.misc.common as common
 from src.actions.fts_actions import ActionSwapMinitiles
@@ -189,8 +189,13 @@ class MinitileScene(QGraphicsScene):
         self.selector.setPos(x*8, y*8)
         
     def updateHoverPreview(self, minitile: int):
-        self.hoverInfo.setImage(self.minitiles[minitile].pixmap().scaled(64, 64))
-        self.hoverInfo.setData(minitile, True if minitile < common.MINITILENOFOREGROUND else False)
+        tileset = self.projectData.getTileset(self.parent().state.currentTileset)
+        subpalette = tileset.getPalette(self.parent().state.currentPaletteGroup,
+                                        self.parent().state.currentPalette).subpalettes[self.parent().state.currentSubpalette]
+        
+        self.hoverInfo.setFgImage(QPixmap.fromImage(ImageQt.ImageQt(tileset.minitiles[minitile].ForegroundToImage(subpalette))).scaled(64, 64))
+        self.hoverInfo.setBgImage(QPixmap.fromImage(ImageQt.ImageQt(tileset.minitiles[minitile].BackgroundToImage(subpalette))).scaled(64, 64))
+        self.hoverInfo.setId(minitile)
         self.lastMinitileHovered = minitile
     
     def parent(self) -> "TileEditor": # for typing
@@ -204,30 +209,44 @@ class TileEditorMinitile(QGraphicsPixmapItem):
     def boundingRect(self):
         return QRectF(0, 0, 8, 8)
 
-
+# TODO rewrite positioning code for this thing to play nice on several monitors
+# (can't test this at the time of commit)
 class MinitileHoverDisplay(QWidget):
     def __init__(self):
         super().__init__()
         
-        layout = QVBoxLayout()
+        layout = QHBoxLayout()
         self.setLayout(layout)
         
-        self.imLabel = QLabel()
-        self.IDLabel = QLabel("ID:")
-        self.hasFgLabel = QLabel("Has FG:")
+        contentLayout = QVBoxLayout()
         
-        layout.addWidget(self.imLabel)
-        layout.addWidget(self.IDLabel)
-        layout.addWidget(self.hasFgLabel)
+        self.fgLabel = QLabel()
+        self.bgLabel = QLabel()
+        self.IDLabel = QLabel("ID:")
+        self.warningLabel = QLabel(f"Minitiles at position {common.MINITILENOFOREGROUND} or greater don't display foreground graphics in-game.")
+        self.warningLabel.setWordWrap(True)
+        
+        contentLayout.addWidget(self.fgLabel)
+        contentLayout.addWidget(self.bgLabel)
+        contentLayout.addWidget(self.IDLabel)
+        
+        layout.addLayout(contentLayout)
+        layout.addWidget(self.warningLabel)
         
         self.setWindowFlags(Qt.WindowType.ToolTip | Qt.WindowType.FramelessWindowHint |
                             Qt.WindowType.WindowTransparentForInput | Qt.WindowType.WindowStaysOnTopHint |
                             Qt.WindowType.WindowDoesNotAcceptFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
         
-    def setImage(self, image: QPixmap):
-        self.imLabel.setPixmap(image)
+    def setFgImage(self, image: QPixmap):
+        self.fgLabel.setPixmap(image)
+    
+    def setBgImage(self, image: QPixmap):
+        self.bgLabel.setPixmap(image)
         
-    def setData(self, id: int, hasFg: bool):
+    def setId(self, id: int):
         self.IDLabel.setText(f"ID: {id}")
-        self.hasFgLabel.setText(f"FG: {'Yes' if hasFg else 'No'}")
+        if id >= common.MINITILENOFOREGROUND:
+            self.warningLabel.show()
+        else:
+            self.warningLabel.hide()
