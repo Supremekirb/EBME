@@ -140,7 +140,7 @@ class ActionChangeSubpaletteColour(QUndoCommand):
         
         self._colour = subpalette.subpaletteRGBA[index]
         
-        if self._colour == [*self.colour, 255]:
+        if self._colour[:3] == self.colour:
             self.setObsolete(True)
         
     def redo(self):

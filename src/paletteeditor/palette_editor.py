@@ -18,7 +18,8 @@ from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.fts_interpreter import Palette
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, CopyEventPaletteDialog,
-                                EditEventPaletteDialog, RenderPaletteDialog, SettingsDialog)
+                                EditEventPaletteDialog, RenderPaletteDialog,
+                                SettingsDialog)
 from src.misc.widgets import (ColourButton, FlagInput, IconLabel,
                               PaletteListItem, PaletteTreeWidget,
                               SubpaletteListItem)
@@ -254,12 +255,14 @@ class PaletteEditor(QWidget):
             self.paletteSettingsColoursCopy.hide()
             self.paletteSettingsColoursExport.hide()
             self.paletteSettingsColoursImport.hide()
+            self.paletteSettingsColoursRender.hide()
         else:
             self.paletteSettingsColoursWarning.hide()
             self.paletteSettingsColoursEdit.show()
             self.paletteSettingsColoursCopy.show()
             self.paletteSettingsColoursExport.show()
             self.paletteSettingsColoursImport.show()
+            self.paletteSettingsColoursRender.show()
             
         if settings.child:
             self.paletteSettingsAddChild.setDisabled(True)
@@ -346,6 +349,15 @@ class PaletteEditor(QWidget):
         else:
             palette = self.projectData.getTileset(palette.parent().parent().tileset
             ).getPalette(palette.parent().paletteGroup, palette.palette)
+            RenderPaletteDialog.renderPalette(self, palette)
+        
+    def renderEventPaletteImage(self):
+        palette = self.paletteSettingsList.currentItem().settings.palette
+        if not palette:
+            return common.showErrorMsg("Cannot render event palette",
+                                       "Please select palette settings with an event palette to render.",
+                                       icon = QMessageBox.Icon.Warning)
+        else:
             RenderPaletteDialog.renderPalette(self, palette)
         
     def exportPalette(self):
@@ -589,12 +601,17 @@ class PaletteEditor(QWidget):
         self.paletteSettingsColoursImport.setIcon(icons.ICON_IMPORT)
         self.paletteSettingsColoursImport.clicked.connect(self.importEventPalette)
         self.paletteSettingsColoursImport.setToolTip("Import")
+        self.paletteSettingsColoursRender = QToolButton()
+        self.paletteSettingsColoursRender.setIcon(icons.ICON_RENDER_IMG)
+        self.paletteSettingsColoursRender.clicked.connect(self.renderEventPaletteImage)
+        self.paletteSettingsColoursRender.setToolTip("Render image")
         
         eventPaletteLayout.addWidget(self.paletteSettingsColoursWarning)
         eventPaletteLayout.addWidget(self.paletteSettingsColoursEdit)
         eventPaletteLayout.addWidget(self.paletteSettingsColoursCopy)
         eventPaletteLayout.addWidget(self.paletteSettingsColoursExport)
         eventPaletteLayout.addWidget(self.paletteSettingsColoursImport)
+        eventPaletteLayout.addWidget(self.paletteSettingsColoursRender)
             
         childOptionsLayout.addWidget(self.paletteSettingsAddChild)
         childOptionsLayout.addWidget(self.paletteSettingsRemoveChild)
