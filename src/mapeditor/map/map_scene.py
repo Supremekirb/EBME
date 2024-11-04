@@ -170,6 +170,11 @@ class MapEditorScene(QGraphicsScene):
                             self.placeTile(coords)
                         if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                             self.pickTile(coords)
+                    if event.buttons() == Qt.MouseButton.RightButton:
+                        if event.modifiers() == Qt.KeyboardModifier.NoModifier:
+                            self.selectSector(coords)
+                        elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                            self.selectSector(coords, True, True)
                 case common.MODEINDEX.SECTOR:
                     if event.buttons() == Qt.MouseButton.LeftButton:
                         if event.modifiers() == Qt.KeyboardModifier.NoModifier:
@@ -210,6 +215,8 @@ class MapEditorScene(QGraphicsScene):
                     if event.buttons() == Qt.MouseButton.RightButton:
                         if event.modifiers() == Qt.KeyboardModifier.NoModifier:
                             self.selectSector(coords)
+                        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                            self.selectSector(coords, True)
                             
                 case common.MODEINDEX.SECTOR:
                     if event.buttons() == Qt.MouseButton.LeftButton:
@@ -1712,6 +1719,7 @@ class MapEditorScene(QGraphicsScene):
                                                       "none", "none", "none",
                                                       0, 0)
                 self.undoStack.push(action)
+                self.refreshSector(EBCoords.fromSector(r, c))
                 progressDialog.setValue(progressDialog.value()+1)
         
         progressDialog.setValue(progressDialog.maximum())

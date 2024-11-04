@@ -255,7 +255,10 @@ class MapEditorNPC(QGraphicsPixmapItem):
             tiles: list[MapTile] = []
             for y in range(y0, y1+1):
                 for x in range(x0, x1+1):
-                    tiles.append(self.scene().projectData.getTile(EBCoords.fromTile(x, y)))
+                    try:
+                        tiles.append(self.scene().projectData.getTile(EBCoords.fromTile(x, y)))
+                    except IndexError:
+                        pass
 
             grid = self.scene().grid
             if grid.isVisible():
