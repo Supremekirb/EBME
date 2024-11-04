@@ -17,7 +17,7 @@ from src.actions.fts_actions import (ActionChangePaletteSettings,
 from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.fts_interpreter import Palette
 from src.coilsnake.project_data import ProjectData
-from src.misc.dialogues import (AboutDialog, CopyEventPaletteDialog,
+from src.misc.dialogues import (AboutDialog, AdvancedPalettePreviewDialog, CopyEventPaletteDialog,
                                 EditEventPaletteDialog, RenderPaletteDialog,
                                 SettingsDialog)
 from src.misc.widgets import (ColourButton, FlagInput, IconLabel,
@@ -656,7 +656,11 @@ class PaletteEditor(QWidget):
         self.exportPaletteAction.triggered.connect(self.exportPalette)
         self.importPaletteAction = QAction(icons.ICON_IMPORT, "&Import palette...")
         self.importPaletteAction.triggered.connect(self.importPalette)
-        self.menuTools.addActions([self.renderPaletteAction, self.exportPaletteAction, self.importPaletteAction])
+        self.advancedPalettePreviewAction = QAction(icons.ICON_PALETTE, "&Advanced palette preview...")
+        self.advancedPalettePreviewAction.triggered.connect(lambda: AdvancedPalettePreviewDialog.advancedPalettePreview(self, self.projectData))
+        self.menuTools.addActions([self.renderPaletteAction, self.advancedPalettePreviewAction])
+        self.menuTools.addSeparator()
+        self.menuTools.addActions([self.exportPaletteAction, self.importPaletteAction])
         
         self.menuHelp = QMenu("&Help")        
         self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")
