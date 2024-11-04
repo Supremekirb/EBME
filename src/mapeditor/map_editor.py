@@ -220,17 +220,12 @@ class MapEditor(QWidget):
         self.cutAction.triggered.connect(self.scene.onCut)
         self.pasteAction = QAction(icons.ICON_PASTE, "&Paste", shortcut=QKeySequence("Ctrl+V"))
         self.pasteAction.triggered.connect(self.scene.onPaste)
-        self.undoAction = QAction(icons.ICON_UNDO, "&Undo", shortcut=QKeySequence("Ctrl+Z"))
-        self.undoAction.triggered.connect(self.scene.onUndo)
-        self.redoAction = QAction(icons.ICON_REDO, "&Redo")
-        self.redoAction.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
-        self.redoAction.triggered.connect(self.scene.onRedo)
         self.cancelAction = QAction(icons.ICON_CANCEL, "C&ancel")
         self.cancelAction.setShortcuts([QKeySequence("Esc"), QKeySequence("Ctrl+D")])
         self.cancelAction.triggered.connect(self.scene.onCancel)
         self.menuEdit.addActions([self.deleteAction, self.cutAction, self.copyAction, self.pasteAction])
         self.menuEdit.addSeparator()
-        self.menuEdit.addActions([self.undoAction, self.redoAction])
+        self.menuEdit.addActions([self.parent().sharedActionUndo, self.parent().sharedActionRedo])
         self.menuEdit.addSeparator()
         self.menuEdit.addAction(self.cancelAction)
         
@@ -242,8 +237,6 @@ class MapEditor(QWidget):
         self.copyAltShiftAction = QAction(icons.ICON_COPY, "Copy", shortcut=QKeySequence("Ctrl+Alt+Shift+C"))
         self.addAction(self.copyAltShiftAction)
         self.copyAltShiftAction.triggered.connect(self.scene.copySelectedSectorPalettes)
-        
-        self.scene.undoStack.cleanChanged.connect(self.parent().updateTitle)
 
         self.menuView = QMenu("&View")
         settings = QSettings()

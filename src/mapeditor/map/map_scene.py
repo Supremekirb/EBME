@@ -61,7 +61,9 @@ class MapEditorScene(QGraphicsScene):
         self.projectData = data
         self.state = state       
 
-        self.undoStack = QUndoStack(self)
+        self.undoStack = self.parent().parent().undoStack
+        self.undoStack.undone.connect(self.onUndoRedo)
+        self.undoStack.redone.connect(self.onUndoRedo)
 
         self.setSceneRect(-128, -128, common.EBMAPWIDTH+256, common.EBMAPHEIGHT+256)
 
@@ -328,23 +330,9 @@ class MapEditorScene(QGraphicsScene):
                     menu.addAction(icons.ICON_EXPORT, "Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
                 case _:
                     return super().contextMenuEvent(event)
-            menu.exec(event.screenPos())          
-    
-    def onUndo(self):
-        command = self.undoStack.command(self.undoStack.index()-1)
+            menu.exec(event.screenPos())
 
-        if command:
-            self.undoStack.undo()
-            self.onUndoRedoCommon(command)
-
-    def onRedo(self):
-        command = self.undoStack.command(self.undoStack.index())
-
-        if command:
-            self.undoStack.redo()
-            self.onUndoRedoCommon(command)
-
-    def onUndoRedoCommon(self, command: QUndoCommand):
+    def onUndoRedo(self, command: QUndoCommand):
         # handle graphics updating and whatnot
         # we don't actually store a reference to the graphics object in the undo command
         # this is because we'd have to make copies of tile graphics and whatever
@@ -352,7 +340,6 @@ class MapEditorScene(QGraphicsScene):
         # even though it would make this quite a bit easier.
         # oh well, it's more memory-efficient anyway.
         # we can just look at the command and see what it's up to.
-        # why is there no signal for these?
         
         actionType = None
         commands = []

@@ -38,8 +38,9 @@ class PaletteEditor(QWidget):
         self.subpalette2Buttons: list[ColourButton] = []
         self.subpaletteTransferButtons: list[QToolButton] = [] # only for iterating, order is NOT reliable
         
-        self.undoStack = QUndoStack()
-        self.undoStack.cleanChanged.connect(self.parent().updateTitle)
+        self.undoStack = self.parent().undoStack
+        self.undoStack.undone.connect(self.onUndoRedo)
+        self.undoStack.redone.connect(self.onUndoRedo)
         
         self.setupUI()
         self.selection1.setCurrentItem(self.selection1.topLevelItem(0), 0)
@@ -52,22 +53,8 @@ class PaletteEditor(QWidget):
         for i in self.projectData.tilesets:
             for j in i.minitiles:
                 j.BothToImage.cache_clear()
-        
-    def onUndo(self):
-        command = self.undoStack.command(self.undoStack.index()-1)
-
-        if command:
-            self.undoStack.undo()
-            self.onUndoRedoCommon(command)
-
-    def onRedo(self):
-        command = self.undoStack.command(self.undoStack.index())
-
-        if command:
-            self.undoStack.redo()
-            self.onUndoRedoCommon(command)
     
-    def onUndoRedoCommon(self, command: QUndoCommand):
+    def onUndoRedo(self, command: QUndoCommand):
         actionType = None
         commands = []
 
@@ -642,12 +629,7 @@ class PaletteEditor(QWidget):
         self.menuFile.addAction(self.openSettingsAction)
         
         self.menuEdit = QMenu("&Edit")
-        self.undoAction = QAction(icons.ICON_UNDO, "&Undo", shortcut=QKeySequence("Ctrl+Z"))
-        self.undoAction.triggered.connect(self.onUndo)
-        self.redoAction = QAction(icons.ICON_REDO, "&Redo")
-        self.redoAction.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
-        self.redoAction.triggered.connect(self.onRedo)
-        self.menuEdit.addActions([self.undoAction, self.redoAction])
+        self.menuEdit.addActions([self.parent().sharedActionUndo, self.parent().sharedActionRedo])
         
         self.menuView = QMenu("&View")
         self.hexAction = self.parent().sharedActionHex

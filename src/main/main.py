@@ -1,14 +1,16 @@
 import logging
 
-from PySide6.QtCore import QSettings
-from PySide6.QtGui import QAction, QFontDatabase, QIcon, QKeySequence
-from PySide6.QtWidgets import (QMainWindow, QMenuBar, QMessageBox, QTabWidget,
-                               QWidget)
+from PySide6.QtCore import QSettings, Qt, QTimer
+from PySide6.QtGui import (QAction, QFontDatabase, QIcon, QKeySequence,
+                           QUndoStack)
+from PySide6.QtWidgets import (QLabel, QMainWindow, QMenuBar, QMessageBox,
+                               QTabWidget, QWidget)
 
 import src.misc.common as common
 import src.project.project as project
 from src.mapeditor.map_editor import MapEditor
-from src.misc.widgets import BaseChangerSpinbox
+from src.misc import icons as icons
+from src.misc.widgets import BaseChangerSpinbox, SignalUndoStack
 from src.paletteeditor.palette_editor import PaletteEditor
 from src.tileeditor.tile_editor import TileEditor
 
@@ -22,6 +24,9 @@ class MainApplication(QMainWindow):
         
         self.icon = QIcon(":/logos/icon.ico")
         self.setWindowIcon(self.icon)
+        
+        self.undoStack = SignalUndoStack()
+        self.undoStack.cleanChanged.connect(self.updateTitle)
 
         # TODO test for other platforms
         self.resize(common.DEFAULTEDITORWIDTH, common.DEFAULTEDITORHEIGHT)
@@ -48,6 +53,11 @@ class MainApplication(QMainWindow):
             self.sharedActionHex.trigger()
         self.sharedActionHex.triggered.connect(lambda: QSettings().setValue("main/HexMode", self.sharedActionHex.isChecked()))
 
+        self.sharedActionUndo = QAction(icons.ICON_UNDO, "&Undo", shortcut=QKeySequence("Ctrl+Z"))
+        self.sharedActionUndo.triggered.connect(self.undoStack.undo)
+        self.sharedActionRedo = QAction(icons.ICON_REDO, "&Redo")
+        self.sharedActionRedo.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
+        self.sharedActionRedo.triggered.connect(self.undoStack.redo)
 
         # initialise EB fonts, because you need to do that after the program has begun and whatever
         # EBMain has monospaced numbers, so we use it in the map editor
@@ -93,10 +103,8 @@ class MainApplication(QMainWindow):
                 self.menu.addMenu(i)
                 
     def updateTitle(self):
-        # see if all undo stacks are clean
         title = self.window().windowTitle()
-        if not self.mapWin.scene.undoStack.isClean() or not self.tileWin.undoStack.isClean() \
-        or not self.paletteWin.undoStack.isClean():
+        if not self.undoStack.isClean():
             if not title.endswith("*"):
                 self.window().setWindowTitle(title + "*")
         else:

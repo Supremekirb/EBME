@@ -57,27 +57,15 @@ class TileEditor(QWidget):
         
         self.projectData = projectData
         self.state = TileEditorState(self)
-        self.undoStack = QUndoStack(self)
-        self.undoStack.cleanChanged.connect(self.parent().updateTitle)
+        self.undoStack = self.parent().undoStack
+        self.undoStack.undone.connect(self.onUndoRedo)
+        self.undoStack.redone.connect(self.onUndoRedo)
         
         self.setupUI()
         self.tilesetSelect.setCurrentIndex(0)
         self.tilesetSelect.activated.emit(0)
-    
-    def onUndo(self):
-        command = self.undoStack.command(self.undoStack.index()-1)
-        if command and not self.fgScene._painting and not self.bgScene._painting:
-            self.undoStack.undo()
-            self.onUndoRedoCommon(command)
             
-    def onRedo(self):
-        command = self.undoStack.command(self.undoStack.index())
-
-        if command and not self.fgScene._painting and not self.bgScene._painting:
-            self.undoStack.redo()
-            self.onUndoRedoCommon(command)
-            
-    def onUndoRedoCommon(self, command: QUndoCommand):
+    def onUndoRedo(self, command: QUndoCommand):
         commands = []
         
         count = command.childCount()
@@ -483,12 +471,7 @@ class TileEditor(QWidget):
         self.menuFile.addAction(self.openSettingsAction)
         
         self.menuEdit = QMenu("&Edit")
-        self.undoAction = QAction(icons.ICON_UNDO, "&Undo", shortcut=QKeySequence("Ctrl+Z"))
-        self.undoAction.triggered.connect(self.onUndo)
-        self.redoAction = QAction(icons.ICON_REDO, "&Redo")
-        self.redoAction.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
-        self.redoAction.triggered.connect(self.onRedo)
-        self.menuEdit.addActions([self.undoAction, self.redoAction])
+        self.menuEdit.addActions([self.parent().sharedActionUndo, self.parent().sharedActionRedo])
         
         self.menuView = QMenu("&View")
         self.tileIDAction = self.parent().sharedActionTileIDs

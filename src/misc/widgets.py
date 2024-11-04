@@ -4,7 +4,8 @@ from PIL import ImageQt
 from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, QSize, Qt, Signal
 from PySide6.QtGui import (QBrush, QColor, QGuiApplication, QIcon, QMouseEvent,
                            QPainter, QPaintEvent, QPalette, QPen, QPixmap,
-                           QResizeEvent, QTransform, QWheelEvent)
+                           QResizeEvent, QTransform, QUndoCommand, QUndoStack,
+                           QWheelEvent)
 from PySide6.QtWidgets import (QApplication, QBoxLayout, QCheckBox,
                                QColorDialog, QFrame, QGraphicsPixmapItem,
                                QGraphicsScene, QGraphicsSceneMouseEvent,
@@ -880,3 +881,17 @@ class SubpaletteListItem(QTreeWidgetItem):
 
     def parent(self) -> PaletteListItem:
         return super().parent()
+    
+# not really a widget...
+class SignalUndoStack(QUndoStack):
+    """QUndoStack with signals for undo and redo. These signals also transmit the command that was just undone/redone."""
+    undone = Signal(QUndoCommand)
+    redone = Signal(QUndoCommand)
+    
+    def undo(self):
+        super().undo()
+        self.undone.emit(self.command(self.index()))
+    
+    def redo(self):
+        super().redo()
+        self.redone.emit(self.command(self.index()-1))
