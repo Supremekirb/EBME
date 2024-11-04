@@ -38,7 +38,7 @@ class MinitileView(QGraphicsView):
         
         self.scene().hoverInfo.show()   
         
-        return super().mouseMoveEvent(event)        self.destIndicator.setRect(-1, -1, 10, 10)
+        return super().mouseMoveEvent(event)
         
     def scene(self) -> "MinitileScene": # for typing
         return super().scene()
