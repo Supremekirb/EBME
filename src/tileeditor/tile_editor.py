@@ -1,7 +1,7 @@
 from copy import copy
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSettings, Qt
 from PySide6.QtGui import (QAction, QColor, QKeySequence, QUndoCommand,
                            QUndoStack)
 from PySide6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
@@ -311,6 +311,15 @@ class TileEditor(QWidget):
         tileset = self.projectData.getTileset(self.state.currentTileset)
         palette = tileset.getPalette(self.state.currentPaletteGroup, self.state.currentPalette)
         RenderMinitilesDialog.renderMinitiles(self, tileset, palette.subpalettes[self.state.currentSubpalette])
+    
+    def toggleTileIDs(self):
+        self.tileScene.update()
+        
+    def toggleGrid(self):
+        if self.gridAction.isChecked():
+            self.minitileScene.grid.show()
+        else:
+            self.minitileScene.grid.hide()
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -481,6 +490,17 @@ class TileEditor(QWidget):
         self.redoAction.triggered.connect(self.onRedo)
         self.menuEdit.addActions([self.undoAction, self.redoAction])
         
+        self.menuView = QMenu("&View")
+        self.tileIDAction = self.parent().sharedActionTileIDs
+        self.tileIDAction.triggered.connect(self.toggleTileIDs)
+        if self.tileIDAction.isChecked():
+            self.toggleTileIDs()
+        self.gridAction = self.parent().sharedActionShowGrid
+        self.gridAction.triggered.connect(self.toggleGrid)
+        if self.gridAction.isChecked():
+            self.toggleGrid()
+        self.menuView.addActions([self.tileIDAction, self.gridAction])
+        
         self.menuTools = QMenu("&Tools")
         self.renderTilesAction = QAction(icons.ICON_RENDER_IMG, "Render image of &tiles...")
         self.renderTilesAction.triggered.connect(self.renderTiles)
@@ -500,7 +520,7 @@ class TileEditor(QWidget):
             self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
             self.menuHelp.addAction(self.openDebugAction)
         
-        self.menuItems = (self.menuFile, self.menuEdit, self.menuTools, self.menuHelp)
+        self.menuItems = (self.menuFile, self.menuEdit, self.menuView, self.menuTools, self.menuHelp)
     
     def parent(self) -> "MainApplication": # for typing
         return super().parent()

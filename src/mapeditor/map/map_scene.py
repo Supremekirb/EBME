@@ -75,7 +75,7 @@ class MapEditorScene(QGraphicsScene):
         path = QPainterPath()
         path.addRect(QRect(0, 0, 256, 128))
         self.sectorSelect = QGraphicsPathItem(path)
-        self.sectorSelect.setPen(QPen(Qt.yellow, 2))
+        self.sectorSelect.setPen(QPen(Qt.GlobalColor.yellow, 1))
         self.sectorSelect.setBrush(QBrush(QColor(255, 255, 0, 0)))
         self.sectorSelect.setZValue(common.MAPZVALUES.SECTORSELECT)
         self.addItem(self.sectorSelect)
@@ -1774,24 +1774,14 @@ class MapEditorScene(QGraphicsScene):
                 
 
     def toggleGrid(self):
-        settings = QSettings()
-        if not self.parent().gridAction.isChecked(): # checked state is updated afterwards
+        if not self.parent().gridAction.isChecked(): # checked state is updated afterwards # <-- some waffle, dont listen
             if self.state.mode != common.MODEINDEX.GAME:
                 self.grid.hide()
-            settings.setValue("mapeditor/ShowGrid", False)
         else: 
             if self.state.mode != common.MODEINDEX.GAME:
                 self.grid.show()
-            settings.setValue("mapeditor/ShowGrid", True)
     
     def toggleTileIDs(self):
-        settings = QSettings()
-        if settings.value("mapeditor/ShowTileIDs", False, bool):
-            settings.setValue("mapeditor/ShowTileIDs", False)
-        else: 
-            settings.setValue("mapeditor/ShowTileIDs", True)
-        
-        settings.sync()
         self.update()
         self.parent().sidebarTile.scene.update()
 

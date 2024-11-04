@@ -254,19 +254,13 @@ class MapEditor(QWidget):
         self.zoomOutAction = QAction(icons.ICON_ZOOM_OUT, "Zoom out", shortcut=QKeySequence.ZoomOut)
         self.zoomOutAction.triggered.connect(self.view.zoomOut)
 
-        self.hexAction = QAction("Use &hexadecimal", shortcut=QKeySequence("Ctrl+H"))
-        self.hexAction.setCheckable(True)
-        self.hexAction.changed.connect(BaseChangerSpinbox.toggleMode)
-        if settings.value("main/HexMode", type=bool):
-            self.hexAction.trigger()
+        self.hexAction = self.parent().sharedActionHex
 
         settings.beginGroup("mapeditor")
 
-        self.gridAction = QAction("Show &grid", shortcut=QKeySequence("Ctrl+G"))
-        self.gridAction.setCheckable(True)
-        self.gridAction.changed.connect(self.scene.toggleGrid) # ehhh... could this go somewhere else?
-        if settings.value("ShowGrid", type=bool):
-            self.gridAction.setChecked(True)
+        self.gridAction = self.parent().sharedActionShowGrid
+        self.gridAction.changed.connect(self.scene.toggleGrid)
+        if self.gridAction.isChecked():
             self.scene.grid.show()
 
         self.gridMenu = QMenu("Grid &style...")
@@ -303,11 +297,10 @@ class MapEditor(QWidget):
             case _:
                 self.gridStyle0Action.setChecked(True)
 
-        self.tileIDAction = QAction("Show &tile IDs", shortcut=QKeySequence("Ctrl+T"))
-        self.tileIDAction.setCheckable(True)
+        self.tileIDAction = self.parent().sharedActionTileIDs
         self.tileIDAction.changed.connect(self.scene.toggleTileIDs)
-        if settings.value("ShowTileIDs", type=bool):
-            self.tileIDAction.trigger()
+        if self.tileIDAction.isChecked():
+            self.scene.toggleTileIDs()
 
         self.npcIDAction = QAction("Show &NPC IDs", shortcut=QKeySequence("Ctrl+N"))
         self.npcIDAction.setCheckable(True)

@@ -1209,7 +1209,8 @@ class AdvancedPalettePreviewDialog(QDialog):
         layout.addRow("Palette", self.paletteSelect)
         
         initPalette = self.projectData.tilesets[0].paletteGroups[0].palettes[0]
-        self.previewScene = TilesetDisplayGraphicsScene(self.projectData, True, forcedPalette=initPalette)
+        self.previewScene = TilesetDisplayGraphicsScene(self.projectData, True, 8, forcedPalette=initPalette)
+        self.previewScene.selectionIndicator.hide()
         previewView = HorizontalGraphicsView(self.previewScene)
         previewView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         previewView.setFixedHeight(self.previewScene.rowSize*32 + previewView.horizontalScrollBar().sizeHint().height())

@@ -1,12 +1,14 @@
 import logging
 
-from PySide6.QtGui import QFontDatabase, QIcon
+from PySide6.QtCore import QSettings
+from PySide6.QtGui import QAction, QFontDatabase, QIcon, QKeySequence
 from PySide6.QtWidgets import (QMainWindow, QMenuBar, QMessageBox, QTabWidget,
                                QWidget)
 
 import src.misc.common as common
 import src.project.project as project
 from src.mapeditor.map_editor import MapEditor
+from src.misc.widgets import BaseChangerSpinbox
 from src.paletteeditor.palette_editor import PaletteEditor
 from src.tileeditor.tile_editor import TileEditor
 
@@ -25,6 +27,27 @@ class MainApplication(QMainWindow):
         self.resize(common.DEFAULTEDITORWIDTH, common.DEFAULTEDITORHEIGHT)
         self.setMinimumSize(common.MINEDITORWIDTH, common.MINEDITORHEIGHT) # ~ minimum map editor size on windows
         self.setupUI()
+        
+        # set up shared actions
+        self.sharedActionTileIDs = QAction("Show &tile IDs", shortcut=QKeySequence("Ctrl+T"))
+        self.sharedActionTileIDs.setCheckable(True)
+        if QSettings().value("mapeditor/ShowTileIDs", type=bool):
+            self.sharedActionTileIDs.trigger()
+        self.sharedActionTileIDs.triggered.connect(lambda: QSettings().setValue("mapeditor/ShowTileIDs", self.sharedActionTileIDs.isChecked()))
+        
+        self.sharedActionShowGrid = QAction("Show &grid", shortcut=QKeySequence("Ctrl+G"))
+        self.sharedActionShowGrid.setCheckable(True)
+        if QSettings().value("mapeditor/ShowGrid", type=bool):
+            self.sharedActionShowGrid.trigger()
+        self.sharedActionShowGrid.triggered.connect(lambda: QSettings().setValue("mapeditor/ShowGrid", self.sharedActionShowGrid.isChecked()))
+        
+        self.sharedActionHex = QAction("Use &hexadecimal", shortcut=QKeySequence("Ctrl+H"))
+        self.sharedActionHex.setCheckable(True)
+        self.sharedActionHex.triggered.connect(lambda: BaseChangerSpinbox.toggleMode())
+        if QSettings().value("main/HexMode", type=bool):
+            self.sharedActionHex.trigger()
+        self.sharedActionHex.triggered.connect(lambda: QSettings().setValue("main/HexMode", self.sharedActionHex.isChecked()))
+
 
         # initialise EB fonts, because you need to do that after the program has begun and whatever
         # EBMain has monospaced numbers, so we use it in the map editor

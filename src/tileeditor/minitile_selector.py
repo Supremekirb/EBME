@@ -24,6 +24,7 @@ class MinitileView(QGraphicsView):
         self.setFixedWidth(self.scene().width()*2 + self.verticalScrollBar().sizeHint().width() + 2)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.centerOn(0, 0)
     
     def leaveEvent(self, event: QEvent):
         self.scene().hoverInfo.hide()
@@ -37,7 +38,7 @@ class MinitileView(QGraphicsView):
         
         self.scene().hoverInfo.show()   
         
-        return super().mouseMoveEvent(event)
+        return super().mouseMoveEvent(event)        self.destIndicator.setRect(-1, -1, 10, 10)
         
     def scene(self) -> "MinitileScene": # for typing
         return super().scene()
@@ -65,16 +66,21 @@ class MinitileScene(QGraphicsScene):
         self.selector.setPen(QColor(Qt.GlobalColor.yellow))
         self.selector.setRect(-1, -1, 10, 10)
         self.selector.setBrush(Qt.BrushStyle.NoBrush)
-        self.selector.setZValue(3)
+        self.selector.setZValue(100)
         self.addItem(self.selector)
         
         self.destIndicator = QGraphicsRectItem()
         self.destIndicator.setPen(QColor(Qt.GlobalColor.white))
         self.destIndicator.setRect(-1, -1, 10, 10)
         self.destIndicator.setBrush(Qt.BrushStyle.NoBrush)
-        self.destIndicator.setZValue(2)
+        self.destIndicator.setZValue(98) # 99 is for hovering minitile
         self.destIndicator.hide()
         self.addItem(self.destIndicator)
+        
+        self.grid = QGraphicsRectItem(self.sceneRect())
+        self.grid.setBrush(QPixmap(":/grids/8grid0.png"))
+        self.addItem(self.grid)
+        self.grid.setZValue(97)
         
         self._mouseDownPos = QPoint()
         
@@ -113,7 +119,7 @@ class MinitileScene(QGraphicsScene):
                     
             if x != int(self._mouseDownPos.x() // 8) or y != int(self._mouseDownPos.y() // 8):                
                 source.setPos(QPoint(pos.x()-4, pos.y()-10))
-                source.setZValue(5)
+                source.setZValue(99)
                 self.selector.setPos(QPoint(pos.x()-4, pos.y()-10))
                 
                 self.destIndicator.show()

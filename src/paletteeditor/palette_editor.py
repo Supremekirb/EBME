@@ -17,9 +17,9 @@ from src.actions.fts_actions import (ActionChangePaletteSettings,
 from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.fts_interpreter import Palette
 from src.coilsnake.project_data import ProjectData
-from src.misc.dialogues import (AboutDialog, AdvancedPalettePreviewDialog, CopyEventPaletteDialog,
-                                EditEventPaletteDialog, RenderPaletteDialog,
-                                SettingsDialog)
+from src.misc.dialogues import (AboutDialog, AdvancedPalettePreviewDialog,
+                                CopyEventPaletteDialog, EditEventPaletteDialog,
+                                RenderPaletteDialog, SettingsDialog)
 from src.misc.widgets import (ColourButton, FlagInput, IconLabel,
                               PaletteListItem, PaletteTreeWidget,
                               SubpaletteListItem)
@@ -648,6 +648,11 @@ class PaletteEditor(QWidget):
         self.redoAction.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
         self.redoAction.triggered.connect(self.onRedo)
         self.menuEdit.addActions([self.undoAction, self.redoAction])
+        
+        self.menuView = QMenu("&View")
+        self.hexAction = self.parent().sharedActionHex
+        self.tileIDAction = self.parent().sharedActionTileIDs
+        self.menuView.addActions([self.hexAction, self.tileIDAction])
 
         self.menuTools = QMenu("&Tools")
         self.renderPaletteAction = QAction(icons.ICON_RENDER_IMG, "&Render image of palette...")
@@ -672,7 +677,7 @@ class PaletteEditor(QWidget):
             self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
             self.menuHelp.addAction(self.openDebugAction)
         
-        self.menuItems = (self.menuFile, self.menuEdit, self.menuTools, self.menuHelp)
+        self.menuItems = (self.menuFile, self.menuEdit, self.menuView, self.menuTools, self.menuHelp)
         
     def parent(self) -> "MainApplication": # for typing
         return super().parent()
