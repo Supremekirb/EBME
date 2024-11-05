@@ -257,6 +257,11 @@ def cap(val: float, min_: float, max_: float):
 def baseN(num: int, base: int, numerals="0123456789abcdefghijklmnopqrstuvwxyz"):
     return ((num == 0) and numerals[0]) or (baseN(num // base, base, numerals).lstrip(numerals[0]) + numerals[num % base])
 
+def normaliseFileExtension(path: str, ext: str) -> str:
+    """Add a file extension to a path if the path doesn't already have a file extension."""
+    if len(path.split(".")) == 1:
+        path += "." + ext
+    return path
 
 def showErrorMsg(title: str="Error", text: str="Error.", info: str=None,
                  icon: QMessageBox.Icon=QMessageBox.Icon.Critical):

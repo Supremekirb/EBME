@@ -348,8 +348,7 @@ class PaletteEditor(QWidget):
                                            self.projectData.dir,
                                            "*.ebpal")
         if path:
-            if len(path.split(".")) == 1:
-                path += ".ebpal"
+            path = common.normaliseFileExtension(path, "ebpal")
             try:
                 with open(path, "w", encoding="utf-8") as file:
                     palette = self.projectData.getTileset(current.parent().parent().tileset).getPalette(
@@ -374,8 +373,7 @@ class PaletteEditor(QWidget):
                                            self.projectData.dir,
                                            "*.ebpal")
         if path:
-            if len(path.split(".")) == 1:
-                path += ".ebpal"
+            path = common.normaliseFileExtension(path, "ebpal")
             try:
                 with open(path, "w", encoding="utf-8") as file:
                     file.write(palette.toRaw())

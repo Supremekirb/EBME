@@ -584,7 +584,7 @@ class RenderMapDialog(QDialog):
     def saveImage(self):
         dir, _ = QFileDialog.getSaveFileName(self, "Save image", "", "PNG Image (*.png)")
         if dir:
-            self.previewImage.pixmap().save(dir[0], "PNG")
+            self.previewImage.pixmap().save(common.normaliseFileExtension(dir, "png"), "PNG")
         
     @staticmethod
     def renderMap(parent=None, scene=QGraphicsScene, x1=0, y1=0, x2=0, y2=0, immediate=False):
@@ -664,7 +664,7 @@ class RenderTilesDialog(QDialog):
     def saveImage(self):
         dir, _ = QFileDialog.getSaveFileName(self, "Save image", "", "PNG Image (*.png)")
         if dir:
-            self.previewImage.pixmap().save(dir[0], "PNG")
+            self.previewImage.pixmap().save(common.normaliseFileExtension(dir, "png"), "PNG")
     
     @staticmethod
     def renderTiles(parent, tileset: FullTileset, palette: Palette):
@@ -744,7 +744,7 @@ class RenderMinitilesDialog(QDialog):
     def saveImage(self):
         dir, _ = QFileDialog.getSaveFileName(self, "Save image", "", "PNG Image (*.png)")
         if dir:
-            self.previewImage.pixmap().save(dir[0], "PNG")
+            self.previewImage.pixmap().save(common.normaliseFileExtension(dir, "png"), "PNG")
     
     @staticmethod
     def renderMinitiles(parent, tileset: FullTileset, subpalette: Subpalette):
@@ -824,7 +824,7 @@ class RenderPaletteDialog(QDialog):
     def saveImage(self):
         dir, _ = QFileDialog.getSaveFileName(self, "Save image", "", "PNG Image (*.png)")
         if dir:
-            self.previewImage.pixmap().save(dir[0], "PNG")
+            self.previewImage.pixmap().save(common.normaliseFileExtension(dir, "png"), "PNG")
     
     @staticmethod
     def renderPalette(parent, palette: Palette):
