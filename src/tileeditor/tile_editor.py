@@ -247,7 +247,7 @@ class TileEditor(QWidget):
         self.fgScene.update()
     
     def onAutoRearrange(self):
-        action = AutoMinitileRearrangerDialog.rearrangeMinitiles(self, self.projectData)
+        action = AutoMinitileRearrangerDialog.rearrangeMinitiles(self, self.projectData, self.state.currentTileset)
         
         if action:
             self.undoStack.push(action)

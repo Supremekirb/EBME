@@ -1021,8 +1021,10 @@ class AutoMinitileRearrangerDialog(QDialog):
                                        str(e))
     
     @staticmethod
-    def rearrangeMinitiles(parent, projectData: ProjectData):
+    def rearrangeMinitiles(parent, projectData: ProjectData, initTileset: int|None=None):
         dialog = AutoMinitileRearrangerDialog(parent, projectData)
+        if initTileset:
+            dialog.tilesetInput.setValue(initTileset)
         dialog.exec()
         return dialog.action
         
