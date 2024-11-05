@@ -177,13 +177,6 @@ class MinitileScene(QGraphicsScene):
             source.setPos((self._mouseDownPos.x() // 8) * 8, (self._mouseDownPos.y() // 8) * 8)
             
             self.destIndicator.hide()
-            self.parent().selectMinitile(index)
-            # aka the part where I realised that i should just pass state instead of set up parenting
-            self.renderTileset(self.parent().state.currentTileset,
-                            self.parent().state.currentPaletteGroup,
-                            self.parent().state.currentPalette,
-                            self.parent().state.currentSubpalette)
-            self.updateHoverPreview(index)
         
         return super().mouseReleaseEvent(event)
 

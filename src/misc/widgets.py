@@ -884,14 +884,39 @@ class SubpaletteListItem(QTreeWidgetItem):
     
 # not really a widget...
 class SignalUndoStack(QUndoStack):
-    """QUndoStack with signals for undo and redo. These signals also transmit the command that was just undone/redone."""
+    """QUndoStack with signals for undo, redo, and push. These signals also transmit the command that was just undone/redone/pushed."""
     undone = Signal(QUndoCommand)
     redone = Signal(QUndoCommand)
+    pushed = Signal(QUndoCommand)
+    """Doesn't emit during macros, only at the end of them"""
     
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        self.inMacro = False
+        
+    def beginMacro(self, text: str):
+        self.inMacro = True
+        return super().beginMacro(text)    
+
+    def endMacro(self):
+        self.inMacro = False
+        super().endMacro()
+        self.pushed.emit(self.command(self.index()-1))
+
     def undo(self):
         super().undo()
-        self.undone.emit(self.command(self.index()))
+        command = self.command(self.index())
+        if command:
+            self.undone.emit(command)
     
     def redo(self):
         super().redo()
-        self.redone.emit(self.command(self.index()-1))
+        command = self.command(self.index()-1)
+        if command:
+            self.redone.emit(command)
+    
+    def push(self, command: QUndoCommand):
+        super().push(command)
+        if not self.inMacro:
+            self.pushed.emit(command)

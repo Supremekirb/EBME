@@ -62,8 +62,9 @@ class MapEditorScene(QGraphicsScene):
         self.state = state       
 
         self.undoStack = self.parent().parent().undoStack
-        self.undoStack.undone.connect(self.onUndoRedo)
-        self.undoStack.redone.connect(self.onUndoRedo)
+        self.undoStack.undone.connect(self.onAction)
+        self.undoStack.redone.connect(self.onAction)
+        self.undoStack.pushed.connect(self.onAction)
 
         self.setSceneRect(-128, -128, common.EBMAPWIDTH+256, common.EBMAPHEIGHT+256)
 
@@ -332,7 +333,7 @@ class MapEditorScene(QGraphicsScene):
                     return super().contextMenuEvent(event)
             menu.exec(event.screenPos())
 
-    def onUndoRedo(self, command: QUndoCommand):
+    def onAction(self, command: QUndoCommand):
         # handle graphics updating and whatnot
         # we don't actually store a reference to the graphics object in the undo command
         # this is because we'd have to make copies of tile graphics and whatever
@@ -429,7 +430,6 @@ class MapEditorScene(QGraphicsScene):
         match actionType:
             case "tile":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.TILE)
-                self.update()
             case "npc":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.NPC)
                 if self.state.currentNPCInstances != []:
@@ -441,8 +441,7 @@ class MapEditorScene(QGraphicsScene):
             case "sector":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.SECTOR)
                 if self.state.currentSectors != []:
-                    self.parent().sidebarSector.fromSectors()
-                self.update()
+                    self.parent().sidebarSector.fromSectors()   
             case "enemy":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.ENEMY)
                 self.parent().sidebarEnemy.selectEnemyTile(self.state.currentEnemyTile)
@@ -454,6 +453,8 @@ class MapEditorScene(QGraphicsScene):
             case "warp":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.WARP)
                 self.parent().sidebarWarp.fromWarp()
+    
+        self.update()
 
     def onCopy(self):
         match self.state.mode:
@@ -515,13 +516,8 @@ class MapEditorScene(QGraphicsScene):
                             self.undoStack.push(action)
                         except KeyError: pass
                         
-                        self.refreshSector(coords)
-                        
                     self.undoStack.endMacro()
                     inMacro = False
-                    self.parent().sidebar.setCurrentIndex(common.MODEINDEX.SECTOR)
-                    self.parent().sidebarSector.fromSectors()
-                    self.update()
                     
                 case "NPC":
                     absolute = QSettings().value("main/absolutePaste", False, type=bool)
@@ -819,7 +815,6 @@ class MapEditorScene(QGraphicsScene):
 
             action = ActionPlaceTile(tile, toPlace)
             self.undoStack.push(action)
-            self.update(*tile.coords.coords(), 32, 32)
     
     def endPlacingTiles(self):
         if self.state.placingTiles:
@@ -866,8 +861,6 @@ class MapEditorScene(QGraphicsScene):
             tileGraphic.render(self.projectData.getTileset(tile.tileset))
         
         self.update(*tile.coords.coords(), 32, 32)
-            # item.setPixmap(tileGraphic.rendered)
-            # item.setText(str(tile.tile).zfill(3))
             
     def placeEnemyTile(self, coords: EBCoords):
         item = self.enemyTileAt(coords)
@@ -881,7 +874,6 @@ class MapEditorScene(QGraphicsScene):
                     
                 action = ActionPlaceEnemyTile(tile, toPlace)
                 self.undoStack.push(action)            
-                self.refreshEnemyTile(coords)
                 
     def endPlacingEnemyTiles(self):
         if self.state.placingEnemyTiles:
@@ -1314,7 +1306,6 @@ class MapEditorScene(QGraphicsScene):
                 coords = end - EBCoords(8, 8)
             action = ActionChangeHotspotLocation(hotspot, coords, end)
             self.undoStack.push(action)
-            self.refreshHotspot(id[0])
         
     def refreshWarp(self, id: int):
         warp = self.projectData.warps[id]
@@ -1350,7 +1341,6 @@ class MapEditorScene(QGraphicsScene):
             teleport = self.projectData.teleports[id[0]]
             action = ActionMoveTeleport(teleport, coords)
             self.undoStack.push(action)
-            self.refreshTeleport(id[0])
             
     def drawBackground(self, painter: QPainter, rect: QRectF):
         super().drawBackground(painter, rect)
@@ -1575,18 +1565,14 @@ class MapEditorScene(QGraphicsScene):
                                                       sector.townmap, sector.townmaparrow, sector.townmapimage,
                                                       sector.townmapx, sector.townmapy)
                 self.undoStack.push(action)
-                
-                self.refreshSector(sector.coords)
 
                 progressDialog.setValue(progressDialog.value()+1)
-
         
         # b) update tiles in sectors (the end effect is to not have junk tiles around the edges)
         for r in range(common.secXToTile(sectorPosX), common.secXToTile(sectorEndX+1)):
             for c in range(common.secYToTile(sectorPosY), common.secYToTile(sectorEndY+1)):
                 action = ActionPlaceTile(self.projectData.getTile(EBCoords.fromTile(r, c)), 0)
                 self.undoStack.push(action)
-                self.refreshTile(EBCoords.fromTile(r, c))
 
         # second pass: place new tiles
         # ignore the for-var names here lol
@@ -1754,7 +1740,6 @@ class MapEditorScene(QGraphicsScene):
                 tile = self.projectData.getEnemyTile(EBCoords.fromEnemy(r, c))
                 action = ActionPlaceEnemyTile(tile, 0)
                 self.undoStack.push(action)
-                self.refreshEnemyTile(EBCoords.fromEnemy(r, c))
                 progressDialog.setValue(progressDialog.value()+1)
         
         progressDialog.setValue(progressDialog.maximum())

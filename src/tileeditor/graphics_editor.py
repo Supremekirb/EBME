@@ -68,9 +68,7 @@ class MinitileEditorWidget(MinitileGraphicsWidget):
         if event.button() == Qt.MouseButton.LeftButton:
             self._painting = False
             action = ActionChangeBitmap(self.currentMinitile, self._scratchBitmap, self.isForeground)
-            self.state.tileEditor.undoStack.push(action)
-            self.state.tileEditor.updateMinitile(self.currentMinitile)
-            
+            self.state.tileEditor.undoStack.push(action)            
         return super().mouseReleaseEvent(event)
     
     def mouseDoubleClickEvent(self, event: QMouseEvent):
@@ -129,10 +127,7 @@ class MinitileEditorWidget(MinitileGraphicsWidget):
                 self._scratchBitmap[i] = colour
         
         action = ActionChangeBitmap(self.currentMinitile, self._scratchBitmap, self.isForeground)
-        self.state.tileEditor.undoStack.push(action)
-        self.state.tileEditor.updateMinitile(self.currentMinitile)
-        
-        self.update()
+        self.state.tileEditor.undoStack.push(action)        
                 
     def adjacentMatchingPixels(self, index: int, matches: list = []):  
         if self.isForeground:

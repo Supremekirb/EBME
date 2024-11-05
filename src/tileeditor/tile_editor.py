@@ -58,14 +58,16 @@ class TileEditor(QWidget):
         self.projectData = projectData
         self.state = TileEditorState(self)
         self.undoStack = self.parent().undoStack
-        self.undoStack.undone.connect(self.onUndoRedo)
-        self.undoStack.redone.connect(self.onUndoRedo)
+        
+        self.undoStack.undone.connect(self.onAction)
+        self.undoStack.redone.connect(self.onAction)
+        self.undoStack.pushed.connect(self.onAction)
         
         self.setupUI()
         self.tilesetSelect.setCurrentIndex(0)
         self.tilesetSelect.activated.emit(0)
             
-    def onUndoRedo(self, command: QUndoCommand):
+    def onAction(self, command: QUndoCommand):
         commands = []
         
         count = command.childCount()
@@ -117,6 +119,7 @@ class TileEditor(QWidget):
                                                  self.state.currentPalette,
                                                  self.state.currentSubpalette)
                 self.minitileScene.updateHoverPreview(self.minitileScene.lastMinitileHovered)
+                self.selectMinitile(self.state.currentMinitile)
                  
     def onTilesetSelect(self):
         value = int(self.tilesetSelect.currentText())
@@ -226,15 +229,11 @@ class TileEditor(QWidget):
         bgBitmap = self.bgScene._scratchBitmap
         action = ActionChangeBitmap(self.fgScene.currentMinitile, bgBitmap, True)
         self.undoStack.push(action)
-        self.fgScene.copyToScratch()
-        self.fgScene.update()
         
     def copyFgToBg(self):
         fgBitmap = self.fgScene._scratchBitmap
         action = ActionChangeBitmap(self.bgScene.currentMinitile, fgBitmap, False)
         self.undoStack.push(action)
-        self.bgScene.copyToScratch()
-        self.bgScene.update()
         
     def swapBgAndFg(self):
         self.undoStack.beginMacro("Swap BG and FG")
@@ -243,19 +242,12 @@ class TileEditor(QWidget):
         action = ActionChangeBitmap(self.fgScene.currentMinitile, bgBitmap, True)
         self.undoStack.push(action)
         self.undoStack.endMacro()
-        self.fgScene.copyToScratch()
-        self.fgScene.update()
     
     def onAutoRearrange(self):
         action = AutoMinitileRearrangerDialog.rearrangeMinitiles(self, self.projectData, self.state.currentTileset)
         
         if action:
             self.undoStack.push(action)
-            self.minitileScene.renderTileset(self.state.currentTileset,
-                                             self.state.currentPaletteGroup,
-                                             self.state.currentPalette,
-                                             self.state.currentSubpalette)
-            self.selectMinitile(self.state.currentMinitile)
         
     def updateTile(self, tile: Tile|int):
         if isinstance(tile, Tile):

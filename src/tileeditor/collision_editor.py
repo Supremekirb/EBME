@@ -43,7 +43,6 @@ class TileCollisionWidget(TileGraphicsWidget):
 
         action = ActionChangeCollision(self.currentTile, self.state.currentCollision, index)
         self.state.tileEditor.undoStack.push(action)
-        self.update()
         
     def pickCollision(self, pos: QPoint):
         index = self.indexAtPos(pos)

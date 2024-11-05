@@ -39,8 +39,9 @@ class PaletteEditor(QWidget):
         self.subpaletteTransferButtons: list[QToolButton] = [] # only for iterating, order is NOT reliable
         
         self.undoStack = self.parent().undoStack
-        self.undoStack.undone.connect(self.onUndoRedo)
-        self.undoStack.redone.connect(self.onUndoRedo)
+        self.undoStack.undone.connect(self.onAction)
+        self.undoStack.redone.connect(self.onAction)
+        self.undoStack.pushed.connect(self.onAction)
         
         self.setupUI()
         self.selection1.setCurrentItem(self.selection1.topLevelItem(0), 0)
@@ -54,7 +55,7 @@ class PaletteEditor(QWidget):
             for j in i.minitiles:
                 j.BothToImage.cache_clear()
     
-    def onUndoRedo(self, command: QUndoCommand):
+    def onAction(self, command: QUndoCommand):
         actionType = None
         commands = []
 
@@ -96,7 +97,7 @@ class PaletteEditor(QWidget):
         self.on1CurrentChanged(self.selection1.currentItem())
         self.on2CurrentChanged(self.selection2.currentItem())
         
-    def transferColourUp(self, index: int, lite: bool=False):
+    def transferColourUp(self, index: int):
         """If lite, don't refresh display and clobber gfx cache"""
         current = self.selection1.getCurrentSubpalette()
         if current:
@@ -106,13 +107,7 @@ class PaletteEditor(QWidget):
             action = ActionChangeSubpaletteColour(subpalette, index, self.subpalette2Buttons[index].chosenColour.toTuple()[:3])
             self.undoStack.push(action)
         
-            if not lite:
-                self.refreshSubpaletteDisplay()
-                self.projectData.clobberTileGraphicsCache()
-                for i in self.projectData.getTileset(self.selection1.getCurrentTileset().tileset).minitiles:
-                    i.BothToImage.cache_clear()
-        
-    def transferColourDown(self, index: int, lite: bool=False):
+    def transferColourDown(self, index: int):
         """If lite, don't refresh display and clobber gfx cache"""
         current = self.selection2.getCurrentSubpalette()
         if current:
@@ -122,35 +117,33 @@ class PaletteEditor(QWidget):
             action = ActionChangeSubpaletteColour(subpalette, index, self.subpalette1Buttons[index].chosenColour.toTuple()[:3])
             self.undoStack.push(action)
         
-            if not lite:
-                self.refreshSubpaletteDisplay()
-                self.projectData.clobberTileGraphicsCache()
-                for i in self.projectData.getTileset(self.selection2.getCurrentTileset().tileset).minitiles:
-                    i.BothToImage.cache_clear()
-        
+    # TODO what the fuck is making these so slow???
     def transferAllColoursUp(self):
         current = self.selection1.getCurrentSubpalette()
         if current:
+            subpalette = self.projectData.getTileset(self.selection1.getCurrentTileset().tileset).getPalette(
+                self.selection1.getCurrentPaletteGroup().paletteGroup, self.selection1.getCurrentPalette().palette
+            ).subpalettes[current.subpalette]
+            
             self.undoStack.beginMacro("Copy subpalette colours")
+            
             for i in range(0, 16):
-                self.transferColourUp(i, lite=True)
+                action = ActionChangeSubpaletteColour(subpalette, i, self.subpalette2Buttons[i].chosenColour.toTuple()[:3])
+                self.undoStack.push(action)
             self.undoStack.endMacro()
-            self.refreshSubpaletteDisplay()
-            self.projectData.clobberTileGraphicsCache()
-            for i in self.projectData.getTileset(self.selection1.getCurrentTileset().tileset).minitiles:
-                i.BothToImage.cache_clear()
         
     def transferAllColoursDown(self):
         current = self.selection2.getCurrentSubpalette()
         if current:
+            subpalette = self.projectData.getTileset(self.selection2.getCurrentTileset().tileset).getPalette(
+                self.selection2.getCurrentPaletteGroup().paletteGroup, self.selection2.getCurrentPalette().palette
+            ).subpalettes[current.subpalette]
+            
             self.undoStack.beginMacro("Copy subpalette colours")
             for i in range(0, 16):
-                self.transferColourDown(i, lite=True)
+                action = ActionChangeSubpaletteColour(subpalette, i, self.subpalette1Buttons[i].chosenColour.toTuple()[:3])
+                self.undoStack.push(action)
             self.undoStack.endMacro()
-            self.refreshSubpaletteDisplay()
-            self.projectData.clobberTileGraphicsCache()
-            for i in self.projectData.getTileset(self.selection2.getCurrentTileset().tileset).minitiles:
-                i.BothToImage.cache_clear()
     
     def onTopColourChanged(self, colour: int):
         current = self.selection1.getCurrentSubpalette()
@@ -162,9 +155,6 @@ class PaletteEditor(QWidget):
             newColour = self.subpalette1Buttons[colour].chosenColour.toTuple()[:3]
             
             self.undoStack.push(ActionChangeSubpaletteColour(subpalette, colour, newColour))
-            self.projectData.clobberTileGraphicsCache()
-            for i in self.projectData.getTileset(self.selection1.getCurrentTileset().tileset).minitiles:
-                i.BothToImage.cache_clear()
         
         
     def onBottomColourChanged(self, colour: int):
@@ -177,9 +167,6 @@ class PaletteEditor(QWidget):
             newColour = self.subpalette2Buttons[colour].chosenColour.toTuple()[:3]
             
             self.undoStack.push(ActionChangeSubpaletteColour(subpalette, colour, newColour))
-            self.projectData.clobberTileGraphicsCache()
-            for i in self.projectData.getTileset(self.selection2.getCurrentTileset().tileset).minitiles:
-                i.BothToImage.cache_clear()
         
     def on1CurrentChanged(self, new: QTreeWidgetItem):        
         if isinstance(new, SubpaletteListItem):
@@ -324,9 +311,7 @@ class PaletteEditor(QWidget):
                                              self.paletteSettingsFlashEffect.value(),
                                              self.paletteSettingsSpritePalette.value())
         self.undoStack.push(action)
-        self.onPaletteSettingsListCurrentChanged(current)
-        self.paletteSettingsList.updateLabels()
-                
+                        
     def renderPaletteImage(self):
         palette = self.selection1.getCurrentPalette()
         if not palette:
@@ -416,13 +401,7 @@ class PaletteEditor(QWidget):
                     
                     newPalette = Palette(file.read())
                     
-                    self.undoStack.push(ActionReplacePalette(newPalette, oldPalette))
-                    
-                    self.projectData.clobberTileGraphicsCache(current.parent().parent().tileset)
-                    for i in self.projectData.getTileset(current.parent().parent().tileset).minitiles:
-                        i.BothToImage.cache_clear()
-                    self.refreshSubpaletteDisplay()
-                        
+                    self.undoStack.push(ActionReplacePalette(newPalette, oldPalette))                        
                     
             except Exception as e:
                 common.showErrorMsg("Cannot import palette",

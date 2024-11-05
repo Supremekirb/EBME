@@ -41,9 +41,6 @@ class TileArrangementWidget(TileGraphicsWidget):
         action = ActionChangeArrangement(self.currentTile, metadata, index)
         action.setText("Place minitile")
         self.state.tileEditor.undoStack.push(action)
-        self.state.tileEditor.updateTile(self.currentTile)
-        
-        self.update()
         
     def modifyMinitile(self, pos: QPoint):
         index = self.indexAtPos(pos)
@@ -74,9 +71,6 @@ class TileArrangementWidget(TileGraphicsWidget):
         action = ActionChangeArrangement(self.currentTile, metadata, index)
         action.setText("Modify minitile mirroring/flipping")
         self.state.tileEditor.undoStack.push(action)
-        self.state.tileEditor.updateTile(self.currentTile)
-        
-        self.update()
         
     def pickMinitile(self, pos: QPoint):
         index = self.indexAtPos(pos)
