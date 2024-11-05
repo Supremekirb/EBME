@@ -845,6 +845,20 @@ class PaletteTreeWidget(QTreeWidget):
             return current
         else: return None
 
+    def syncPaletteGroup(self, group: int):
+        tileset = self.topLevelItem(self.projectData.getTilesetFromPaletteGroup(group).id)
+        for i in range(tileset.childCount()):
+            paletteGroup: PaletteGroupListItem = tileset.child(i)
+            if paletteGroup.paletteGroup == group:
+                for j in reversed(range(paletteGroup.childCount())):
+                    paletteGroup.removeChild(paletteGroup.child(j))
+                for j in self.projectData.getPaletteGroup(group).palettes:
+                    palette = PaletteListItem(j.paletteID, paletteGroup, [f"Palette {j.paletteID}"])
+                    paletteGroup.addChild(palette)
+                    for k in range(0, 6):
+                        subpalette = SubpaletteListItem(k, palette, [f"Subpalette {k}"])
+                        palette.addChild(subpalette)
+
 class TilesetListItem(QTreeWidgetItem):
     def __init__(self, tileset: int, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -1,11 +1,16 @@
 from copy import copy
 
 from PySide6.QtGui import QUndoCommand
+from PySide6.QtWidgets import QMessageBox
 
 import src.misc.common as common
+from src.actions.sector_actions import ActionChangeSectorAttributes
 from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
-                                           Subpalette, Tile)
+                                           PaletteGroup, Subpalette, Tile)
+from src.coilsnake.project_data import ProjectData
 from src.objects.palette_settings import PaletteSettings
+from src.objects.sector import Sector
+from src.objects.tile import MapTile, MapTileGraphic
 
 
 class ActionChangeBitmap(QUndoCommand):
@@ -259,3 +264,161 @@ class ActionChangePaletteSettings(QUndoCommand):
 
     def id(self):
         return common.ACTIONINDEX.PALETTESETTINGSUPDATE
+    
+class ActionAddPalette(QUndoCommand):
+    def __init__(self, palette: Palette, projectData: ProjectData):
+        # quite a big one. we will need the ProjectData because we need to deal with a lot of stuff
+        
+        super().__init__()
+        self.setText("Add palette")
+        
+        self.palette = palette
+        self.projectData = projectData
+        
+    def redo(self):
+        tileset = self.projectData.getTilesetFromPaletteGroup(self.palette.groupID)
+        tileset.palettes.append(self.palette)
+        tileset.palettes.sort(key=lambda p: p.paletteID)
+        paletteGroup = tileset.getPaletteGroup(self.palette.groupID)
+        paletteGroup.palettes.append(self.palette)
+        paletteGroup.palettes.sort(key=lambda p: p.paletteID)
+        
+        settings = PaletteSettings(0, 0, 0)
+        self.projectData.paletteSettings[self.palette.groupID][self.palette.paletteID] = settings
+        
+        newGraphics = self.projectData.tilegfx[tileset.id][self.palette.groupID][self.palette.paletteID] = {}
+        for i in range(common.MAXTILES):
+            graphic = MapTileGraphic(i, tileset.id, self.palette.groupID, self.palette.paletteID)
+            newGraphics[i] = graphic
+    
+    def undo(self):   
+        tileset = self.projectData.getTilesetFromPaletteGroup(self.palette.groupID)
+        tileset.palettes.remove(self.palette)
+        tileset.getPaletteGroup(self.palette.groupID).palettes.remove(self.palette)
+        
+        self.projectData.paletteSettings[self.palette.groupID].pop(self.palette.paletteID, None)
+        
+        self.projectData.tilegfx[tileset.id][self.palette.groupID].pop(self.palette.paletteID, None) 
+                   
+    def mergeWith(self, other):
+        return False
+
+    def id(self):
+        return common.ACTIONINDEX.ADDPALETTE
+    
+class ActionRemovePalette(QUndoCommand):
+    def __init__(self, palette: Palette, projectData: ProjectData):
+        super().__init__()
+        self.setText("Remove palette")
+        
+        self.palette = palette
+        self.projectData = projectData
+
+        # truth be told I was hoping for a rather elegant undo/redo swap of ActionAddPalette but no dice
+        # the nice thing about making them separate is that we only have to verify stuff for this action specifically
+        
+        # verification of objects using this palette
+        # objects using this palette will be set to use palette 0
+        # BIT OF CONTEX TIME
+        # Qt does provide a command parenting system, where all children are also undone/redone
+        # however!
+        # some strange issue is causing it to not like... something about what I've done here
+        # and crash the entire program (yikes!)
+        # This specifically happens in the QUndoStack.push() function after
+        # 1. deleting a palette 2. undoing 3. deleting it again with a new action
+        # Since this seems to be both a Qt issue and a C++ issue, (probably something with pointers)
+        # and I can't really debug, I hereby give up.
+        # and now similar functionality to MultiActionWrapper will take its place.
+        # it works, okay?!
+        self.commands: list[QUndoCommand] = []
+        
+        for i in self.projectData.sectors.flat:
+            i: Sector
+            if i.palettegroup == self.palette.groupID and i.palette == self.palette.paletteID:
+                self.commands.append(ActionChangeSectorAttributes(
+                    i, i.tileset, i.palettegroup,
+                    self.projectData.getTileset(i.tileset).getPaletteGroup(
+                    i.palettegroup).palettes[0].paletteID,
+                    i.item, i.music, i.setting, i.teleport,
+                    i.townmap, i.townmaparrow, i.townmapimage,
+                    i.townmapx, i.townmapy))
+                
+        # change things using palettes past this ID to use ID -1
+        # (don't actually apply the change here, only create actions)
+        palettes = self.projectData.getPaletteGroup(palette.groupID).palettes
+        for i in palettes:
+            self.test = i
+            if i.paletteID > palette.paletteID:
+                # for sectors
+                for j in self.projectData.sectors.flat:
+                    j: Sector
+                    if j.palette == i.paletteID and j.palettegroup == i.groupID:
+                        self.commands.append(ActionChangeSectorAttributes(
+                            j, j.tileset, j.palettegroup, j.palette-1, # <-- the important bit
+                            j.item, j.music, j.setting, j.teleport,
+                            j.townmap, j.townmaparrow, j.townmapimage,
+                            j.townmapx, j.townmapy))
+                        
+                
+        # for palette settings
+        # TODO currently nonfunctional -- need actions for adding/removing event palettes first!
+        # for id, settings in self.projectData.paletteSettings[palette.groupID].items():
+        #     if id > palette.paletteID:
+        #         self.childActions.append(ActionChangePaletteSettings(
+        #             self.projectData.paletteSettings[i.groupID][id-1],
+        #             settings.flag,
+        #             settings.flashEffect,
+        #             settings.spritePalette))
+        #
+        #         eventPalette = settings.palette
+        #         previousEventPalette = self.projectData.paletteSettings[palette.groupID][id-1].palette
+        #         if eventPalette and previousEventPalette:
+        #             for subpalette in range(0, 6):
+        #                 for colour in range(0, 16):
+        #                     self.childActions.append(ActionChangeSubpaletteColour(previousEventPalette.subpalettes[subpalette],
+        #                         colour, eventPalette.subpalettes[subpalette].subpaletteRGBA[colour][:3]))
+        #             # we can safely ... ignore leaving one extra palette settings :3
+        
+    def redo(self):
+        tileset = self.projectData.getTilesetFromPaletteGroup(self.palette.groupID)
+        paletteGroup = self.projectData.getPaletteGroup(self.palette.groupID)
+        # first let's shift all the other palettes down by one
+        # do this first to make sure nothing happens with child actions I guess?
+        # not that anything should
+        for i in paletteGroup.palettes:
+            if i.paletteID > self.palette.paletteID:
+                i.paletteID -= 1
+        
+        for i in self.commands:
+            i.redo()
+            
+        tileset.palettes.remove(self.palette)
+        tileset.palettes.sort(key=lambda p: p.paletteID) # probably not necessary, but why not
+        paletteGroup.palettes.remove(self.palette)
+        paletteGroup.palettes.sort(key=lambda p: p.paletteID)
+        
+        self.projectData.clobberTileGraphicsCache(tileset.id, paletteGroup.groupID)
+            
+    def undo(self):
+        tileset = self.projectData.getTilesetFromPaletteGroup(self.palette.groupID)
+        paletteGroup = self.projectData.getPaletteGroup(self.palette.groupID)
+        # shift palettes back up again
+        for i in paletteGroup.palettes:
+            if i.paletteID >= self.palette.paletteID:
+                i.paletteID += 1
+
+        for i in self.commands:
+            i.undo()
+        
+        tileset.palettes.append(self.palette)
+        tileset.palettes.sort(key=lambda p: p.paletteID)
+        paletteGroup.palettes.append(self.palette)
+        paletteGroup.palettes.sort(key=lambda p: p.paletteID)
+        
+        self.projectData.clobberTileGraphicsCache(tileset.id, paletteGroup.groupID)
+            
+    def mergeWith(self, other):
+        return False
+    
+    def id(self):
+        return common.ACTIONINDEX.REMOVEPALETTE

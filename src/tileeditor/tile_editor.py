@@ -11,10 +11,10 @@ from PySide6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
 import src.misc.common as common
 import src.misc.debug as debug
 import src.misc.icons as icons
-from src.actions.fts_actions import (ActionChangeArrangement,
+from src.actions.fts_actions import (ActionAddPalette, ActionChangeArrangement,
                                      ActionChangeBitmap, ActionChangeCollision,
                                      ActionChangeSubpaletteColour,
-                                     ActionSwapMinitiles)
+                                     ActionRemovePalette, ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.fts_interpreter import Minitile, Tile
 from src.coilsnake.project_data import ProjectData
@@ -74,13 +74,14 @@ class TileEditor(QWidget):
         if count > 0:
             for c in range(count):
                 commands.append(command.child(c))
+            commands.append(command)
         
-        elif isinstance(command, MultiActionWrapper):
+        elif hasattr(command, "commands"):
             for c in command.commands:
                 commands.append(c)
         
-        else:
-            commands.append(command)
+        # do this *always* to be safe        
+        commands.append(command)
         
         actionType: str = None
         for c in commands:
@@ -97,6 +98,8 @@ class TileEditor(QWidget):
                 actionType = "collision"
             elif isinstance(c, ActionSwapMinitiles):
                 actionType = "swap"
+            elif isinstance(c, ActionAddPalette) or isinstance(c, ActionRemovePalette):
+                self.onPaletteGroupSelect()
         
         match actionType:
             case "bitmap":

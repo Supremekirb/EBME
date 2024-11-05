@@ -25,6 +25,7 @@ import src.misc.icons as icons
 import src.objects.trigger as trigger
 from src.actions.enemy_actions import (ActionPlaceEnemyTile,
                                        ActionUpdateEnemyMapGroup)
+from src.actions.fts_actions import ActionAddPalette, ActionRemovePalette
 from src.actions.hotspot_actions import (ActionChangeHotspotColour,
                                          ActionChangeHotspotComment,
                                          ActionChangeHotspotLocation)
@@ -349,13 +350,14 @@ class MapEditorScene(QGraphicsScene):
         if count > 0: # handle macros
             for c in range(command.childCount()):
                 commands.append(command.child(c))
+            commands.append(command)
                         
-        elif isinstance(command, MultiActionWrapper): # handle multis (which should not have children)
+        elif hasattr(command, "commands"): # handle multis (which should not have children)
             for c in command.commands:
                 commands.append(c)
                 
-        else: # otherwise we are just a standalone
-            commands.append(command)
+        # do this *always* to be safe        
+        commands.append(command)
         
         progressDialog = QProgressDialog(f'Executing "{command.text()}"...', "NONCANCELLABLE", 0, len(commands))
         progressDialog.setCancelButton(None) # no cancel button
@@ -421,6 +423,10 @@ class MapEditorScene(QGraphicsScene):
             if isinstance(c, ActionMoveTeleport) or isinstance(c, ActionUpdateTeleport):
                 actionType = "warp"
                 self.refreshTeleport(c.teleport.id)
+            
+            if isinstance(c, ActionAddPalette) or isinstance(c, ActionRemovePalette):
+                self.parent().sidebarTile.fromSector(self.state.currentSectors[-1])
+                self.parent().sidebarSector.fromSectors()
             
             progressDialog.setValue(progressDialog.value()+1)
         

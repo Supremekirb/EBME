@@ -11,8 +11,9 @@ from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
 import src.misc.common as common
 import src.misc.debug as debug
 import src.misc.icons as icons
-from src.actions.fts_actions import (ActionChangePaletteSettings,
-                                     ActionChangeSubpaletteColour,
+from src.actions.fts_actions import (ActionAddPalette,
+                                     ActionChangePaletteSettings,
+                                     ActionChangeSubpaletteColour, ActionRemovePalette,
                                      ActionReplacePalette)
 from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.fts_interpreter import Palette
@@ -44,7 +45,7 @@ class PaletteEditor(QWidget):
         self.undoStack.pushed.connect(self.onAction)
         
         self.setupUI()
-        self.selection1.setCurrentItem(self.selection1.topLevelItem(0), 0)
+        self.paletteTree.setCurrentItem(self.paletteTree.topLevelItem(0), 0)
         
     def clobberAllCachedMinitiles(self):
         # for use on undo/redo. As with the gfx/tile editor,
@@ -64,12 +65,12 @@ class PaletteEditor(QWidget):
             for c in range(command.childCount()):
                 commands.append(command.child(c))
                         
-        elif isinstance(command, MultiActionWrapper): # handle multis (which should not have children)
+        if hasattr(command, "commands"): # handle multis (which should not have children)
             for c in command.commands:
                 commands.append(c)
-                
-        else: # otherwise we are just a standalone
-            commands.append(command)
+        
+        # do this *always* to be safe        
+        commands.append(command)
             
         for c in commands:
             if isinstance(c, ActionChangeSubpaletteColour):
@@ -78,6 +79,9 @@ class PaletteEditor(QWidget):
                 actionType = "palette"
             if isinstance(c, ActionChangePaletteSettings):
                 actionType = "settings"
+            if isinstance(c, ActionAddPalette) or isinstance(c, ActionRemovePalette):
+                self.paletteTree.syncPaletteGroup(c.palette.groupID)
+                self.comparePaletteTree.syncPaletteGroup(c.palette.groupID)
                 
         match actionType:
             case "subpalette":
@@ -94,35 +98,35 @@ class PaletteEditor(QWidget):
                 self.paletteSettingsList.updateLabels()
                 
     def refreshSubpaletteDisplay(self):
-        self.on1CurrentChanged(self.selection1.currentItem())
-        self.on2CurrentChanged(self.selection2.currentItem())
+        self.onPaletteTreeCurrentChanged(self.paletteTree.currentItem())
+        self.onCompareTreeCurrentChanged(self.comparePaletteTree.currentItem())
         
     def transferColourUp(self, index: int):
         """If lite, don't refresh display and clobber gfx cache"""
-        current = self.selection1.getCurrentSubpalette()
+        current = self.paletteTree.getCurrentSubpalette()
         if current:
-            subpalette = self.projectData.getTileset(self.selection1.getCurrentTileset().tileset).getPalette(
-                self.selection1.getCurrentPaletteGroup().paletteGroup, self.selection1.getCurrentPalette().palette
+            subpalette = self.projectData.getTileset(self.paletteTree.getCurrentTileset().tileset).getPalette(
+                self.paletteTree.getCurrentPaletteGroup().paletteGroup, self.paletteTree.getCurrentPalette().palette
             ).subpalettes[current.subpalette]
             action = ActionChangeSubpaletteColour(subpalette, index, self.subpalette2Buttons[index].chosenColour.toTuple()[:3])
             self.undoStack.push(action)
         
     def transferColourDown(self, index: int):
         """If lite, don't refresh display and clobber gfx cache"""
-        current = self.selection2.getCurrentSubpalette()
+        current = self.comparePaletteTree.getCurrentSubpalette()
         if current:
-            subpalette = self.projectData.getTileset(self.selection2.getCurrentTileset().tileset).getPalette(
-                self.selection2.getCurrentPaletteGroup().paletteGroup, self.selection2.getCurrentPalette().palette
+            subpalette = self.projectData.getTileset(self.comparePaletteTree.getCurrentTileset().tileset).getPalette(
+                self.comparePaletteTree.getCurrentPaletteGroup().paletteGroup, self.comparePaletteTree.getCurrentPalette().palette
             ).subpalettes[current.subpalette]
             action = ActionChangeSubpaletteColour(subpalette, index, self.subpalette1Buttons[index].chosenColour.toTuple()[:3])
             self.undoStack.push(action)
         
     # TODO what the fuck is making these so slow???
     def transferAllColoursUp(self):
-        current = self.selection1.getCurrentSubpalette()
+        current = self.paletteTree.getCurrentSubpalette()
         if current:
-            subpalette = self.projectData.getTileset(self.selection1.getCurrentTileset().tileset).getPalette(
-                self.selection1.getCurrentPaletteGroup().paletteGroup, self.selection1.getCurrentPalette().palette
+            subpalette = self.projectData.getTileset(self.paletteTree.getCurrentTileset().tileset).getPalette(
+                self.paletteTree.getCurrentPaletteGroup().paletteGroup, self.paletteTree.getCurrentPalette().palette
             ).subpalettes[current.subpalette]
             
             self.undoStack.beginMacro("Copy subpalette colours")
@@ -133,10 +137,10 @@ class PaletteEditor(QWidget):
             self.undoStack.endMacro()
         
     def transferAllColoursDown(self):
-        current = self.selection2.getCurrentSubpalette()
+        current = self.comparePaletteTree.getCurrentSubpalette()
         if current:
-            subpalette = self.projectData.getTileset(self.selection2.getCurrentTileset().tileset).getPalette(
-                self.selection2.getCurrentPaletteGroup().paletteGroup, self.selection2.getCurrentPalette().palette
+            subpalette = self.projectData.getTileset(self.comparePaletteTree.getCurrentTileset().tileset).getPalette(
+                self.comparePaletteTree.getCurrentPaletteGroup().paletteGroup, self.comparePaletteTree.getCurrentPalette().palette
             ).subpalettes[current.subpalette]
             
             self.undoStack.beginMacro("Copy subpalette colours")
@@ -146,10 +150,10 @@ class PaletteEditor(QWidget):
             self.undoStack.endMacro()
     
     def onTopColourChanged(self, colour: int):
-        current = self.selection1.getCurrentSubpalette()
+        current = self.paletteTree.getCurrentSubpalette()
         if current:
-            subpalette = self.projectData.getTileset(self.selection1.getCurrentTileset().tileset).getPalette(
-                self.selection1.getCurrentPaletteGroup().paletteGroup, self.selection1.getCurrentPalette().palette
+            subpalette = self.projectData.getTileset(self.paletteTree.getCurrentTileset().tileset).getPalette(
+                self.paletteTree.getCurrentPaletteGroup().paletteGroup, self.paletteTree.getCurrentPalette().palette
             ).subpalettes[current.subpalette]
             
             newColour = self.subpalette1Buttons[colour].chosenColour.toTuple()[:3]
@@ -158,19 +162,19 @@ class PaletteEditor(QWidget):
         
         
     def onBottomColourChanged(self, colour: int):
-        current = self.selection2.getCurrentSubpalette()
+        current = self.comparePaletteTree.getCurrentSubpalette()
         if current:
-            subpalette = self.projectData.getTileset(self.selection2.getCurrentTileset().tileset).getPalette(
-                self.selection2.getCurrentPaletteGroup().paletteGroup, self.selection2.getCurrentPalette().palette
+            subpalette = self.projectData.getTileset(self.comparePaletteTree.getCurrentTileset().tileset).getPalette(
+                self.comparePaletteTree.getCurrentPaletteGroup().paletteGroup, self.comparePaletteTree.getCurrentPalette().palette
             ).subpalettes[current.subpalette]
             
             newColour = self.subpalette2Buttons[colour].chosenColour.toTuple()[:3]
             
             self.undoStack.push(ActionChangeSubpaletteColour(subpalette, colour, newColour))
         
-    def on1CurrentChanged(self, new: QTreeWidgetItem):        
+    def onPaletteTreeCurrentChanged(self, new: QTreeWidgetItem):        
         if isinstance(new, SubpaletteListItem):
-            self.selection2.setEnabled(True)
+            self.comparePaletteTree.setEnabled(True)
             
             subpalette = self.projectData.getTileset(
                 new.parent().parent().parent().tileset).getPalette(new.parent().parent().paletteGroup,
@@ -184,7 +188,7 @@ class PaletteEditor(QWidget):
                 button.blockSignals(False)
                 button.setEnabled(True)
             
-            if self.selection2.getCurrentSubpalette():
+            if self.comparePaletteTree.getCurrentSubpalette():
                 for i in self.subpaletteTransferButtons:
                     i.setEnabled(True)
                 for i in self.subpalette2Buttons:
@@ -199,7 +203,7 @@ class PaletteEditor(QWidget):
                 j.setDisabled(True)
             for i in self.subpaletteTransferButtons:
                 i.setDisabled(True)
-            self.selection2.setDisabled(True)
+            self.comparePaletteTree.setDisabled(True)
         
             if isinstance(new, PaletteListItem):
                 self.loadPaletteSettingsTree(new.parent().paletteGroup,
@@ -268,7 +272,7 @@ class PaletteEditor(QWidget):
         palette = self.paletteSettingsList.currentItem().settings.palette
         if palette:
             actions = EditEventPaletteDialog.editEventPalette(self, palette,
-                                                              self.selection1.getCurrentTileset().tileset,
+                                                              self.paletteTree.getCurrentTileset().tileset,
                                                               self.projectData)
             if actions:
                 self.undoStack.push(actions)
@@ -280,7 +284,7 @@ class PaletteEditor(QWidget):
             if action:
                 self.undoStack.push(action)
              
-    def on2CurrentChanged(self, new: QTreeWidgetItem):
+    def onCompareTreeCurrentChanged(self, new: QTreeWidgetItem):
         if isinstance(new, SubpaletteListItem):
             subpalette = self.projectData.getTileset(
                 new.parent().parent().parent().tileset).getPalette(new.parent().parent().paletteGroup,
@@ -294,7 +298,7 @@ class PaletteEditor(QWidget):
                 button.blockSignals(False)
                 button.setEnabled(True)
             
-            if self.selection1.getCurrentSubpalette():
+            if self.paletteTree.getCurrentSubpalette():
                 for i in self.subpaletteTransferButtons:
                     i.setEnabled(True)
         
@@ -313,7 +317,7 @@ class PaletteEditor(QWidget):
         self.undoStack.push(action)
                         
     def renderPaletteImage(self):
-        palette = self.selection1.getCurrentPalette()
+        palette = self.paletteTree.getCurrentPalette()
         if not palette:
             return common.showErrorMsg("Cannot render palette",
                                        "Please select a palette to render.",
@@ -333,7 +337,7 @@ class PaletteEditor(QWidget):
             RenderPaletteDialog.renderPalette(self, palette)
         
     def exportPalette(self):
-        current = self.selection1.getCurrentPalette()
+        current = self.paletteTree.getCurrentPalette()
         if not current:
             return common.showErrorMsg("Cannot export palette",
                                        "Please select a palette to export from.",
@@ -382,7 +386,7 @@ class PaletteEditor(QWidget):
                 raise
         
     def importPalette(self):
-        current = self.selection1.getCurrentPalette()
+        current = self.paletteTree.getCurrentPalette()
         if not current:
             return common.showErrorMsg("Cannot import palette",
                                        "Please select a palette to import over.",
@@ -432,14 +436,71 @@ class PaletteEditor(QWidget):
                                     "An error occured when importing the event palette.",
                                     str(e))
                 raise
+            
+    def addPalette(self):
+        current = self.paletteTree.getCurrentPaletteGroup()
+        if not current:
+            return common.showErrorMsg("Cannot add palette",
+                                       "Please select a palette group to add a palette to.",
+                                       icon=QMessageBox.Icon.Warning)
+            
+        tileset = self.projectData.getTileset(current.parent().tileset)
+        paletteGroup = tileset.getPaletteGroup(current.paletteGroup)
+        # "add" more like duplicate
+        base = paletteGroup.palettes[-1]
+        if base.paletteID >= 7:
+            return common.showErrorMsg("Cannot add palette",
+                                       "The maximum number of palettes in this palette group has been reached.",
+                                       icon=QMessageBox.Icon.Warning)
+        
+        new = Palette(common.baseN(current.paletteGroup, 32)
+                      + common.baseN(base.paletteID+1, 32)
+                      + base.toRaw()[2:])
+        
+        action = ActionAddPalette(new, self.projectData)
+        self.undoStack.push(action)
+        
+    def removePalette(self):
+        current = self.paletteTree.getCurrentPalette()
+        if not current:
+            return common.showErrorMsg("Cannot remove palette",
+                                       "Please select a palette to remove.",
+                                       icon=QMessageBox.Icon.Warning)
+            
+        tileset = self.projectData.getTileset(current.parent().parent().tileset)
+        paletteGroup = tileset.getPaletteGroup(current.parent().paletteGroup)
+        palette = paletteGroup.palettes[current.palette]
+        # "add" more like duplicate
+        base = paletteGroup.palettes[current.palette]
+        if len(paletteGroup.palettes) == 1:
+            return common.showErrorMsg("Cannot remove palette",
+                                       "Cannot leave a palette group with no palettes.",
+                                       icon=QMessageBox.Icon.Warning)
+        
+        action = ActionRemovePalette(base, self.projectData)
+        self.undoStack.push(action)
         
     def setupUI(self):
         layout = QHBoxLayout()
         self.setLayout(layout)
         
-        self.selection1 = PaletteTreeWidget(self.projectData, self)
-        self.selection1.setMaximumWidth(self.selection1.sizeHint().width())
-        self.selection1.currentItemChanged.connect(self.on1CurrentChanged)
+        paletteSelectionLayout = QVBoxLayout()
+        self.paletteTree = PaletteTreeWidget(self.projectData, self)
+        self.paletteTree.setMaximumWidth(self.paletteTree.sizeHint().width())
+        self.paletteTree.currentItemChanged.connect(self.onPaletteTreeCurrentChanged)
+        paletteSelectionLayout.addWidget(self.paletteTree)
+        
+        addRemoveLayout = QHBoxLayout()
+        self.addPaletteButton = QPushButton("Add palette")
+        self.addPaletteButton.setIcon(icons.ICON_NEW)
+        self.addPaletteButton.clicked.connect(self.addPalette)
+        self.removePaletteButton = QToolButton()
+        self.removePaletteButton.setIcon(icons.ICON_DELETE)
+        self.removePaletteButton.setToolTip("Remove palette")
+        self.removePaletteButton.clicked.connect(self.removePalette)
+        addRemoveLayout.addWidget(self.addPaletteButton)
+        addRemoveLayout.addWidget(self.removePaletteButton)
+        paletteSelectionLayout.addLayout(addRemoveLayout)
         
         editorsLayout = QVBoxLayout()
         
@@ -447,11 +508,11 @@ class PaletteEditor(QWidget):
         compareGroupBoxLayout = QHBoxLayout() 
         compareGroupBox.setLayout(compareGroupBoxLayout)
         
-        self.selection2 = PaletteTreeWidget(self.projectData, self)
-        self.selection2.setMaximumWidth(self.selection2.sizeHint().width())
-        self.selection2.currentItemChanged.connect(self.on2CurrentChanged)
-        self.selection2.setHeaderHidden(False)
-        self.selection2.setHeaderLabel("Compare against...")
+        self.comparePaletteTree = PaletteTreeWidget(self.projectData, self)
+        self.comparePaletteTree.setMaximumWidth(self.comparePaletteTree.sizeHint().width())
+        self.comparePaletteTree.currentItemChanged.connect(self.onCompareTreeCurrentChanged)
+        self.comparePaletteTree.setHeaderHidden(False)
+        self.comparePaletteTree.setHeaderLabel("Compare against...")
         
         editRowsLayout = QVBoxLayout()
         editRowsLayout.addStretch()
@@ -467,7 +528,7 @@ class PaletteEditor(QWidget):
         
         compareGroupBoxLayout.addLayout(editRowsLayout)
         compareGroupBoxLayout.addLayout(editOtherButtonsLayout)
-        compareGroupBoxLayout.addWidget(self.selection2)
+        compareGroupBoxLayout.addWidget(self.comparePaletteTree)
         
         for i in range(0, 16):
             button = ColourButton()
@@ -595,7 +656,7 @@ class PaletteEditor(QWidget):
         
         editorsLayout.addWidget(self.paletteSettingsGroupBox)
         
-        layout.addWidget(self.selection1)
+        layout.addLayout(paletteSelectionLayout)
         layout.addLayout(editorsLayout)
         
         self.menuFile = QMenu("&File")

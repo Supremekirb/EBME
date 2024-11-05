@@ -182,7 +182,26 @@ class ProjectData():
         except KeyError:
             return "No description."
     
-    # special getters for some of the more cursed accesses
+    # special getters for some of the more cursed accesses(
+    def getTilesetFromPaletteGroup(self, paletteGroup: int):
+        for i in self.tilesets:
+            try:
+                if i.getPaletteGroup(paletteGroup):
+                    return i
+            except ValueError:
+                continue
+        else:
+            raise ValueError(f"Could not find any tileset containing palette group {paletteGroup}.")
+    
+    def getPaletteGroup(self, paletteGroup: int):
+        for i in self.tilesets:
+            try:
+                return i.getPaletteGroup(paletteGroup)
+            except ValueError:
+                continue
+        else:
+            raise ValueError(f"Could not find palette group {paletteGroup} in any tileset.")
+    
     def sectorFromID(self, id: int) -> Sector:
         return self.sectors.flat[id]
 
