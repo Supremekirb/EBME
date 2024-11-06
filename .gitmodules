@@ -1,0 +1,4 @@
+[submodule "eb-png2fts"]
+	path = eb-png2fts
+	url = https://github.com/charasyn/eb-png2fts
+	branch = with-map-data

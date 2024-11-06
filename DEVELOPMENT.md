@@ -1,11 +1,17 @@
 # Development Notes
 
+## Cloning
+
+When cloning the source code, please use `--recurse-submodules`. If you're using a git GUI, such as GitHub Desktop, this should happen automatically. In any case please ensure that `/eb-png2fts/` contains png2fts source code.
+
 ## Preresiquites
 
 EBME uses Python 3.12.7. I highly recommend using `pyenv` to manage multiple Python versions.
 You should create a virtual environment, or PySide6 will complain at you. Use `venv` or `virtualenv` for this.
+
 Once you've created the virtual environment, you should run `prepare_environment.py` to install modules and unpack .spec files.
-You should run `prepare_environment.py` periodically in case of changes to `ebme.spec.TEMPLATE` and png2fts.
+
+You should run `prepare_environment.py` periodically in case of changes to `ebme.spec.TEMPLATE` and installed Python packages.
 
 ## Build Instructions
 

@@ -9,10 +9,6 @@
 __pycache__/
 resources_rc.py
 
-# deps
-# we gather png2fts in prepare_environment.py
-eb-png2fts/
-
 # build
 deployment/
 build/
