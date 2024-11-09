@@ -822,6 +822,7 @@ class MapEditorScene(QGraphicsScene):
 
             action = ActionPlaceTile(tile, toPlace)
             self.undoStack.push(action)
+            self.update(QRect(*coords.roundToTile(), 32, 32)) # manual update here becase we don't in onAction for performance reasons on batch pushes
     
     def endPlacingTiles(self):
         if self.state.placingTiles:
@@ -1373,6 +1374,25 @@ class MapEditorScene(QGraphicsScene):
                         graphic.hasRendered = True
                         
                     painter.drawPixmap(QPoint(x*32, y*32), graphic.rendered)
+                    
+                    painter.setOpacity(0.7)
+                    painter.setPen(Qt.PenStyle.NoPen)
+                    presets = QSettings().value("presets/presets", defaultValue=common.DEFAULTCOLLISIONPRESETS)
+                    presetColours: dict[int, int] = {}
+                    for _, value, colour in json.loads(presets):
+                        presetColours[value] = colour
+                    for cx in range(0, 4):
+                        for cy in range(0, 4):
+                            collision = self.collisionAt(EBCoords.fromWarp(coords.coordsWarp()[0]+cx, coords.coordsWarp()[1]+cy))
+                            if collision:
+                                try:
+                                    colour = presetColours[collision]
+                                except KeyError:
+                                    colour = 0x303030
+                                painter.setBrush(QColor.fromRgb(colour))
+                                painter.drawRect((x*32)+(cx*8), (y*32)+(cy*8), 8, 8)
+                    painter.setOpacity(1)
+                    
                 except Exception:
                     painter.drawPixmap(QPoint(x*32, y*32), QPixmap(":/ui/errorTile.png"))
                     logging.warning(traceback.format_exc())

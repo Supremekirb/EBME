@@ -22,8 +22,6 @@ from src.misc.widgets import TileGraphicsWidget
 if TYPE_CHECKING:
     from tile_editor import TileEditorState
     
-DEFAULT_PRESETS = "[[\"None\", 0, 0], [\"Solid\", 128, 16711680], [\"Trigger\", 16, 16776960], [\"Solid trigger\", 144, 14483711], [\"Water\", 8, 255], [\"Deep water\", 12, 127], [\"Sunstroke\", 4, 16744192], [\"Foreground bottom half\", 1, 3186688], [\"Foreground full\", 3, 10547200], [\"Talk through\", 130, 11534591]]"
-
 class TileCollisionWidget(TileGraphicsWidget):
     def __init__(self, state: "TileEditorState"):
         super().__init__()
@@ -299,7 +297,7 @@ class CollisionPresetList(QVBoxLayout):
         self.list.blockSignals(True)
         self.list.clear()
         
-        presets = QSettings().value("presets/presets", defaultValue=DEFAULT_PRESETS)
+        presets = QSettings().value("presets/presets", defaultValue=common.DEFAULTCOLLISIONPRESETS)
         try:
             if presets:
                 for name, value, colour in json.loads(presets):
@@ -309,7 +307,7 @@ class CollisionPresetList(QVBoxLayout):
             logging.warning(f"Unable to load user-specified presets! Trying to load defaults... {traceback.format_exc()}")
             try:
                 QSettings().remove("presets/presets")
-                for name, value, colour in json.loads(DEFAULT_PRESETS):
+                for name, value, colour in json.loads(common.DEFAULTCOLLISIONPRESETS):
                     item = PresetItem(name, value, colour)
                     self.list.addItem(item)
             except Exception:

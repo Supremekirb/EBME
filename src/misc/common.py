@@ -181,6 +181,8 @@ COLLISIONBITS = IntFlag("COLLISIONBITS", ["FOREGROUNDBOTTOM",
                                           "UNUSED",
                                           "VERYSOLID",
                                           "SOLID"])
+DEFAULTCOLLISIONPRESETS = "[[\"None\", 0, 0], [\"Solid\", 128, 16711680], [\"Trigger\", 16, 16776960], [\"Solid trigger\", 144, 14483711], [\"Water\", 8, 255], [\"Deep water\", 12, 127], [\"Sunstroke\", 4, 16744192], [\"Foreground bottom half\", 1, 3186688], [\"Foreground full\", 3, 10547200], [\"Talk through\", 130, 11534591]]"
+
 
 MINITILENOFOREGROUND = 384
 
