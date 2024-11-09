@@ -1,21 +1,22 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtGui import (QAction, QColor, QKeySequence, QUndoCommand,
-                           QUndoStack)
+from PySide6.QtGui import QAction, QColor, QKeySequence, QUndoCommand
 from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
                                QHBoxLayout, QListWidget, QListWidgetItem,
                                QMenu, QMessageBox, QPushButton, QSpinBox,
-                               QToolButton, QTreeWidget, QTreeWidgetItem,
-                               QVBoxLayout, QWidget)
+                               QToolButton, QTreeWidgetItem, QVBoxLayout,
+                               QWidget)
 
 import src.misc.common as common
 import src.misc.debug as debug
 import src.misc.icons as icons
 from src.actions.fts_actions import (ActionAddPalette,
+                                     ActionAddPaletteSettingsChild,
                                      ActionChangePaletteSettings,
-                                     ActionChangeSubpaletteColour, ActionRemovePalette,
+                                     ActionChangeSubpaletteColour,
+                                     ActionRemovePalette,
+                                     ActionRemovePaletteSettingsChild,
                                      ActionReplacePalette)
-from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.fts_interpreter import Palette
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AdvancedPalettePreviewDialog,
@@ -79,6 +80,28 @@ class PaletteEditor(QWidget):
                 actionType = "palette"
             if isinstance(c, ActionChangePaletteSettings):
                 actionType = "settings"
+            if isinstance(c, ActionAddPaletteSettingsChild):
+                self.paletteSettingsList.populateSettings(self.paletteSettingsList.item(0).settings)
+                focus = self.paletteSettingsList.itemFromSettings(c.settings)
+                if focus:
+                    self.paletteSettingsList.setCurrentItem(focus)
+                else:
+                    focus = self.paletteSettingsList.itemFromSettings(c.parent) # may be undoing
+                    if focus:
+                        self.paletteSettingsList.setCurrentItem(focus)
+                    else:
+                        self.paletteSettingsList.setCurrentRow(0)
+            if isinstance(c, ActionRemovePaletteSettingsChild):
+                self.paletteSettingsList.populateSettings(self.paletteSettingsList.item(0).settings)
+                focus = self.paletteSettingsList.itemFromSettings(c._settings) # first check if undoing
+                if focus:
+                    self.paletteSettingsList.setCurrentItem(focus)
+                else:
+                    focus = self.paletteSettingsList.itemFromSettings(c.parent) # otherwise this is redo behavior
+                    if focus:
+                        self.paletteSettingsList.setCurrentItem(focus)
+                    else:
+                        self.paletteSettingsList.setCurrentRow(0)
             if isinstance(c, ActionAddPalette) or isinstance(c, ActionRemovePalette):
                 self.paletteTree.syncPaletteGroup(c.palette.groupID)
                 self.comparePaletteTree.syncPaletteGroup(c.palette.groupID)
@@ -225,48 +248,49 @@ class PaletteEditor(QWidget):
             self.paletteSettingsList.setCurrentItem(self.paletteSettingsList.item(0))
     
     def onPaletteSettingsListCurrentChanged(self, new: "PaletteSettingsListItem"):
-        settings = new.settings
-        
-        if self.paletteSettingsList.item(0) == new:
-            self.paletteSettingsColoursWarning.show()
-            self.paletteSettingsColoursEdit.hide()
-            self.paletteSettingsColoursCopy.hide()
-            self.paletteSettingsColoursExport.hide()
-            self.paletteSettingsColoursImport.hide()
-            self.paletteSettingsColoursRender.hide()
-        else:
-            self.paletteSettingsColoursWarning.hide()
-            self.paletteSettingsColoursEdit.show()
-            self.paletteSettingsColoursCopy.show()
-            self.paletteSettingsColoursExport.show()
-            self.paletteSettingsColoursImport.show()
-            self.paletteSettingsColoursRender.show()
+        if new:
+            settings = new.settings
             
-        if settings.child:
-            self.paletteSettingsAddChild.setDisabled(True)
-            self.paletteSettingsRemoveChild.setEnabled(True)
-        else:
-            self.paletteSettingsAddChild.setEnabled(True)
-            self.paletteSettingsRemoveChild.setDisabled(True)
-        
-        self.paletteSettingsFlag.setValue(settings.flag)
-        self.paletteSettingsFlashEffect.setValue(settings.flashEffect)
-        self.paletteSettingsSpritePalette.setValue(settings.spritePalette)
-        
-        if settings.child:
-            if settings.flag == 0:
-                self.paletteSettingsChildWarning.setIcon(icons.ICON_WARNING)
-                self.paletteSettingsChildWarning.setText("Elsewise palette even when flag is 0")
+            if self.paletteSettingsList.item(0) == new:
+                self.paletteSettingsColoursWarning.show()
+                self.paletteSettingsColoursEdit.hide()
+                self.paletteSettingsColoursCopy.hide()
+                self.paletteSettingsColoursExport.hide()
+                self.paletteSettingsColoursImport.hide()
+                self.paletteSettingsColoursRender.hide()
             else:
-                self.paletteSettingsChildWarning.setIcon(icons.ICON_OK)
-                self.paletteSettingsChildWarning.setText("Valid configuration")
-        else:
-            if settings.flag != 0:
-                self.paletteSettingsChildWarning.setIcon(icons.ICON_WARNING)
-                self.paletteSettingsChildWarning.setText("No elsewise palette when flag is not 0")
+                self.paletteSettingsColoursWarning.hide()
+                self.paletteSettingsColoursEdit.show()
+                self.paletteSettingsColoursCopy.show()
+                self.paletteSettingsColoursExport.show()
+                self.paletteSettingsColoursImport.show()
+                self.paletteSettingsColoursRender.show()
+                
+            if settings.child:
+                self.paletteSettingsAddChild.setDisabled(True)
+                self.paletteSettingsRemoveChild.setEnabled(True)
             else:
-                self.paletteSettingsChildWarning.setIcon(icons.ICON_OK)
-                self.paletteSettingsChildWarning.setText("Valid configuration")
+                self.paletteSettingsAddChild.setEnabled(True)
+                self.paletteSettingsRemoveChild.setDisabled(True)
+            
+            self.paletteSettingsFlag.setValue(settings.flag)
+            self.paletteSettingsFlashEffect.setValue(settings.flashEffect)
+            self.paletteSettingsSpritePalette.setValue(settings.spritePalette)
+            
+            if settings.child:
+                if settings.flag == 0:
+                    self.paletteSettingsChildWarning.setIcon(icons.ICON_WARNING)
+                    self.paletteSettingsChildWarning.setText("Elsewise palette even when flag is 0")
+                else:
+                    self.paletteSettingsChildWarning.setIcon(icons.ICON_OK)
+                    self.paletteSettingsChildWarning.setText("Valid configuration")
+            else:
+                if settings.flag != 0:
+                    self.paletteSettingsChildWarning.setIcon(icons.ICON_WARNING)
+                    self.paletteSettingsChildWarning.setText("No elsewise palette when flag is not 0")
+                else:
+                    self.paletteSettingsChildWarning.setIcon(icons.ICON_OK)
+                    self.paletteSettingsChildWarning.setText("Valid configuration")
                 
     def onEditEventPalette(self):
         palette = self.paletteSettingsList.currentItem().settings.palette
@@ -477,6 +501,27 @@ class PaletteEditor(QWidget):
         
         action = ActionRemovePalette(base, self.projectData)
         self.undoStack.push(action)
+    
+    def addPaletteSettingsChild(self):
+        current = self.paletteSettingsList.currentItem()
+        new = PaletteSettings(0, 0, 0)
+        
+        if current.settings.palette:
+            new.palette = current.settings.palette
+        else:
+            palette = self.projectData.getPaletteGroup(self.paletteTree.getCurrentPaletteGroup()
+                                                      ).palettes[self.paletteTree.getCurrentPalette().palette]
+            new.palette = Palette(palette.toRaw()) # make a copy of the current if top-level
+        
+        action = ActionAddPaletteSettingsChild(new, current.settings)
+        self.undoStack.push(action)
+    
+    def removePaletteSettingsChild(self):
+        current = self.paletteSettingsList.currentItem()
+        top = self.paletteSettingsList.item(0)
+        
+        action = ActionRemovePaletteSettingsChild(current.settings, top.settings)
+        self.undoStack.push(action)
         
     def setupUI(self):
         layout = QHBoxLayout()
@@ -609,9 +654,11 @@ class PaletteEditor(QWidget):
         self.paletteSettingsAddChild = QToolButton()
         self.paletteSettingsAddChild.setIcon(icons.ICON_NEW)
         self.paletteSettingsAddChild.setToolTip("Add elsewise settings")
+        self.paletteSettingsAddChild.clicked.connect(self.addPaletteSettingsChild)
         self.paletteSettingsRemoveChild = QToolButton()
         self.paletteSettingsRemoveChild.setIcon(icons.ICON_DELETE)
         self.paletteSettingsRemoveChild.setToolTip("Remove elsewise settings")
+        self.paletteSettingsRemoveChild.clicked.connect(self.removePaletteSettingsChild)
         self.paletteSettingsChildWarning = IconLabel()
         
         eventPaletteLayout = QHBoxLayout()
@@ -757,6 +804,12 @@ class PaletteSettingsTreeWidget(QListWidget):
             
             i.setText(string)
             i.setIcon(icon)
+            
+    def itemFromSettings(self, settings: PaletteSettings):
+        for i in [self.item(j) for j in range(self.count())]:
+            i: PaletteSettingsListItem
+            if i.settings == settings:
+                return i
     
     def currentItem(self) -> "PaletteSettingsListItem":
         return super().currentItem()

@@ -1,7 +1,6 @@
 from copy import copy
 
 from PySide6.QtGui import QUndoCommand
-from PySide6.QtWidgets import QMessageBox
 
 import src.misc.common as common
 from src.actions.sector_actions import ActionChangeSectorAttributes
@@ -422,3 +421,68 @@ class ActionRemovePalette(QUndoCommand):
     
     def id(self):
         return common.ACTIONINDEX.REMOVEPALETTE
+    
+    
+class ActionAddPaletteSettingsChild(QUndoCommand):
+    def __init__(self, settings: PaletteSettings, parent: PaletteSettings):
+        super().__init__()
+        self.setText("Add palette settings child")
+        
+        assert settings.palette != None, "Child settings must have palette! Something has gone wrong!"
+        
+        self.settings = settings
+        self.parent = parent
+        
+        self._settings = parent.child
+        
+    def redo(self):
+        self.parent.child = self.settings 
+    
+    def undo(self): # should always be None...?
+        self.parent.child = self._settings
+
+    def mergeWith(self, other):
+        return False
+
+    def id(self):
+        return common.ACTIONINDEX.ADDPALETTESETTINGSCHILD
+
+class ActionRemovePaletteSettingsChild(QUndoCommand):
+    def __init__(self, parent: PaletteSettings, top: PaletteSettings):
+        super().__init__()
+        self.setText("Remove palette settings children")
+        
+        self.parent = parent
+        self.top = top
+        
+        self._settings = parent.child
+        
+        if self._settings == None:
+            self.setObsolete(True)
+        
+    def redo(self):
+        # manage reparenting
+        children = []
+        settings = self.top
+        while settings.child:
+            children.append(settings.child)
+            settings = settings.child
+        
+        for index, i in enumerate(children):
+            if i == self.parent.child:
+                try:
+                    self.parent.child = children[index+1]
+                    break
+                except IndexError: # nothing is able to be reparented
+                    pass
+        else: # fallback
+            self.parent.child = None 
+    
+    def undo(self):
+        self.parent.child = self._settings
+
+    def mergeWith(self, other):
+        return False
+
+    def id(self):
+        return common.ACTIONINDEX.REMOVEPALETTESETTINGSCHILD
