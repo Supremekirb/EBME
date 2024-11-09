@@ -778,6 +778,13 @@ class MapEditorScene(QGraphicsScene):
         x = x % 4
         y = y % 4
         return collisionMap[x + y * 4]
+    
+    def sampleCollisionRegion(self, topleft: EBCoords, bottomright: EBCoords) -> int:
+        collision = 0
+        for x in range(topleft.coordsWarp()[0], bottomright.coordsWarp()[0]+1):
+            for y in range(topleft.coordsWarp()[1], bottomright.coordsWarp()[1]+1):
+                collision |= self.collisionAt(EBCoords.fromWarp(x, y))
+        return collision
             
     def enemyTileAt(self, coords: EBCoords) -> MapEditorEnemyTile | None:
         """Get a MapEditorEnemyTile at coords

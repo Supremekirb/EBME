@@ -12,10 +12,10 @@ from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
                                QGraphicsSimpleTextItem, QMenu, QStyle)
 
 import src.misc.common as common
+import src.misc.icons as icons
 from src.actions.npc_actions import ActionMoveNPCInstance
 from src.misc.coords import EBCoords
 from src.objects.tile import MapTile
-import src.misc.icons as icons
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
@@ -244,50 +244,54 @@ class MapEditorNPC(QGraphicsPixmapItem):
         # BUG masks can overlap with other NPCs, looks weird
         # QRegion mask?
         
-            topLeft = self.boundingRect().topLeft()
-            bottomRight = self.boundingRect().bottomRight()
-            topLeft = self.mapToScene(topLeft)
-            bottomRight = self.mapToScene(bottomRight)
+            topLeft = self.mapToScene(self.boundingRect().topLeft())
+            bottomRight = self.mapToScene(self.boundingRect().bottomRight())
             
-            # get the tiles we intersect with
-            x0, y0 = EBCoords(int(topLeft.x()), int(topLeft.y())).coordsTile()
-            x1, y1 = EBCoords(int(bottomRight.x()), int(bottomRight.y())).coordsTile()
-            tiles: list[MapTile] = []
-            for y in range(y0, y1+1):
-                for x in range(x0, x1+1):
-                    try:
-                        tiles.append(self.scene().projectData.getTile(EBCoords.fromTile(x, y)))
-                    except IndexError:
-                        pass
+            colliderTopLeft = self.mapToScene(self.collisionBounds.rect().topLeft())
+            colliderBottomRight = self.mapToScene(self.collisionBounds.rect().bottomRight())
+            collision = self.scene().sampleCollisionRegion(EBCoords(colliderTopLeft.x(), colliderTopLeft.y()+self.collisionBounds.y()),
+                                                           EBCoords(colliderBottomRight.x(), colliderBottomRight.y()+self.collisionBounds.y()))
+            
+            if collision & common.COLLISIONBITS.FOREGROUNDBOTTOM or collision & common.COLLISIONBITS.FOREGROUNDTOP:
+                # get the tiles we intersect with
+                x0, y0 = EBCoords(int(topLeft.x()), int(topLeft.y())).coordsTile()
+                x1, y1 = EBCoords(int(bottomRight.x()), int(bottomRight.y())).coordsTile()
+                tiles: list[MapTile] = []
+                for y in range(y0, y1+1):
+                    for x in range(x0, x1+1):
+                        try:
+                            tiles.append(self.scene().projectData.getTile(EBCoords.fromTile(x, y)))
+                        except IndexError:
+                            pass
 
-            grid = self.scene().grid
-            if grid.isVisible():
-                brush = grid.brush()
-            else:
-                brush = None
+                grid = self.scene().grid
+                if grid.isVisible():
+                    brush = grid.brush()
+                else:
+                    brush = None
+                        
+                for tile in tiles:
+                    graphic = self.scene().projectData.getTileGraphic(tile.tileset,
+                                                                    tile.palettegroup,
+                                                                    tile.palette,
+                                                                    tile.tile)
                     
-            for tile in tiles:
-                graphic = self.scene().projectData.getTileGraphic(tile.tileset,
-                                                                tile.palettegroup,
-                                                                tile.palette,
-                                                                tile.tile)
-                
-                if not graphic.hasRenderedFg:
-                    graphic.renderFg(self.scene().projectData.getTileset(tile.tileset))
-                
-                target = (tile.coords.x - math.ceil(topLeft.x()) + self.offset().x(),
-                        tile.coords.y - math.ceil(topLeft.y()) + self.offset().y())
+                    if not graphic.hasRenderedFg:
+                        graphic.renderFg(self.scene().projectData.getTileset(tile.tileset))
+                    
+                    target = (tile.coords.x - math.ceil(topLeft.x()) + self.offset().x(),
+                            tile.coords.y - math.ceil(topLeft.y()) + self.offset().y())
 
-                pixmap = graphic.renderedFg.copy() # seems inefficient but doesn't appear to have an actual impact?
-                if brush:
-                    gridPainter = QPainter(pixmap)
-                    gridPainter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceAtop)
-                    gridPainter.setBrush(brush)
-                    gridPainter.setPen(Qt.GlobalColor.transparent)
-                    gridPainter.drawRect(0, 0, 32, 32)
-                    gridPainter.end()
-                
-                painter.drawPixmap(*target, pixmap)
+                    pixmap = graphic.renderedFg.copy() # seems inefficient but doesn't appear to have an actual impact?
+                    if brush:
+                        gridPainter = QPainter(pixmap)
+                        gridPainter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceAtop)
+                        gridPainter.setBrush(brush)
+                        gridPainter.setPen(Qt.GlobalColor.transparent)
+                        gridPainter.drawRect(0, 0, 32, 32)
+                        gridPainter.end()
+                    
+                    painter.drawPixmap(*target, pixmap)
         
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
         if (not self.isDummy) and self.scene().state.mode == common.MODEINDEX.NPC:
