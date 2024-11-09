@@ -28,6 +28,14 @@ def writeDirectory(parent, data):
                                  "text": "Could not save tilesets.",
                                  "info": str(e)})
             raise
+        parent.updates.emit("Saving palette settings...")
+        try:
+            savePaletteSettings(data)
+        except Exception as e:
+            parent.returns.emit({"title": "Failed to save palette settings",
+                                 "text": "Could not save palette settings.",
+                                 "info": str(e)})
+            raise
         parent.updates.emit("Saving sectors...")
         try:
             saveSectors(data)
@@ -164,6 +172,38 @@ def saveTilesets(data: ProjectData):
                 shutil.copyfileobj(fts_file, file)
         except Exception as e:
             raise Exception(f"Could not write tileset {i.id:02d} at {os.path.normpath(data.getResourcePath('eb.TilesetModule', f'Tilesets/{i.id:02d}'))}.") from e
+
+def savePaletteSettings(data: ProjectData):
+    try:
+        settings_yml = {}
+        for paletteGroup in data.paletteSettings.keys():
+            settings_yml[paletteGroup] = {}
+            for palette, settings in data.paletteSettings[paletteGroup].items():
+                settings_yml[paletteGroup][palette] = {
+                    "Event Flag": settings.flag,
+                    "Flash Effect": settings.flashEffect,
+                    "Sprite Palette": settings.spritePalette
+                }
+                key = settings_yml[paletteGroup][palette]
+                nested = settings.child
+                while nested:
+                    key["Event Palette"] = {
+                        "Colors": nested.palette.toRaw()[2:], # no id for palette/group in these, just raw colours
+                        "Event Flag": nested.flag,
+                        "Flash Effect": nested.flashEffect,
+                        "Sprite Palette": nested.spritePalette
+                    }
+                    nested = nested.child
+                    key = key["Event Palette"] # feels cursed but... works??
+    except Exception as e:
+        raise Exception(f"Could not convert palette settings to .yml format") from e
+
+    try:
+        with open(data.getResourcePath('eb.TilesetModule', "map_palette_settings"), "w", encoding="utf-8") as file:
+            yaml.dump(settings_yml, file, Dumper=yaml.CSafeDumper, default_flow_style=False, sort_keys=False)
+    except Exception as e:
+        raise Exception(f"Could not write map palette settings to {os.path.normpath(data.getResourcePath('eb.TilesetModule', 'map_palette_settings'))}.") from e
+                
 
 def saveSectors(data: ProjectData):
     try:
