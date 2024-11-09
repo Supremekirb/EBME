@@ -3,6 +3,7 @@ import json
 import logging
 import math
 import sys
+import traceback
 from math import ceil
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -1361,16 +1362,20 @@ class MapEditorScene(QGraphicsScene):
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
                 coords = EBCoords.fromTile(x, y)
-                tile = self.projectData.getTile(coords)
-                graphic = self.projectData.getTileGraphic(tile.tileset,
-                                                          tile.palettegroup,
-                                                          tile.palette,
-                                                          tile.tile)
-                if not graphic.hasRendered:
-                    graphic.render(self.projectData.getTileset(tile.tileset))
-                    graphic.hasRendered = True
-                    
-                painter.drawPixmap(QPoint(x*32, y*32), graphic.rendered)
+                try:
+                    tile = self.projectData.getTile(coords)
+                    graphic = self.projectData.getTileGraphic(tile.tileset,
+                                                            tile.palettegroup,
+                                                            tile.palette,
+                                                            tile.tile)
+                    if not graphic.hasRendered:
+                        graphic.render(self.projectData.getTileset(tile.tileset))
+                        graphic.hasRendered = True
+                        
+                    painter.drawPixmap(QPoint(x*32, y*32), graphic.rendered)
+                except Exception:
+                    painter.drawPixmap(QPoint(x*32, y*32), QPixmap(":/ui/errorTile.png"))
+                    logging.warning(traceback.format_exc())
                 
         painter.setFont("EBMain")
         font = painter.font()
@@ -1383,12 +1388,15 @@ class MapEditorScene(QGraphicsScene):
             
             for y in range(y0, y1+1):
                 for x in range(x0, x1+1):
-                    coords = EBCoords.fromTile(x, y)
-                    tile = self.projectData.getTile(coords)
-                    painter.setPen(Qt.GlobalColor.black)
-                    painter.drawText((x*32)+8, (y*32)+23, str(tile.tile).zfill(3))
-                    painter.setPen(Qt.GlobalColor.white)
-                    painter.drawText((x*32)+7, (y*32)+22, str(tile.tile).zfill(3))
+                    try:
+                        coords = EBCoords.fromTile(x, y)
+                        tile = self.projectData.getTile(coords)
+                        painter.setPen(Qt.GlobalColor.black)
+                        painter.drawText((x*32)+8, (y*32)+23, str(tile.tile).zfill(3))
+                        painter.setPen(Qt.GlobalColor.white)
+                        painter.drawText((x*32)+7, (y*32)+22, str(tile.tile).zfill(3))
+                    except Exception:
+                        logging.warning(traceback.format_exc())
         
         if self.state.mode in (common.MODEINDEX.ENEMY, common.MODEINDEX.ALL):
             self.renderEnemies(start, *(end-start).coordsEnemy())

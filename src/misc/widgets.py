@@ -1,4 +1,6 @@
 from copy import copy
+import logging
+import traceback
 
 from PIL import ImageQt
 from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, QSize, Qt, Signal
@@ -565,34 +567,38 @@ class TilesetDisplayGraphicsScene(QGraphicsScene):
         tileset = self.projectData.getTileset(self.currentTileset)        
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
-                tileID = self.posToTileIndex(x, y)
-                if tileID >= common.MAXTILES or tileID < 0:
-                    continue
-                
-                if not self.forcedPalette:
-                    tileGfx = self.projectData.getTileGraphic(self.currentTileset,
-                                                            self.currentPaletteGroup,
-                                                            self.currentPalette,
-                                                            tileID)
-                    if not tileGfx.hasRendered:
-                        tileGfx.render(tileset)
-                        tileGfx.hasRendered = True
+                try:
+                    tileID = self.posToTileIndex(x, y)
+                    if tileID >= common.MAXTILES or tileID < 0:
+                        continue
+                    
+                    if not self.forcedPalette:
+                        tileGfx = self.projectData.getTileGraphic(self.currentTileset,
+                                                                self.currentPaletteGroup,
+                                                                self.currentPalette,
+                                                                tileID)
+                        if not tileGfx.hasRendered:
+                            tileGfx.render(tileset)
+                            tileGfx.hasRendered = True
+                            
+                        painter.drawPixmap(x*32, y*32, tileGfx.rendered)
                         
-                    painter.drawPixmap(x*32, y*32, tileGfx.rendered)
+                    else:
+                        try:
+                            pixmap = self.forcedPaletteCache[tileID]
+                        except KeyError:
+                            tileset = self.projectData.getTileset(self.currentTileset)
+                            tile = tileset.tiles[tileID]
+                            self.forcedPaletteCache[tileID] = QPixmap.fromImage(ImageQt.ImageQt(
+                                tile.toImage(self.forcedPalette, tileset)
+                            ))
+                            pixmap = self.forcedPaletteCache[tileID]
+                        
+                        painter.drawPixmap(x*32, y*32, pixmap)
+                except Exception:
+                    painter.drawPixmap(x*32, y*32, QPixmap(":ui/errorTile.png"))
+                    logging.warning(traceback.format_exc())
                     
-                else:
-                    try:
-                        pixmap = self.forcedPaletteCache[tileID]
-                    except KeyError:
-                        tileset = self.projectData.getTileset(self.currentTileset)
-                        tile = tileset.tiles[tileID]
-                        self.forcedPaletteCache[tileID] = QPixmap.fromImage(ImageQt.ImageQt(
-                            tile.toImage(self.forcedPalette, tileset)
-                        ))
-                        pixmap = self.forcedPaletteCache[tileID]
-                    
-                    painter.drawPixmap(x*32, y*32, pixmap)
-                
         if QSettings().value("mapeditor/ShowTileIDs", False, bool):
             painter.setFont("EBMain")
             font = painter.font()
@@ -604,11 +610,14 @@ class TilesetDisplayGraphicsScene(QGraphicsScene):
             
             for y in range(y0, y1+1):
                 for x in range(x0, x1+1):
-                    tileID = self.posToTileIndex(x, y)
-                    painter.setPen(Qt.GlobalColor.black)
-                    painter.drawText((x*32)+8, (y*32)+23, str(tileID).zfill(3))
-                    painter.setPen(Qt.GlobalColor.white)
-                    painter.drawText((x*32)+7, (y*32)+22, str(tileID).zfill(3))
+                    try:
+                        tileID = self.posToTileIndex(x, y)
+                        painter.setPen(Qt.GlobalColor.black)
+                        painter.drawText((x*32)+8, (y*32)+23, str(tileID).zfill(3))
+                        painter.setPen(Qt.GlobalColor.white)
+                        painter.drawText((x*32)+7, (y*32)+22, str(tileID).zfill(3))
+                    except Exception:
+                        logging.warning(traceback.format_exc())
     
     def posToTileIndex(self, x: int, y: int):
         if self.horizontal:

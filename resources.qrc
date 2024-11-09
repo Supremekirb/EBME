@@ -38,6 +38,7 @@
         <file alias="arrowDown.png">assets/ui/arrowDown.png</file>
         <file alias="bg.png">assets/ui/bg.png</file>
         <file alias="erase.png">assets/ui/erase.png</file>
+        <file alias="errorTile.png">assets/ui/errorTile.png</file>
         <file alias="modeAll.png">assets/ui/modeAll.png</file>
         <file alias="modeAllDark.png">assets/ui/modeAllDark.png</file>
         <file alias="modeTrigger.png">assets/ui/modeTrigger.png</file>
