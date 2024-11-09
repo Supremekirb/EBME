@@ -187,7 +187,7 @@ MINITILENOFOREGROUND = 384
 def getCoilsnakeVersion(id: int) -> str:
     try:
         return COILSNAKEVERSIONNAMES[id]
-    except IndexError: return f"Unknown (ID {id})"
+    except KeyError: return f"Unknown (ID {id})"
 
 def absolutePath(file: str) -> str:
     """Get the absolute path of a file. Used to avoid packager weirdness.
