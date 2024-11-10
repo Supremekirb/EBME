@@ -1,10 +1,11 @@
+import json
 import math
 import uuid
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSettings, Qt
-from PySide6.QtGui import (QBitmap, QBrush, QImage, QKeySequence, QPainter,
-                           QPainterPath, QPen, QPixmap, QRegion)
+from PySide6.QtGui import (QBitmap, QBrush, QColor, QImage, QKeySequence,
+                           QPainter, QPainterPath, QPen, QPixmap, QRegion)
 from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
                                QGraphicsRectItem,
                                QGraphicsSceneContextMenuEvent,
@@ -226,6 +227,12 @@ class MapEditorNPC(QGraphicsPixmapItem):
 
         self.collisionBounds.setRect(-w, -h, w*2, h*2)
         self.collisionBounds.setY(offsetY)
+        
+    def sampleCollision(self) -> int:
+        colliderTopLeft = self.mapToScene(self.collisionBounds.rect().topLeft())
+        colliderBottomRight = self.mapToScene(self.collisionBounds.rect().bottomRight())
+        return self.scene().sampleCollisionRegion(EBCoords(colliderTopLeft.x(), colliderTopLeft.y()+self.collisionBounds.y()),
+                                                  EBCoords(colliderBottomRight.x()-1, colliderBottomRight.y()+self.collisionBounds.y()-1))
     
     # reimplementing function to highlight the border as that obscures the vanilla Qt selection border
     def paint(self, painter: QPainter, option, a):        
@@ -238,7 +245,7 @@ class MapEditorNPC(QGraphicsPixmapItem):
             
         super().paint(painter, option, a)
         
-        if QSettings().value("mapeditor/MaskNPCsWithForeground", type=bool):
+        if QSettings().value("mapeditor/MaskNPCsWithForeground", type=bool, defaultValue=True):
         # get the mask based on tiles we intersect with
         # what we actually do is just kinda paint on top. a real mask would be nice...
         # BUG masks can overlap with other NPCs, looks weird
@@ -247,12 +254,17 @@ class MapEditorNPC(QGraphicsPixmapItem):
             topLeft = self.mapToScene(self.boundingRect().topLeft())
             bottomRight = self.mapToScene(self.boundingRect().bottomRight())
             
-            colliderTopLeft = self.mapToScene(self.collisionBounds.rect().topLeft())
-            colliderBottomRight = self.mapToScene(self.collisionBounds.rect().bottomRight())
-            collision = self.scene().sampleCollisionRegion(EBCoords(colliderTopLeft.x(), colliderTopLeft.y()+self.collisionBounds.y()),
-                                                           EBCoords(colliderBottomRight.x(), colliderBottomRight.y()+self.collisionBounds.y()))
+            collision = self.sampleCollision()
             
             if collision & common.COLLISIONBITS.FOREGROUNDBOTTOM or collision & common.COLLISIONBITS.FOREGROUNDTOP:
+                height = self.pixmap().rect().height()
+                half = (8 * round((height//2)/8))
+                diff = height-half
+                adjusted = self.pixmap().rect().adjusted(self.offset().x(),
+                                                         self.offset().y(),
+                                                         0, 0)
+                bottomHalfRect = adjusted.adjusted(0, diff, 0, 0)
+                
                 # get the tiles we intersect with
                 x0, y0 = EBCoords(int(topLeft.x()), int(topLeft.y())).coordsTile()
                 x1, y1 = EBCoords(int(bottomRight.x()), int(bottomRight.y())).coordsTile()
@@ -283,6 +295,27 @@ class MapEditorNPC(QGraphicsPixmapItem):
                             tile.coords.y - math.ceil(topLeft.y()) + self.offset().y())
 
                     pixmap = graphic.renderedFg.copy() # seems inefficient but doesn't appear to have an actual impact?
+                    
+                    collisionPainter = QPainter(pixmap)
+                    collisionPainter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceAtop)
+                    collisionPainter.setOpacity(0.7)
+                    collisionPainter.setPen(Qt.PenStyle.NoPen)
+                    presets = QSettings().value("presets/presets", defaultValue=common.DEFAULTCOLLISIONPRESETS)
+                    presetColours: dict[int, int] = {}
+                    for _, value, colour in json.loads(presets):
+                        presetColours[value] = colour
+                    for cx in range(0, 4):
+                        for cy in range(0, 4):
+                            minitileCollision = self.scene().collisionAt(EBCoords.fromWarp(tile.coords.coordsWarp()[0]+cx, tile.coords.coordsWarp()[1]+cy))
+                            if minitileCollision:
+                                try:
+                                    colour = presetColours[minitileCollision]
+                                except KeyError:
+                                    colour = 0x303030
+                                collisionPainter.setBrush(QColor.fromRgb(colour))
+                                collisionPainter.drawRect(cx*8, cy*8, 8, 8)
+                    collisionPainter.end()
+                
                     if brush:
                         gridPainter = QPainter(pixmap)
                         gridPainter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceAtop)
@@ -291,6 +324,10 @@ class MapEditorNPC(QGraphicsPixmapItem):
                         gridPainter.drawRect(0, 0, 32, 32)
                         gridPainter.end()
                     
+                    if (collision & common.COLLISIONBITS.FOREGROUNDBOTTOM) and not (collision & common.COLLISIONBITS.FOREGROUNDTOP):
+                        painter.setClipRect(bottomHalfRect)
+                    else:
+                        painter.setClipRect(adjusted)
                     painter.drawPixmap(*target, pixmap)
         
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):

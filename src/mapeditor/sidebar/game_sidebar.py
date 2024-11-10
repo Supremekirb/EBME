@@ -49,9 +49,9 @@ class SidebarGame(QWidget):
         self.showPreviewNPC.setChecked(True)
         self.showPreviewNPC.toggled.connect(self.togglePreviewNPC)
 
-        # self.obeyCollision = QCheckBox("Obey collision")
-        # self.obeyCollision.setChecked(True)
-        # self.obeyCollision.toggled.connect(self.toggleObeyCollision)
+        self.obeyCollision = QCheckBox("Player obeys collision")
+        self.obeyCollision.setChecked(True)
+        self.obeyCollision.toggled.connect(self.toggleObeyCollision)
         
         self.renderThisRegion = QPushButton("Render this region")
         self.renderThisRegion.clicked.connect(self.renderRegion)
@@ -62,6 +62,7 @@ class SidebarGame(QWidget):
         layout.addWidget(self.screenMaskOpacity)
         layout.addWidget(self.showTileMask)
         layout.addWidget(self.showPreviewNPC)
+        layout.addWidget(self.obeyCollision)
         layout.addWidget(self.renderThisRegion)
         groupbox.setLayout(layout)
         contentLayout.addWidget(groupbox)
@@ -103,9 +104,5 @@ class SidebarGame(QWidget):
         rect = master.boundingRect()
         self.mapeditor.renderMap(rect.left(), rect.top(), rect.right(), rect.bottom(), True)
             
-            
-    def toggleShowNPCs(self):
-        ...
-            
     def toggleObeyCollision(self):
-        ...
+        self.state.previewCollides = self.obeyCollision.isChecked()

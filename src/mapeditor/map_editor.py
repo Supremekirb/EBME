@@ -318,7 +318,7 @@ class MapEditor(QWidget):
         
         self.npcForegroundMaskAction = QAction("Show &foreground in front of NPCs")
         self.npcForegroundMaskAction.setCheckable(True)
-        if settings.value("MaskNPCsWithForeground", type=bool):
+        if settings.value("MaskNPCsWithForeground", type=bool, defaultValue=True):
             self.npcForegroundMaskAction.setChecked(True)
         self.npcForegroundMaskAction.changed.connect(self.scene.toggleNPCForegroundMask)
 
@@ -437,6 +437,7 @@ class MapEditorState():
         self.showPreviewMap = True
         self.showPreviewNPC = True
         self.previewLocked = False
+        self.previewCollides = True
         
     def selectTrigger(self, trigger: Trigger, add: bool=False):
         """Select a trigger or add one to the current selection

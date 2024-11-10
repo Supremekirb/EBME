@@ -104,6 +104,7 @@ class MapEditorScene(QGraphicsScene):
         spr = self.projectData.getSprite(1)
         self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(
             spr.renderFacingImg(common.DIRECTION8.down))))
+        self.previewNPC.setCollisionBounds(8, 8) # TODO use player's hardcoded collision
         self.previewNPC.hide()
         self.addItem(self.previewNPC)
         
@@ -1456,44 +1457,50 @@ class MapEditorScene(QGraphicsScene):
         
     def moveGameModeMask(self, coords: EBCoords, forceRefreshSector: bool=False):
         coords.restrictToMap()
+        self._lastCoords = coords
         
         # janky little fun thing to do direction and animation
         if coords == EBCoords(self.previewNPC.x(), self.previewNPC.y()):
             return
         
-        self.previewNPCPositionSamples.insert(0, coords)
-        if len(self.previewNPCPositionSamples) > self.PREVIEWNPCMAXSAMPLES:
-            last = self.previewNPCPositionSamples.pop()
-            delta = coords - last 
-        else:
-            while len(self.previewNPCPositionSamples) < self.PREVIEWNPCMAXSAMPLES:
-                self.previewNPCPositionSamples.append(coords)
-                delta = EBCoords(0, 0)
-        
-        self.previewNPCStillTimer.start()
-        self.previewNPCAnimTimer -= 1
-        if self.previewNPCAnimTimer < 0:
-            self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
-            self.previewNPCAnimState = int(not self.previewNPCAnimState)        
-        
-        angle = math.atan2(delta.y, delta.x)
-        angle = math.degrees(angle)
-        angle += 90
-        if angle >=  360:
-            angle -= 360
-        if angle < 0:
-            angle += 360
-            
-        facing = round(angle/45)
-        if facing > 7: facing = 0
-        
-        self.previewNPCCurrentDir = facing
-        sprite = self.projectData.getSprite(1).renderFacingImg(facing, self.previewNPCAnimState)
-        self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(sprite)))   
-        
+        old = self.previewNPC.pos()
         self.previewNPC.setPos(coords.x, coords.y)
-        
-        self._lastCoords = coords
+        if not (self.previewNPC.sampleCollision() & common.COLLISIONBITS.SOLID or self.previewNPC.sampleCollision() & common.COLLISIONBITS.VERYSOLID)\
+            or not self.state.previewCollides:
+            self.previewNPCPositionSamples.insert(0, coords)
+            if len(self.previewNPCPositionSamples) > self.PREVIEWNPCMAXSAMPLES:
+                last = self.previewNPCPositionSamples.pop()
+                delta = coords - last 
+            else:
+                while len(self.previewNPCPositionSamples) < self.PREVIEWNPCMAXSAMPLES:
+                    self.previewNPCPositionSamples.append(coords)
+                    delta = EBCoords(0, 0)
+            
+            self.previewNPCStillTimer.start()
+            self.previewNPCAnimTimer -= 1
+            if self.previewNPCAnimTimer < 0:
+                self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
+                self.previewNPCAnimState = int(not self.previewNPCAnimState)        
+            
+            angle = math.atan2(delta.y, delta.x)
+            angle = math.degrees(angle)
+            angle += 90
+            if angle >=  360:
+                angle -= 360
+            if angle < 0:
+                angle += 360
+                
+            facing = round(angle/45)
+            if facing > 7: facing = 0
+            
+            self.previewNPCCurrentDir = facing
+            sprite = self.projectData.getSprite(1).renderFacingImg(facing, self.previewNPCAnimState)
+            self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(sprite)))   
+            
+            self.previewNPC.setPos(coords.x, coords.y)
+        else:
+            self.previewNPC.setPos(old)
+            
         sector = self.projectData.getSector(coords)
         
         if not hasattr(self, "_lastSector"):
