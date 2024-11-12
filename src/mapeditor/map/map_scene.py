@@ -90,7 +90,6 @@ class MapEditorScene(QGraphicsScene):
         
         self.previewNPC = MapEditorNPC(EBCoords(), -1, UUID(int=0))
         self.previewNPC.setDummy()
-        self.previewNPC.setZValue(common.MAPZVALUES.SCREENMASK)
         self.previewNPC.setCursor(Qt.CursorShape.BlankCursor)
         self.previewNPCPositionSamples: list[EBCoords] = []
         self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY

@@ -387,6 +387,16 @@ class MapEditorNPC(QGraphicsPixmapItem):
                     self.scene().undoStack.endMacro()
                 
                 self.scene().parent().sidebarNPC.fromNPCInstances()
+    
+    def setPos(self, *args, **kwargs):
+        super().setPos(*args, **kwargs)
+        colliding = self.collidingItems()
+        for i in colliding:
+            if i.zValue() == self.zValue():
+                if self.y() > i.y():
+                    i.stackBefore(self)
+                else:
+                    self.stackBefore(i)
 
     # for typing
     def scene(self) -> "MapEditorScene":
