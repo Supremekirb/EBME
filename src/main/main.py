@@ -10,9 +10,10 @@ import src.misc.common as common
 import src.project.project as project
 from src.mapeditor.map_editor import MapEditor
 from src.misc import icons as icons
-from src.misc.widgets import BaseChangerSpinbox, SignalUndoStack
 from src.paletteeditor.palette_editor import PaletteEditor
 from src.tileeditor.tile_editor import TileEditor
+from src.widgets.input import BaseChangerSpinbox
+from src.widgets.misc import SignalUndoStack
 
 
 class MainApplication(QMainWindow):

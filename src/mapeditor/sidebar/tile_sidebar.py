@@ -6,8 +6,8 @@ from PySide6.QtWidgets import (QComboBox, QFormLayout, QGraphicsView,
 
 from src.actions.sector_actions import ActionChangeSectorAttributes
 from src.coilsnake.project_data import ProjectData
-from src.misc.widgets import TilesetDisplayGraphicsScene
 from src.objects.sector import Sector
+from src.widgets.tile import TilesetDisplayGraphicsScene
 
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState

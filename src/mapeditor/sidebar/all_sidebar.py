@@ -24,6 +24,10 @@ class SidebarAll(QWidget):
         
         self.setupUI()
         
+    def onToggleCollision(self): # lambdas have failed me.
+        self.state.allModeShowsCollision = self.showCollision.isChecked()
+        self.mapeditor.scene.update()
+        
     def setupUI(self):
         contentLayout = QVBoxLayout()
         layout = QFormLayout()
@@ -49,6 +53,10 @@ class SidebarAll(QWidget):
         self.showWarps.setChecked(True)
         self.showWarps.toggled.connect(lambda: MapEditorWarp.showWarps() if self.showWarps.isChecked() else MapEditorWarp.hideWarps())
         
+        self.showCollision = QCheckBox("Show collision")
+        self.showCollision.setChecked(True)
+        self.showCollision.toggled.connect(self.onToggleCollision)
+        
         self.viewHint = QLabel("Use the View menu to toggle visibility of things like NPC IDs.")
         self.viewHint.setWordWrap(True)
         
@@ -58,7 +66,7 @@ class SidebarAll(QWidget):
         layout.addWidget(self.showEnemyTiles)
         layout.addWidget(self.showHotspots)
         layout.addWidget(self.showWarps)
-        
+        layout.addWidget(self.showCollision)
         groupbox.setLayout(layout)
         contentLayout.addWidget(groupbox)
         contentLayout.addStretch()

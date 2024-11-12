@@ -10,7 +10,8 @@ from src.actions.hotspot_actions import (ActionChangeHotspotColour,
                                          ActionChangeHotspotLocation)
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
-from src.misc.widgets import ColourButton, CoordsInput, HSeparator
+from src.widgets.input import ColourButton, CoordsInput
+from src.widgets.layout import HSeparator
 
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState

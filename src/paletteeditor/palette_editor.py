@@ -22,10 +22,11 @@ from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AdvancedPalettePreviewDialog,
                                 CopyEventPaletteDialog, EditEventPaletteDialog,
                                 RenderPaletteDialog, SettingsDialog)
-from src.misc.widgets import (ColourButton, FlagInput, IconLabel,
-                              PaletteListItem, PaletteTreeWidget,
-                              SubpaletteListItem)
 from src.objects.palette_settings import PaletteSettings
+from src.widgets.input import ColourButton, FlagInput
+from src.widgets.misc import IconLabel
+from src.widgets.palette import (PaletteListItem, PaletteTreeWidget,
+                                 SubpaletteListItem)
 
 if TYPE_CHECKING:
     from src.main.main import MainApplication

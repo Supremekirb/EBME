@@ -1,0 +1,78 @@
+from PySide6.QtCore import QSize, Signal
+from PySide6.QtGui import QIcon, QUndoCommand, QUndoStack
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
+
+
+# https://stackoverflow.com/a/64279374
+class IconLabel(QWidget):
+    IconSize = QSize(16, 16)
+    HorizontalSpacing = 2
+
+    def __init__(self, text: str|None=None, icon: QIcon|None=None, final_stretch=True):
+        super().__init__()
+
+        layout = QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+
+        self.iconLabel = QLabel()
+        if icon:
+            self.setIcon(icon)
+            
+        self.textLabel = QLabel()
+        if text:
+            self.setText(text)
+
+        layout.addWidget(self.iconLabel)
+        layout.addSpacing(self.HorizontalSpacing)
+        layout.addWidget(self.textLabel)
+
+        if final_stretch:
+            layout.addStretch()
+    
+    def setIcon(self, icon: QIcon):
+        self.iconLabel.setPixmap(icon.pixmap(self.IconSize))
+    
+    def setText(self, text: str):
+        self.textLabel.setText(text)
+        
+# not really a widget...
+class SignalUndoStack(QUndoStack):
+    """QUndoStack with signals for undo, redo, and push. These signals also transmit the command that was just undone/redone/pushed."""
+    undone = Signal(QUndoCommand)
+    redone = Signal(QUndoCommand)
+    pushed = Signal(QUndoCommand)
+    """Doesn't emit during macros, only at the end of them"""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        self.inMacro = False
+        
+    def beginMacro(self, text: str):
+        self.inMacro = True
+        return super().beginMacro(text)    
+
+    def endMacro(self):
+        self.inMacro = False
+        super().endMacro()
+        self.pushed.emit(self.command(self.index()-1))
+
+    def undo(self):
+        super().undo()
+        command = self.command(self.index())
+        if command:
+            self.undone.emit(command)
+    
+    def redo(self):
+        super().redo()
+        command = self.command(self.index()-1)
+        if command:
+            self.redone.emit(command)
+    
+    def push(self, command: QUndoCommand):
+        super().push(command)
+        if command:
+            if not self.inMacro:
+                self.pushed.emit(command)
+            

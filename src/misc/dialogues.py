@@ -24,11 +24,12 @@ from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
                                            PaletteGroup, Subpalette)
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
-from src.misc.widgets import (ColourButton, CoordsInput,
-                              HorizontalGraphicsView, HSeparator, IconLabel,
-                              PaletteListItem, PaletteSelector,
-                              PaletteTreeWidget, SubpaletteListItem,
-                              TilesetDisplayGraphicsScene)
+from src.widgets.input import ColourButton, CoordsInput
+from src.widgets.layout import HorizontalGraphicsView, HSeparator
+from src.widgets.misc import IconLabel
+from src.widgets.palette import (PaletteListItem, PaletteSelector,
+                                 PaletteTreeWidget, SubpaletteListItem)
+from src.widgets.tile import TilesetDisplayGraphicsScene
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene

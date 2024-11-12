@@ -9,9 +9,9 @@ from src.actions.warp_actions import (ActionMoveTeleport, ActionMoveWarp,
                                       ActionUpdateTeleport, ActionUpdateWarp)
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
-from src.misc.widgets import (BaseChangerSpinbox, CoordsInput, FlagInput,
-                              HSeparator)
 from src.objects.warp import Teleport, Warp
+from src.widgets.input import BaseChangerSpinbox, CoordsInput, FlagInput
+from src.widgets.layout import HSeparator
 
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState

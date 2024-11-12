@@ -1,14 +1,12 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QPoint, Qt, Signal
-from PySide6.QtGui import QColor, QMouseEvent
-from PySide6.QtWidgets import QGridLayout, QLabel, QSizePolicy, QWidget
+from PySide6.QtGui import QMouseEvent
 
 from src.actions.fts_actions import (ActionChangeBitmap,
                                      ActionChangeSubpaletteColour)
-from src.coilsnake.fts_interpreter import Palette
-from src.misc.widgets import (ColourButton, MinitileGraphicsWidget,
-                              PaletteSelector)
+from src.widgets.palette import PaletteSelector
+from src.widgets.tile import MinitileGraphicsWidget
 
 if TYPE_CHECKING:
     from tile_editor import TileEditorState

@@ -17,6 +17,7 @@ def init_icons():
     global EBICON_ENEMY
     global EBICON_HOTSPOT
     global EBICON_WARP
+    global EBICON_COLLISION
     global EBICON_ALL
     global EBICON_GAME
     
@@ -29,6 +30,7 @@ def init_icons():
         EBICON_ENEMY = QIcon(":/ui/modeEnemyDark.png")
         EBICON_HOTSPOT = QIcon(":/ui/modeHotspotDark.png")
         EBICON_WARP = QIcon(":/ui/modeWarpDark.png")
+        EBICON_COLLISION = QIcon(":/ui/modeCollisionDark.png")
         EBICON_ALL = QIcon(":/ui/modeAllDark.png")
         EBICON_GAME = QIcon(":/ui/modeGameDark.png")
     else:
@@ -39,6 +41,7 @@ def init_icons():
         EBICON_ENEMY = QIcon(":/ui/modeEnemy.png")
         EBICON_HOTSPOT = QIcon(":/ui/modeHotspot.png")
         EBICON_WARP = QIcon(":/ui/modeWarp.png")
+        EBICON_COLLISION = QIcon(":/ui/modeCollision.png")
         EBICON_ALL = QIcon(":/ui/modeAll.png")
         EBICON_GAME = QIcon(":/ui/modeGame.png")
     
@@ -132,6 +135,9 @@ def init_icons():
     
     global ICON_FIND
     ICON_FIND = icon("ph.magnifying-glass")
+    
+    global ICON_FIX
+    ICON_FIX = icon("ph.wrench")
     
     global ICON_COORDS
     ICON_COORDS = icon("ph.crosshair-simple")

@@ -13,9 +13,9 @@ from src.actions.music_actions import (ActionAddMapMusicTrack,
                                        ActionDeleteMapMusicTrack,
                                        ActionMoveMapMusicTrack)
 from src.coilsnake.project_data import ProjectData
-from src.misc.widgets import FlagInput
 from src.objects.music import (MapMusicEntry, MapMusicEntryListItem,
                                MapMusicHierarchy, MapMusicHierarchyListItem)
+from src.widgets.input import FlagInput
 
 
 def parseMetadata(path: str) -> dict:

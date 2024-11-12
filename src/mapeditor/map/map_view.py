@@ -54,7 +54,7 @@ class MapEditorView(QGraphicsView):
             return
             
         if self.state.mode in [common.MODEINDEX.TILE, common.MODEINDEX.SECTOR, common.MODEINDEX.ENEMY,
-                                common.MODEINDEX.HOTSPOT, common.MODEINDEX.WARP,
+                                common.MODEINDEX.HOTSPOT, common.MODEINDEX.WARP, common.MODEINDEX.COLLISION,
                                 common.MODEINDEX.GAME, common.MODEINDEX.ALL]:
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
         else:

@@ -4,7 +4,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QMouseEvent
 
 from src.actions.fts_actions import ActionChangeArrangement
-from src.misc.widgets import TileGraphicsWidget
+from src.widgets.tile import TileGraphicsWidget
 
 if TYPE_CHECKING:
     from tile_editor import TileEditorState

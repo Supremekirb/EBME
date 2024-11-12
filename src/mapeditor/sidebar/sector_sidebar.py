@@ -8,8 +8,9 @@ import src.misc.common as common
 from src.actions.sector_actions import ActionChangeSectorAttributes
 from src.coilsnake.project_data import ProjectData
 from src.misc.map_music_editor import MapMusicEditor
-from src.misc.widgets import BaseChangerSpinbox, CoordsInput, HSeparator
 from src.objects.sector import Sector
+from src.widgets.input import BaseChangerSpinbox, CoordsInput
+from src.widgets.layout import HSeparator
 
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState

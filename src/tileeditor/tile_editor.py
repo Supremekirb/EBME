@@ -21,14 +21,14 @@ from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AutoMinitileRearrangerDialog,
                                 RenderMinitilesDialog, RenderTilesDialog,
                                 SettingsDialog)
-from src.misc.widgets import (AspectRatioWidget, HorizontalGraphicsView,
-                              TilesetDisplayGraphicsScene)
 from src.tileeditor.arrangement_editor import TileArrangementWidget
-from src.tileeditor.collision_editor import (CollisionPresetList,
-                                             TileCollisionWidget)
+from src.tileeditor.collision_editor import (TileEditorCollisionPresetList,
+                                             TileEditorCollisionWidget)
 from src.tileeditor.graphics_editor import (GraphicsEditorPaletteSelector,
                                             MinitileEditorWidget)
 from src.tileeditor.minitile_selector import MinitileScene, MinitileView
+from src.widgets.layout import AspectRatioWidget, HorizontalGraphicsView
+from src.widgets.tile import TilesetDisplayGraphicsScene
 
 if TYPE_CHECKING:
     from src.main.main import MainApplication
@@ -361,10 +361,10 @@ class TileEditor(QWidget):
         self.arrangementScene = TileArrangementWidget(self.state)
         self.arrangementAspectRatioContainer = AspectRatioWidget(self.arrangementScene)
         
-        self.collisionScene = TileCollisionWidget(self.state)
+        self.collisionScene = TileEditorCollisionWidget(self.state)
         self.collisionAspectRatioContainer = AspectRatioWidget(self.collisionScene)
         
-        self.presetList = CollisionPresetList(self.state)
+        self.presetList = TileEditorCollisionPresetList(self.state)
         
         self.minitileFgWarning = QLabel("<span style='color: red'>Foreground graphics won't display in-game.</span>")
         self.minitileFgWarning.setTextFormat(Qt.TextFormat.RichText)

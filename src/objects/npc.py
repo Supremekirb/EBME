@@ -296,25 +296,26 @@ class MapEditorNPC(QGraphicsPixmapItem):
 
                     pixmap = graphic.renderedFg.copy() # seems inefficient but doesn't appear to have an actual impact?
                     
-                    collisionPainter = QPainter(pixmap)
-                    collisionPainter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceAtop)
-                    collisionPainter.setOpacity(0.7)
-                    collisionPainter.setPen(Qt.PenStyle.NoPen)
-                    presets = QSettings().value("presets/presets", defaultValue=common.DEFAULTCOLLISIONPRESETS)
-                    presetColours: dict[int, int] = {}
-                    for _, value, colour in json.loads(presets):
-                        presetColours[value] = colour
-                    for cx in range(0, 4):
-                        for cy in range(0, 4):
-                            minitileCollision = self.scene().collisionAt(EBCoords.fromWarp(tile.coords.coordsWarp()[0]+cx, tile.coords.coordsWarp()[1]+cy))
-                            if minitileCollision:
-                                try:
-                                    colour = presetColours[minitileCollision]
-                                except KeyError:
-                                    colour = 0x303030
-                                collisionPainter.setBrush(QColor.fromRgb(colour))
-                                collisionPainter.drawRect(cx*8, cy*8, 8, 8)
-                    collisionPainter.end()
+                    if self.scene().state.mode == common.MODEINDEX.ALL and self.scene().state.allModeShowsCollision:
+                        collisionPainter = QPainter(pixmap)
+                        collisionPainter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceAtop)
+                        collisionPainter.setOpacity(0.7)
+                        collisionPainter.setPen(Qt.PenStyle.NoPen)
+                        presets = QSettings().value("presets/presets", defaultValue=common.DEFAULTCOLLISIONPRESETS)
+                        presetColours: dict[int, int] = {}
+                        for _, value, colour in json.loads(presets):
+                            presetColours[value] = colour
+                        for cx in range(0, 4):
+                            for cy in range(0, 4):
+                                minitileCollision = self.scene().collisionAt(EBCoords.fromWarp(tile.coords.coordsWarp()[0]+cx, tile.coords.coordsWarp()[1]+cy))
+                                if minitileCollision:
+                                    try:
+                                        colour = presetColours[minitileCollision]
+                                    except KeyError:
+                                        colour = 0x303030
+                                    collisionPainter.setBrush(QColor.fromRgb(colour))
+                                    collisionPainter.drawRect(cx*8, cy*8, 8, 8)
+                        collisionPainter.end()
                 
                     if brush:
                         gridPainter = QPainter(pixmap)

@@ -8,12 +8,15 @@ from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QLabel,
 
 import src.misc.common as common
 import src.objects.trigger as trigger
+from src.actions.fts_actions import ActionChangeCollision
 from src.actions.misc_actions import MultiActionWrapper
 from src.actions.trigger_actions import ActionMoveTrigger, ActionUpdateTrigger
 from src.coilsnake.project_data import ProjectData
+from src.misc import icons
 from src.misc.coords import EBCoords
-from src.misc.widgets import (BaseChangerSpinbox, CoordsInput, FlagInput,
-                              HSeparator)
+from src.widgets.input import BaseChangerSpinbox, CoordsInput, FlagInput
+from src.widgets.layout import HSeparator
+from src.widgets.misc import IconLabel
 
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState
@@ -133,6 +136,15 @@ class SidebarTrigger(QWidget):
         if len(set(i.coords.y for i in triggers)) == 1:
             self.generalPos.y.setValue(triggers[0].coords.coordsWarp()[1])
         else: self.generalPos.y.clear()
+        
+        for i in triggers:
+            if not (self.mapeditor.scene.collisionAt(i.coords) & common.COLLISIONBITS.TRIGGER):
+                self.collisionWarning.show()
+                self.collisionFixButton.show()
+                break
+        else:
+            self.collisionWarning.hide()
+            self.collisionFixButton.hide()
         
         # if they use different types
         if not all(isinstance(i.typeData, type(triggers[0].typeData)) for i in triggers):
@@ -314,6 +326,20 @@ class SidebarTrigger(QWidget):
         for i in self.state.currentTriggers:
             self.mapeditor.scene.refreshTrigger(i.uuid)
 
+    def fixTriggerCollision(self):
+        triggers = self.state.currentTriggers
+        commands = []
+        for i in triggers:
+            collision = self.mapeditor.scene.collisionAt(i.coords)
+            if not (collision & common.COLLISIONBITS.TRIGGER):
+                maptile = self.projectData.getTile(i.coords)
+                tile = self.projectData.getTileset(maptile.tileset).tiles[maptile.tile]
+                index = (i.coords.coordsWarp()[0] % 4) + (i.coords.coordsWarp()[1] % 4) * 4
+                commands.append(ActionChangeCollision(tile, collision|common.COLLISIONBITS.TRIGGER, index))
+        if commands:
+            self.mapeditor.scene.undoStack.push(MultiActionWrapper(commands, "Fix trigger collision"))
+        
+        
     def setupUI(self):
         self.triggerLabel = QLabel("Select a trigger to edit.")
         self.triggerLabel.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -329,6 +355,14 @@ class SidebarTrigger(QWidget):
 
         self.generalPos.x.setToolTip("Position of the trigger. Trigger coordinates are in pixels/8.")
         self.generalPos.y.setToolTip("Position of the trigger. Trigger coordinates are in pixels/8.")
+        
+        self.collisionWarning = IconLabel("Trigger not supported by collision", icons.ICON_WARNING)
+        self.collisionWarning.textLabel.setWordWrap(True)
+        self.collisionFixButton = QPushButton("Set trigger collision flag")
+        self.collisionFixButton.setToolTip("Triggers can only function if the collision they are over has the correct flag set.")
+        self.collisionFixButton.clicked.connect(self.fixTriggerCollision)
+        self.collisionWarning.hide()
+        self.collisionFixButton.hide()
 
         self.generalType = QComboBox(self.generalData)
         self.generalType.addItem(QIcon(":/triggers/triggerDoor.png"), "Door")
@@ -352,6 +386,8 @@ Switch: Automatically triggers some text when walked over, if the flag is set.""
         self.generalType.currentIndexChanged.connect(self.switchTriggerForm)
         
         self.generalDataLayout.addRow("Position", self.generalPos)
+        self.generalDataLayout.addRow(self.collisionWarning)
+        self.generalDataLayout.addRow(self.collisionFixButton)
         self.generalDataLayout.addRow("Type", self.generalType)
 
         self.generalData.setLayout(self.generalDataLayout)

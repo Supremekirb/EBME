@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (QGraphicsPixmapItem, QGridLayout, QInputDialog,
 import src.mapeditor.map.map_scene as map_scene
 import src.mapeditor.map.map_view as map_view
 import src.mapeditor.sidebar.all_sidebar as all_sidebar
+import src.mapeditor.sidebar.collision_sidebar as collision_sidebar
 import src.mapeditor.sidebar.enemy_sidebar as enemy_sidebar
 import src.mapeditor.sidebar.game_sidebar as game_sidebar
 import src.mapeditor.sidebar.hotspot_sidebar as hotspot_sidebar
@@ -24,12 +25,12 @@ import src.mapeditor.status_bar as status_bar
 import src.misc.common as common
 import src.misc.debug as debug
 import src.misc.icons as icons
+from src.coilsnake.fts_interpreter import Tile
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.dialogues import (AboutDialog, CoordsDialog, FindDialog,
                                 RenderMapDialog, SettingsDialog)
 from src.misc.map_music_editor import MapMusicEditor
-from src.misc.widgets import BaseChangerSpinbox, UprightIconsWestTabWidget
 from src.objects.enemy import EnemyTile
 from src.objects.hotspot import Hotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
@@ -37,6 +38,7 @@ from src.objects.sector import Sector
 from src.objects.trigger import Trigger
 from src.objects.warp import MapEditorWarp, Teleport, Warp
 from src.png2fts.png2fts_gui import png2ftsMapEditorGui
+from src.widgets.layout import UprightIconsWestTabWidget
 
 if TYPE_CHECKING:
     from src.main.main import MainApplication
@@ -57,11 +59,12 @@ class MapEditor(QWidget):
 
         self.updateTabSize(0)
         self.scene.selectSector(EBCoords(0, 0))
+        self.scene.pickCollision(EBCoords(0, 0))
         logging.info("Map editor initialised")
 
     def changeSidebarTab(self, index):
         self.updateTabSize(index)
-        self.scene.changeMode(index)
+        self.scene.onChangeMode(index)
         self.state.mode = index
 
     def updateTabSize(self, index):
@@ -184,6 +187,7 @@ class MapEditor(QWidget):
         self.sidebarEnemy = enemy_sidebar.SidebarEnemy(self, self.state, self.projectData)
         self.sidebarHotspot = hotspot_sidebar.SidebarHotspot(self, self.state, self, self.projectData)
         self.sidebarWarp = warp_sidebar.SidebarWarp(self, self.state, self, self.projectData)
+        self.sidebarCollision = collision_sidebar.SidebarCollision(self, self.state, self, self.projectData)
         self.sidebarAll = all_sidebar.SidebarAll(self, self.state, self, self.projectData)
         self.sidebarGame = game_sidebar.SidebarGame(self, self.state, self, self.projectData)
 
@@ -194,6 +198,7 @@ class MapEditor(QWidget):
         self.sidebar.addTab(self.sidebarEnemy, icons.EBICON_ENEMY, "Enemy")
         self.sidebar.addTab(self.sidebarHotspot, icons.EBICON_HOTSPOT, "Hotspot")
         self.sidebar.addTab(self.sidebarWarp, icons.EBICON_WARP, "Warp && TP")
+        self.sidebar.addTab(self.sidebarCollision, icons.EBICON_COLLISION, "Collision")
         self.sidebar.addTab(self.sidebarAll, icons.EBICON_ALL, "View All")
         self.sidebar.addTab(self.sidebarGame, icons.EBICON_GAME, "View Game")
         self.sidebar.setTabPosition(QTabWidget.TabPosition.West)
@@ -360,13 +365,15 @@ class MapEditor(QWidget):
         self.modeHotspotAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.HOTSPOT))
         self.modeWarpAction = QAction(icons.EBICON_WARP, "&Warp && TP", shortcut=QKeySequence("F7"))
         self.modeWarpAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.WARP))
-        self.modeAllAction = QAction(icons.EBICON_ALL, "&All", shortcut=QKeySequence("F8"))
+        self.modeCollisionAction = QAction(icons.EBICON_COLLISION, "&Collision", shortcut=QKeySequence("F8"))
+        self.modeCollisionAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.COLLISION))
+        self.modeAllAction = QAction(icons.EBICON_ALL, "&All", shortcut=QKeySequence("F9"))
         self.modeAllAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.ALL))
-        self.modeGameAction = QAction(icons.EBICON_GAME, "&Game", shortcut=QKeySequence("F9"))
+        self.modeGameAction = QAction(icons.EBICON_GAME, "&Game", shortcut=QKeySequence("F10"))
         self.modeGameAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.GAME))
         
         self.menuMode.addActions([self.modeTileAction, self.modeSectorAction, self.modeNPCAction, self.modeTriggerAction,
-                                  self.modeEnemyAction, self.modeHotspotAction, self.modeWarpAction,
+                                  self.modeEnemyAction, self.modeHotspotAction, self.modeWarpAction, self.modeCollisionAction,
                                   self.modeAllAction, self.modeGameAction])
         
         self.menuGoto = QMenu("&Go to")
@@ -428,9 +435,11 @@ class MapEditorState():
         self.currentTriggers: list[Trigger] = []
         self.currentHotspot: Hotspot = None
         self.currentWarp: Warp|Teleport = None
+        self.currentCollision = 0
 
         self.placingTiles = False
         self.placingEnemyTiles = False
+        self.placingCollision = False
         
         self.previewScreenOpacity = 0.5
         self.showPreviewScreen = True
@@ -439,8 +448,10 @@ class MapEditorState():
         self.previewLocked = False
         self.previewCollides = True
         
+        self.allModeShowsCollision = True
+        
     def selectTrigger(self, trigger: Trigger, add: bool=False):
-        """Select a trigger or add one to the current selection
+        """Select a trigger or add one to the current  
 
         Args:
             trigger (Trigger): Trigger to select

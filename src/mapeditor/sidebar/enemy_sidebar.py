@@ -14,7 +14,7 @@ import src.misc.common as common
 from src.actions.enemy_actions import ActionUpdateEnemyMapGroup
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
-from src.misc.widgets import ColourButton, FlagInput
+from src.widgets.input import ColourButton, FlagInput
 
 if TYPE_CHECKING:
     from mapeditor.map_editor import MapEditor, MapEditorState

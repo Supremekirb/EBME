@@ -202,6 +202,8 @@ class MapEditorTrigger(QGraphicsPixmapItem):
             menu.addAction(icons.ICON_CUT, "Cut", self.scene().onCut)
             menu.addAction(icons.ICON_COPY, "Copy", self.scene().onCopy)
             menu.addAction(icons.ICON_PASTE, "Paste", self.scene().onPaste)
+            menu.addSeparator()
+            menu.addAction(icons.ICON_FIX, "Fix collision", self.scene().parent().sidebarTrigger.fixTriggerCollision)
             
             menu.exec(event.screenPos())
             super().contextMenuEvent(event)

@@ -81,6 +81,7 @@ class MinitileScene(QGraphicsScene):
         self.grid.setBrush(QPixmap(":/grids/8grid0.png"))
         self.addItem(self.grid)
         self.grid.setZValue(97)
+        self.grid.hide()
         
         self._mouseDownPos = QPoint()
         

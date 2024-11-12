@@ -12,8 +12,7 @@ import numpy
 from PIL import ImageQt
 from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, Qt, QTimer
 from PySide6.QtGui import (QBrush, QColor, QKeySequence, QPainter,
-                           QPainterPath, QPen, QPixmap, QPolygon, QUndoCommand,
-                           QUndoStack)
+                           QPainterPath, QPen, QPixmap, QPolygon, QUndoCommand)
 from PySide6.QtWidgets import (QApplication, QGraphicsLineItem,
                                QGraphicsPathItem, QGraphicsPixmapItem,
                                QGraphicsRectItem, QGraphicsScene,
@@ -26,11 +25,11 @@ import src.misc.icons as icons
 import src.objects.trigger as trigger
 from src.actions.enemy_actions import (ActionPlaceEnemyTile,
                                        ActionUpdateEnemyMapGroup)
-from src.actions.fts_actions import ActionAddPalette, ActionRemovePalette
+from src.actions.fts_actions import (ActionAddPalette, ActionChangeCollision,
+                                     ActionRemovePalette)
 from src.actions.hotspot_actions import (ActionChangeHotspotColour,
                                          ActionChangeHotspotComment,
                                          ActionChangeHotspotLocation)
-from src.actions.misc_actions import MultiActionWrapper
 from src.actions.npc_actions import (ActionAddNPCInstance,
                                      ActionChangeNPCInstance,
                                      ActionDeleteNPCInstance,
@@ -193,6 +192,12 @@ class MapEditorScene(QGraphicsScene):
                             self.placeEnemyTile(coords)
                         if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                             self.pickEnemyTile(coords)
+                case common.MODEINDEX.COLLISION:
+                    if event.buttons() == Qt.MouseButton.LeftButton:
+                        if event.modifiers() == Qt.KeyboardModifier.NoModifier:
+                            self.placeCollision(coords)
+                        elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                            self.pickCollision(coords)
                 case common.MODEINDEX.GAME:
                     if not self.state.previewLocked: # only move if we're not panning - messes with anim
                         if not (Qt.KeyboardModifier.ShiftModifier in event.modifiers() and \
@@ -238,6 +243,13 @@ class MapEditorScene(QGraphicsScene):
                         if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                             self.pickEnemyTile(coords)
                 
+                case common.MODEINDEX.COLLISION:
+                    if event.buttons() == Qt.MouseButton.LeftButton:
+                        if event.modifiers() == Qt.KeyboardModifier.NoModifier:
+                            self.placeCollision(coords)
+                        elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                            self.pickCollision(coords)
+                
                 case common.MODEINDEX.GAME:
                     if event.buttons() == Qt.MouseButton.LeftButton:
                         if event.modifiers() == Qt.KeyboardModifier.NoModifier:
@@ -279,6 +291,9 @@ class MapEditorScene(QGraphicsScene):
                 case common.MODEINDEX.ENEMY:
                     if event.buttons() == Qt.MouseButton.NoButton:
                         self.endPlacingEnemyTiles()
+                case common.MODEINDEX.COLLISION:
+                    if event.buttons() == Qt.MouseButton.NoButton:
+                        self.endPlacingCollision()
                     
         super().mouseReleaseEvent(event)
         
@@ -429,6 +444,9 @@ class MapEditorScene(QGraphicsScene):
             if isinstance(c, ActionAddPalette) or isinstance(c, ActionRemovePalette):
                 self.parent().sidebarTile.fromSector(self.state.currentSectors[-1])
                 self.parent().sidebarSector.fromSectors()
+                
+            if isinstance(c, ActionChangeCollision):
+                actionType = "collision"
             
             progressDialog.setValue(progressDialog.value()+1)
         
@@ -461,6 +479,11 @@ class MapEditorScene(QGraphicsScene):
             case "warp":
                 self.parent().sidebar.setCurrentIndex(common.MODEINDEX.WARP)
                 self.parent().sidebarWarp.fromWarp()
+            case "collision":
+                self.parent().sidebar.setCurrentIndex(common.MODEINDEX.COLLISION)
+                self.parent().sidebarCollision.display.update()
+                if self.parent().sidebarCollision.presets._lastTile:
+                    self.parent().sidebarCollision.presets.verifyTileCollision(self.parent().sidebarCollision.presets._lastTile)
     
         self.update()
 
@@ -653,7 +676,7 @@ class MapEditorScene(QGraphicsScene):
         """
         self.state.tempMode = index
 
-    def changeMode(self, index: int):           
+    def onChangeMode(self, index: int):           
         if index == common.MODEINDEX.SECTOR:
             self.sectorSelect.show()
         else:
@@ -740,6 +763,8 @@ class MapEditorScene(QGraphicsScene):
             
         # fix grid
         self.setGrid(self._currentGrid, index)
+        
+        self.update()
 
     def renderEnemies(self, coords: EBCoords, w: int, h: int):
         """Render a rectangular region of enemy tiles
@@ -895,6 +920,55 @@ class MapEditorScene(QGraphicsScene):
         if self.state.placingEnemyTiles:
             self.state.placingEnemyTiles = False
             self.undoStack.endMacro()
+            
+    def placeCollision(self, coords: EBCoords):
+        coords.restrictToMap()
+        maptile = self.projectData.getTile(coords)
+        tileset = self.projectData.getTileset(maptile.tileset)
+        palette = tileset.getPalette(maptile.palettegroup, maptile.palette)
+        tile = self.projectData.getTileset(maptile.tileset).tiles[maptile.tile]
+        
+        self.parent().sidebarCollision.display.currentTile = tile
+        self.parent().sidebarCollision.display.currentPalette = palette
+        self.parent().sidebarCollision.display.currentTileset = tileset
+        self.parent().sidebarCollision.presets.verifyTileCollision(tile)
+        
+        if self.collisionAt(coords) != self.state.currentCollision:
+            if not self.state.placingCollision:
+                self.undoStack.beginMacro("Place collision")
+                self.state.placingCollision = True
+            x, y = coords.coordsWarp()
+            x = x % 4
+            y = y % 4
+            index = x + y * 4
+            action = ActionChangeCollision(tile, self.state.currentCollision, index)
+            self.undoStack.push(action)
+            self.update()
+    
+    def endPlacingCollision(self):
+        if self.state.placingCollision:
+            self.state.placingCollision = False
+            self.undoStack.endMacro()
+            
+    def pickCollision(self, coords: EBCoords):
+        collision = self.collisionAt(coords)
+        self.state.currentCollision = collision
+        
+        maptile = self.projectData.getTile(coords)
+        tileset = self.projectData.getTileset(maptile.tileset)
+        palette = tileset.getPalette(maptile.palettegroup, maptile.palette)
+        tile = self.projectData.getTileset(maptile.tileset).tiles[maptile.tile]
+        self.parent().sidebarCollision.display.currentTile = tile
+        self.parent().sidebarCollision.display.currentPalette = palette
+        self.parent().sidebarCollision.display.currentTileset = tileset
+        self.parent().sidebarCollision.display.update()
+        self.parent().sidebarCollision.presets.verifyTileCollision(tile)
+        
+        item = self.parent().sidebarCollision.presets.getPreset(collision)
+        if item:
+            self.parent().sidebarCollision.presets.list.setCurrentItem(item)
+            
+        
             
     def pickEnemyTile(self, coords: EBCoords):
         """Pick an enemy tile at this location and load it into the sidebar
@@ -1368,6 +1442,11 @@ class MapEditorScene(QGraphicsScene):
         x0, y0 = start.coordsTile()
         x1, y1 = end.coordsTile()
         
+        presets = QSettings().value("presets/presets", defaultValue=common.DEFAULTCOLLISIONPRESETS)
+        presetColours: dict[int, int] = {}
+        for _, value, colour in json.loads(presets):
+            presetColours[value] = colour
+        
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
                 coords = EBCoords.fromTile(x, y)
@@ -1383,23 +1462,20 @@ class MapEditorScene(QGraphicsScene):
                         
                     painter.drawPixmap(QPoint(x*32, y*32), graphic.rendered)
                     
-                    painter.setOpacity(0.7)
-                    painter.setPen(Qt.PenStyle.NoPen)
-                    presets = QSettings().value("presets/presets", defaultValue=common.DEFAULTCOLLISIONPRESETS)
-                    presetColours: dict[int, int] = {}
-                    for _, value, colour in json.loads(presets):
-                        presetColours[value] = colour
-                    for cx in range(0, 4):
-                        for cy in range(0, 4):
-                            collision = self.collisionAt(EBCoords.fromWarp(coords.coordsWarp()[0]+cx, coords.coordsWarp()[1]+cy))
-                            if collision:
-                                try:
-                                    colour = presetColours[collision]
-                                except KeyError:
-                                    colour = 0x303030
-                                painter.setBrush(QColor.fromRgb(colour))
-                                painter.drawRect((x*32)+(cx*8), (y*32)+(cy*8), 8, 8)
-                    painter.setOpacity(1)
+                    if self.state.mode == common.MODEINDEX.COLLISION or (self.state.mode == common.MODEINDEX.ALL and self.state.allModeShowsCollision):
+                        painter.setOpacity(0.7)
+                        painter.setPen(Qt.PenStyle.NoPen)
+                        for cx in range(0, 4):
+                            for cy in range(0, 4):
+                                collision = self.collisionAt(EBCoords.fromWarp(coords.coordsWarp()[0]+cx, coords.coordsWarp()[1]+cy))
+                                if collision:
+                                    try:
+                                        colour = presetColours[collision]
+                                    except KeyError:
+                                        colour = 0x303030
+                                    painter.setBrush(QColor.fromRgb(colour))
+                                    painter.drawRect((x*32)+(cx*8), (y*32)+(cy*8), 8, 8)
+                        painter.setOpacity(1)
                     
                 except Exception:
                     painter.drawPixmap(QPoint(x*32, y*32), QPixmap(":/ui/errorTile.png"))
@@ -1465,8 +1541,18 @@ class MapEditorScene(QGraphicsScene):
         
         old = self.previewNPC.pos()
         self.previewNPC.setPos(coords.x, coords.y)
-        if not (self.previewNPC.sampleCollision() & common.COLLISIONBITS.SOLID or self.previewNPC.sampleCollision() & common.COLLISIONBITS.VERYSOLID)\
-            or not self.state.previewCollides:
+        collidesWithTerrain = bool((self.previewNPC.sampleCollision() & common.COLLISIONBITS.SOLID or self.previewNPC.sampleCollision() & common.COLLISIONBITS.VERYSOLID))
+        collidingItems = self.previewNPC.collidingItems()
+        collidesWithNPC = False
+        for i in collidingItems:
+            if isinstance(i, MapEditorNPC):
+                self.previewNPC.collisionBounds.show()
+                if self.previewNPC.collisionBounds in i.collisionBounds.collidingItems():
+                    collidesWithNPC = True
+                    break
+        self.previewNPC.collisionBounds.hide()
+        
+        if not (collidesWithTerrain or collidesWithNPC) or not self.state.previewCollides:
             self.previewNPCPositionSamples.insert(0, coords)
             if len(self.previewNPCPositionSamples) > self.PREVIEWNPCMAXSAMPLES:
                 last = self.previewNPCPositionSamples.pop()
