@@ -102,7 +102,8 @@ class MapEditorScene(QGraphicsScene):
         spr = self.projectData.getSprite(1)
         self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(
             spr.renderFacingImg(common.DIRECTION8.down))))
-        self.previewNPC.setCollisionBounds(8, 8) # TODO use player's hardcoded collision
+        self.previewNPC.setCollisionBounds(4, 4) # use player's hardcoded collision
+        self.previewNPC.collisionBounds.setY(4)
         self.previewNPC.hide()
         self.addItem(self.previewNPC)
         
