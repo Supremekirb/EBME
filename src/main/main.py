@@ -13,7 +13,7 @@ from src.misc import icons as icons
 from src.paletteeditor.palette_editor import PaletteEditor
 from src.tileeditor.tile_editor import TileEditor
 from src.widgets.input import BaseChangerSpinbox
-from src.widgets.misc import SignalUndoStack
+from src.widgets.misc import SignalUndoStack, UndoFutureLine, UndoHistoryLine
 
 
 class MainApplication(QMainWindow):
@@ -28,6 +28,10 @@ class MainApplication(QMainWindow):
         
         self.undoStack = SignalUndoStack()
         self.undoStack.cleanChanged.connect(self.updateTitle)
+        
+        self.undoHistoryLabel = UndoHistoryLine(self.undoStack)
+        self.undoHistoryLabel.setElideMode(Qt.TextElideMode.ElideLeft)
+        self.undoFutureLabel = UndoFutureLine(self.undoStack)
 
         # TODO test for other platforms
         self.resize(common.DEFAULTEDITORWIDTH, common.DEFAULTEDITORHEIGHT)
@@ -167,6 +171,15 @@ class MainApplication(QMainWindow):
         self.mainTabWin.currentChanged.connect(self.onTabSwitch)
 
         self.setCentralWidget(self.mainTabWin)
+        self.statusBar().addWidget(self.undoHistoryLabel, 1)
+        label = QLabel()
+        label.setPixmap(icons.ICON_DOWN_DOUBLE.pixmap(16, 16))
+        self.statusBar().addWidget(label)
+        self.statusBar().addWidget(self.undoFutureLabel, 1)
+        self.statusBar().setSizeGripEnabled(False)
+        
+        if not QSettings().value("main/showUndoRedo", True, type=bool):
+            self.statusBar().hide()
 
         self.menu = QMenuBar(self)
         self.setMenuBar(self.menu)

@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class ActionMoveTrigger(QUndoCommand):
     def __init__(self, trigger: "Trigger", coords: EBCoords):
         super().__init__()
-        self.setText("Move Trigger")
+        self.setText("Move trigger")
 
         self.trigger = trigger
         self.coords = coords
@@ -48,7 +48,7 @@ class ActionMoveTrigger(QUndoCommand):
 class ActionUpdateTrigger(QUndoCommand):
     def __init__(self, trigger: "Trigger", typeData):
         super().__init__()
-        self.setText("Update Trigger")
+        self.setText("Update trigger")
 
         self.trigger = trigger
         self.typeData = typeData
@@ -85,7 +85,7 @@ class ActionUpdateTrigger(QUndoCommand):
 class ActionDeleteTrigger(QUndoCommand):
     def __init__(self, trigger: "Trigger", scene: "MapEditorScene"):
         super().__init__()
-        self.setText("Delete Trigger")
+        self.setText("Delete trigger")
 
         self.trigger = trigger
         self.scene = scene
@@ -109,7 +109,7 @@ class ActionDeleteTrigger(QUndoCommand):
 class ActionAddTrigger(QUndoCommand):
     def __init__(self, trigger: "Trigger", scene: "MapEditorScene"):
         super().__init__()
-        self.setText("Add Trigger")
+        self.setText("Add trigger")
 
         self.trigger = trigger
         self.scene = scene

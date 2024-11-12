@@ -52,7 +52,7 @@ class ActionMoveNPCInstance(QUndoCommand):
 class ActionChangeNPCInstance(QUndoCommand):
     def __init__(self, instance: "NPCInstance", npc: int):
         super().__init__()
-        self.setText("Change NPC Instance")
+        self.setText("Change NPC instance")
 
         self.instance = instance
         self.npc = npc
@@ -82,7 +82,7 @@ class ActionChangeNPCInstance(QUndoCommand):
 class ActionDeleteNPCInstance(QUndoCommand):
     def __init__(self, instance: "NPCInstance", scene: "MapEditorScene"):
         super().__init__()
-        self.setText("Delete NPC Instance")
+        self.setText("Delete NPC instance")
 
         self.instance = instance
         self.scene = scene
@@ -107,7 +107,7 @@ class ActionDeleteNPCInstance(QUndoCommand):
 class ActionAddNPCInstance(QUndoCommand):
     def __init__(self, instance: "NPCInstance", scene: "MapEditorScene"):
         super().__init__()
-        self.setText("Add NPC Instance")
+        self.setText("Add NPC instance")
 
         self.instance = instance
         self.scene = scene

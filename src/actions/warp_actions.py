@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class ActionMoveWarp(QUndoCommand):
     def __init__(self, warp: "Warp", coords: EBCoords):
         super().__init__()
-        self.setText("Move Warp")
+        self.setText("Move warp")
 
         self.warp = warp
         self.coords = coords
@@ -45,7 +45,7 @@ class ActionMoveWarp(QUndoCommand):
 class ActionUpdateWarp(QUndoCommand):
     def __init__(self, warp: "Warp", dir: int, style: int, unknown: int, comment: str):
         super().__init__()
-        self.setText("Update Warp")
+        self.setText("Update warp")
 
         self.warp = warp
         self.dir = dir
@@ -91,7 +91,10 @@ class ActionUpdateWarp(QUndoCommand):
 class ActionMoveTeleport(ActionMoveWarp):
     def __init__(self, teleport: "Teleport", coords: EBCoords):
         super().__init__(teleport, coords)
+        self.setText("Move teleport")
+        
         self.teleport = self.warp
+        
     def mergeWith(self, other: QUndoCommand):
         # wrong action type
         if other.id() != common.ACTIONINDEX.TELEPORTMOVESIDEBAR:
@@ -112,7 +115,7 @@ class ActionMoveTeleport(ActionMoveWarp):
 class ActionUpdateTeleport(QUndoCommand):
     def __init__(self, teleport: "Teleport", flag: int, name: str):
         super().__init__()
-        self.setText("Update Teleport")
+        self.setText("Update teleport")
 
         self.teleport = teleport
         self.flag = flag

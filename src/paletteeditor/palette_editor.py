@@ -510,7 +510,7 @@ class PaletteEditor(QWidget):
         if current.settings.palette:
             new.palette = current.settings.palette
         else:
-            palette = self.projectData.getPaletteGroup(self.paletteTree.getCurrentPaletteGroup()
+            palette = self.projectData.getPaletteGroup(self.paletteTree.getCurrentPaletteGroup().paletteGroup
                                                       ).palettes[self.paletteTree.getCurrentPalette().palette]
             new.palette = Palette(palette.toRaw()) # make a copy of the current if top-level
         

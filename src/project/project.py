@@ -193,6 +193,10 @@ class Project(QWidget):
                     self.enableEditors()
                     self.enableSave()
                     
+                    self.mainWin.undoStack.clear()
+                    self.mainWin.undoHistoryLabel.updateText()
+                    self.mainWin.undoFutureLabel.updateText()
+                    
                 self.loadProjectInfo()
                 self.projectInfo.setDisabled(False)
                 self.enableReload()

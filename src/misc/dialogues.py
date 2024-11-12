@@ -377,6 +377,10 @@ class SettingsDialog(QDialog):
                                  "Disabled"])
         self.personalisationLayout.addRow("Smooth go to:", self.smoothGoto)
         self.personalisationLayout.addWidget(QLabel("Change this if you experience performance issues when using go-to features."))
+        
+        self.showUndoRedo = QCheckBox("")
+        self.personalisationLayout.addRow("Show undo/redo timeline:", self.showUndoRedo)
+        self.personalisationLayout.addWidget(QLabel("Restart to show/hide timeline."))
 
         self.defaultProgramsBox = QGroupBox("Default programs")
         self.defaultProgramsLayout = QFormLayout()
@@ -444,6 +448,7 @@ class SettingsDialog(QDialog):
         self.absolutePaste.setChecked(self.settings.value("main/absolutePaste", False, type=bool))
         self.applicationTheme.setCurrentText(self.settings.value("personalisation/applicationTheme", QApplication.style().objectName(), type=str))
         self.smoothGoto.setCurrentText(self.settings.value("personalisation/smoothGoto", "Always enabled", type=str))
+        self.showUndoRedo.setChecked(self.settings.value("main/showUndoRedo", True, type=bool))
         self.textEditorCommand.setText(self.settings.value("programs/textEditorCommand", ""))
         # self.imageEditorCommand.setText(self.settings.value("programs/imageEditorCommand", ""))
         self.png2ftsLabel.setText(self.settings.value("programs/png2fts", ""))
@@ -452,6 +457,7 @@ class SettingsDialog(QDialog):
         self.settings.setValue("main/disableLoadLast", not(self.loadLastProject.isChecked()))
         self.settings.setValue("main/noCtrlZoom", self.noCtrlZoom.isChecked())
         self.settings.setValue("main/absolutePaste", self.absolutePaste.isChecked())
+        self.settings.setValue("main/showUndoRedo", self.showUndoRedo.isChecked())
         
         self.settings.setValue("personalisation/applicationTheme", self.applicationTheme.currentText())
         self.settings.setValue("personalisation/smoothGoto", self.smoothGoto.currentText())
