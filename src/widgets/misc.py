@@ -108,18 +108,17 @@ class SignalUndoStack(QUndoStack):
     def endMacro(self):
         self.inMacro = False
         super().endMacro()
-        self.pushed.emit(self.command(self.index()-1))
+        if command := self.command(self.index()-1):
+            self.pushed.emit(command)
 
     def undo(self):
         super().undo()
-        command = self.command(self.index())
-        if command:
+        if command := self.command(self.index()):
             self.undone.emit(command)
     
     def redo(self):
         super().redo()
-        command = self.command(self.index()-1)
-        if command:
+        if command := self.command(self.index()-1):
             self.redone.emit(command)
     
     def push(self, command: QUndoCommand):

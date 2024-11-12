@@ -63,19 +63,24 @@ class MapMusicHierarchy:
         if target > index:
             target -= 1
         
-        self.entries.insert(target, self.entires.pop(index))
+        self.entries.insert(target, self.entries.pop(index))
         
 class MapMusicHierarchyListItem(QTreeWidgetItem):
-    def __init__(self, id: int):
-        super().__init__([f"Entry {id}"])
-        self.id = id
+    def __init__(self, hierachy: MapMusicHierarchy):
+        super().__init__([f"Entry {hierachy.id}"])
+        self.hierachy = hierachy
         
         self.setIcon(0, icons.ICON_MUSIC_LIST)
 
 class MapMusicEntryListItem(QTreeWidgetItem):
-    def __init__(self, flag: int, music: int):
-        super().__init__([f"{music} Unknown", str(flag) if flag < 0x8000 else f"{flag - 0x8000} (Inverted)"])
-        self.flag = flag
-        self.music = music
-        
+    def __init__(self, entry: MapMusicEntry):
+        super().__init__()
+        self.entry = entry
+        self.updateFlagText()
         self.setIcon(0, icons.ICON_MUSIC)
+        
+    def updateFlagText(self):
+        self.setText(1, str(self.entry.flag) if self.entry.flag < 0x8000 else f"{self.entry.flag - 0x8000} (Inverted)")
+        
+    def parent(self) -> MapMusicHierarchyListItem:
+        return super().parent()

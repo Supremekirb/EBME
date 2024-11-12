@@ -226,7 +226,8 @@ class SidebarSector(QWidget):
         self.musicSelect.editingFinished.connect(self.toSectors)
         
         self.musicEdit = QPushButton("Edit")
-        self.musicEdit.clicked.connect(lambda: MapMusicEditor.openMapMusicEditor(self, self.projectData,
+        self.musicEdit.clicked.connect(lambda: MapMusicEditor.openMapMusicEditor(self, self.mapeditor.scene.undoStack,
+                                                                                 self.projectData,
                                                                                  self.musicSelect.value()))
         
         musicLayout.addWidget(self.musicSelect)

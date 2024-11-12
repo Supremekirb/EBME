@@ -125,9 +125,9 @@ class MapEditorWarp(QGraphicsPixmapItem):
                         if not isMovingWarps:
                             isMovingWarps = True
                             if i.warpType == "warp":
-                                self.scene().undoStack.beginMacro("Move Warps")
+                                self.scene().undoStack.beginMacro("Move warps")
                             else:
-                                self.scene().undoStack.beginMacro("Move Teleports")
+                                self.scene().undoStack.beginMacro("Move teleports")
                         
                         i.setPos(coords.x, coords.y)
                         

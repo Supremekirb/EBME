@@ -68,6 +68,10 @@ class TileEditor(QWidget):
         self.tilesetSelect.activated.emit(0)
             
     def onAction(self, command: QUndoCommand):
+        
+        if not command:
+            return
+        
         commands = []
         
         count = command.childCount()

@@ -359,6 +359,9 @@ class MapEditorScene(QGraphicsScene):
         # oh well, it's more memory-efficient anyway.
         # we can just look at the command and see what it's up to.
         
+        if not command:
+            return # idk why this happens but uh. it does. probably A Qt Thing:tm:
+        
         actionType = None
         commands = []
 

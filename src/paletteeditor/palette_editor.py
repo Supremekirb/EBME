@@ -59,6 +59,10 @@ class PaletteEditor(QWidget):
                 j.BothToImage.cache_clear()
     
     def onAction(self, command: QUndoCommand):
+        
+        if not command:
+            return
+        
         actionType = None
         commands = []
 

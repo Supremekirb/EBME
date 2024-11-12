@@ -1,21 +1,21 @@
 import logging
 
 from PySide6.QtCore import QFile, Qt
-from PySide6.QtGui import QAction, QUndoStack
+from PySide6.QtGui import QAction, QUndoCommand
 from PySide6.QtWidgets import (QComboBox, QCompleter, QDialog, QFileDialog,
                                QFormLayout, QGroupBox, QHBoxLayout,
-                               QHeaderView, QMessageBox, QPushButton,
-                               QSizePolicy, QTreeWidget, QVBoxLayout)
+                               QHeaderView, QPushButton, QSizePolicy,
+                               QTreeWidget, QVBoxLayout)
 
-import src.misc.icons as icons
 from src.actions.music_actions import (ActionAddMapMusicTrack,
                                        ActionChangeMapMusicTrack,
                                        ActionDeleteMapMusicTrack,
                                        ActionMoveMapMusicTrack)
 from src.coilsnake.project_data import ProjectData
-from src.objects.music import (MapMusicEntry, MapMusicEntryListItem,
-                               MapMusicHierarchy, MapMusicHierarchyListItem)
+from src.objects.music import (MapMusicEntryListItem, MapMusicHierarchy,
+                               MapMusicHierarchyListItem)
 from src.widgets.input import FlagInput
+from src.widgets.misc import SignalUndoStack
 
 
 def parseMetadata(path: str) -> dict:
@@ -45,20 +45,22 @@ def parseMetadata(path: str) -> dict:
 
 class MapMusicEditor(QDialog):
     LAST_EBMUSED = None
-    def __init__(self, parent, projectData: ProjectData):
+    def __init__(self, parent, undoStack: SignalUndoStack, projectData: ProjectData):
         super().__init__(parent)
         self.projectData = projectData
         self.substitutions = {}
-        self.undoStack = QUndoStack(self)
-        self.undoStack.cleanChanged.connect(self.onCleanChanged)
+        self.undoStack = undoStack
+        self.undoStack.redone.connect(self.onAction)
+        self.undoStack.undone.connect(self.onAction)
+        self.undoStack.pushed.connect(self.onAction)
         
         self.undoAction = QAction("Undo")
         self.undoAction.setShortcut("Ctrl+Z")
-        self.undoAction.triggered.connect(self.onUndo)
-        
+        self.undoAction.triggered.connect(self.undoStack.undo)
+
         self.redoAction = QAction("Redo")
         self.redoAction.setShortcuts(["Ctrl+Y", "Ctrl+Shift+Z"])
-        self.redoAction.triggered.connect(self.onRedo)
+        self.redoAction.triggered.connect(self.undoStack.redo)
         
         self.addActions([self.undoAction, self.redoAction])
         
@@ -71,19 +73,39 @@ class MapMusicEditor(QDialog):
             self.substitutions = self.substitutions | parseMetadata(MapMusicEditor.LAST_EBMUSED)
         self.applySubstitutions() 
         
-    def onUndo(self):
-        self.undoStack.undo()
-        self.applySubstitutions()
+    def onAction(self, command: QUndoCommand):
+        if not command:
+            return
         
-    def onRedo(self):
-        self.undoStack.redo()
-        self.applySubstitutions()
+        commands = []
         
-    def onCleanChanged(self):
-        if self.undoStack.isClean():
-            self.setWindowTitle("Map Music Editor")
-        else: self.setWindowTitle("Map Music Editor*")
+        count = command.childCount()
+        if count > 0:
+            for c in range(count):
+                commands.append(command.child(c))
+            commands.append(command)
         
+        elif hasattr(command, "commands"):
+            for c in command.commands:
+                commands.append(c)
+        
+        # do this *always* to be safe        
+        commands.append(command)
+        
+        for c in commands:
+            if isinstance(c, ActionChangeMapMusicTrack):
+                for i in self.projectData.mapMusic:
+                    if c.entry in i.entries:
+                        self.refreshHierachy(i)
+                        break
+                self.fromCurrentItem()
+            if isinstance(c, ActionMoveMapMusicTrack):
+                self.refreshHierachy(c.hierachy)
+            if isinstance(c, ActionAddMapMusicTrack):
+                self.refreshHierachy(c.hierachy)
+            if isinstance(c, ActionDeleteMapMusicTrack):
+                self.refreshHierachy(c.hierachy)
+    
     def shiftUp(self):
         selected = self.tree.currentItem()
         if not isinstance(selected, MapMusicEntryListItem):
@@ -94,9 +116,8 @@ class MapMusicEditor(QDialog):
         if index == 0:
             return
         
-        self.undoStack.push(ActionMoveMapMusicTrack(self.tree, parent, selected, index-1))
+        self.undoStack.push(ActionMoveMapMusicTrack(parent.hierachy, selected.entry, index-1))
         
-    
     def shiftDown(self):
         selected = self.tree.currentItem()
         if not isinstance(selected, MapMusicEntryListItem):
@@ -107,7 +128,7 @@ class MapMusicEditor(QDialog):
         if index == parent.childCount()-1:
             return
         
-        self.undoStack.push(ActionMoveMapMusicTrack(self.tree, parent, selected, index+1))
+        self.undoStack.push(ActionMoveMapMusicTrack(parent.hierachy, selected.entry, index+2))
         
     def addTrack(self):
         selected = self.tree.currentItem()
@@ -116,9 +137,7 @@ class MapMusicEditor(QDialog):
         
         parent = selected.parent()
         index = parent.indexOfChild(selected)
-        action = ActionAddMapMusicTrack(self.tree, parent, index)
-        action.track.setText(0, f"1 {self.substitutions[1]}")
-        
+        action = ActionAddMapMusicTrack(parent.hierachy, index+1)        
         self.undoStack.push(action)    
         
     def removeTrack(self):
@@ -130,7 +149,28 @@ class MapMusicEditor(QDialog):
         if parent.childCount() == 1:
             return
         
-        self.undoStack.push(ActionDeleteMapMusicTrack(self.tree, parent, selected))
+        self.undoStack.push(ActionDeleteMapMusicTrack(parent.hierachy, selected.entry))
+        
+    def refreshHierachy(self, hierachy: MapMusicHierarchy):
+        lastSelected = self.tree.currentItem()
+        lastEntry = None
+        if isinstance(lastSelected, MapMusicEntryListItem):
+            lastEntry = lastSelected.entry
+        
+        for i in range(self.tree.topLevelItemCount()):
+            item: MapMusicHierarchyListItem = self.tree.topLevelItem(i)
+            if item.hierachy == hierachy:
+                for j in reversed(range(item.childCount())):
+                    item.removeChild(item.child(j))
+                    
+                for entry in hierachy.entries:
+                    new = MapMusicEntryListItem(entry)
+                    item.addChild(new)
+                    if lastEntry == entry:
+                        self.tree.setCurrentItem(new)
+                break
+                        
+        self.applySubstitutions()
         
     def fromCurrentItem(self):
         currentItem = self.tree.currentItem()
@@ -139,8 +179,8 @@ class MapMusicEditor(QDialog):
         self.musicFlag.blockSignals(True)
         
         if isinstance(currentItem, MapMusicEntryListItem):
-            self.musicTrack.setCurrentIndex(currentItem.music-1)
-            self.musicFlag.setValue(currentItem.flag)
+            self.musicTrack.setCurrentIndex(currentItem.entry.music-1)
+            self.musicFlag.setValue(currentItem.entry.flag)
             self.editorBox.setDisabled(False)
             self.editorBox.setTitle("Track Details")
         else:
@@ -158,28 +198,13 @@ class MapMusicEditor(QDialog):
         if not isinstance(currentItem, MapMusicEntryListItem):
             return
         
-        action = ActionChangeMapMusicTrack(currentItem, self.musicTrack.currentIndex()+1,
+        action = ActionChangeMapMusicTrack(currentItem.entry, self.musicTrack.currentIndex()+1,
                                            self.musicFlag.value())
         
         self.undoStack.push(action)
         
         currentItem.setText(0, self.musicTrack.itemText(self.musicTrack.currentIndex()))
-        currentItem.setText(1, str(self.musicFlag.value()) if self.musicFlag.value() < 0x8000 else f"{self.musicFlag.value()-0x8000} (Inverted)")
-        
-    def toMapMusic(self):
-        for i in range(0, self.tree.topLevelItemCount()):
-            entries = []
-            i = self.tree.topLevelItem(i)
-            if isinstance(i, MapMusicHierarchyListItem):
-                for j in range(0, i.childCount()):
-                    j = i.child(j)
-                    if isinstance(j, MapMusicEntryListItem):
-                        entries.append(MapMusicEntry(j.flag, j.music))
-                
-                item = MapMusicHierarchy(i.id)
-                item.entries = entries
-                self.projectData.mapMusic[i.id-1] = item
-                        
+        currentItem.updateFlagText()                       
                 
     def importMetadata(self):
         path, _ = QFileDialog.getOpenFileName(self, "Import EBMusEd metadata",
@@ -193,7 +218,6 @@ class MapMusicEditor(QDialog):
         MapMusicEditor.LAST_EBMUSED = None
         self.substitutions = {}
         self.applyDefaultSubstitutions()
-        self.applySubstitutions()
             
     def applyDefaultSubstitutions(self):
         file = QFile(":/misc/songs.txt")
@@ -202,6 +226,7 @@ class MapMusicEditor(QDialog):
         for i in range(0, len(file)):
             name = file[i].strip()
             self.substitutions[i+1] = name
+        self.applySubstitutions()
         
     def applySubstitutions(self):
         self.musicTrack.blockSignals(True)
@@ -215,8 +240,8 @@ class MapMusicEditor(QDialog):
                 for j in range(0, i.childCount()):
                     j = i.child(j)
                     if isinstance(j, MapMusicEntryListItem):
-                        if j.music in self.substitutions:
-                            j.setText(0, strings[j.music-1])
+                        if j.entry.music in self.substitutions:
+                            j.setText(0, strings[j.entry.music-1])
                             
         self.musicCompleter = QCompleter(strings)
         self.musicCompleter.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
@@ -229,35 +254,11 @@ class MapMusicEditor(QDialog):
         
         self.musicTrack.blockSignals(False)
         self.musicFlag.blockSignals(False)
-        self.tree.blockSignals(False)
-
-    def onSaveClose(self):
-        self.toMapMusic()
-        self.undoStack.setClean()
-        self.close()
-        
-    def onClose(self):
-        if not self.undoStack.isClean():
-            msg = QMessageBox()
-            msg.setText("Save your changes before returning to the map editor?")
-            msg.setStandardButtons(QMessageBox.StandardButton.Save | QMessageBox.StandardButton.Discard | QMessageBox.StandardButton.Cancel)
-            msg.setDefaultButton(QMessageBox.StandardButton.Save)
-            result = msg.exec()
-            
-            if result == QMessageBox.StandardButton.Save:
-                self.toMapMusic()
-                self.undoStack.setClean()
-                self.close()
-                
-            if result == QMessageBox.StandardButton.Discard:
-                self.close()
-                
-        else: self.close()
-                
+        self.tree.blockSignals(False)                
             
     @staticmethod
-    def openMapMusicEditor(parent, projectData: ProjectData, goto: int|None = None):
-        dialog = MapMusicEditor(parent, projectData)
+    def openMapMusicEditor(parent, undoStack: SignalUndoStack, projectData: ProjectData, goto: int|None = None):
+        dialog = MapMusicEditor(parent, undoStack, projectData)
         
         if goto != None:
             for i in range(0, dialog.tree.topLevelItemCount()):
@@ -291,10 +292,10 @@ class MapMusicEditor(QDialog):
         
         items = []
         for i in self.projectData.mapMusic:
-            item = MapMusicHierarchyListItem(i.id)
+            item = MapMusicHierarchyListItem(i)
             entries = []
             for j in i.entries:
-                entry = MapMusicEntryListItem(j.flag, j.music)
+                entry = MapMusicEntryListItem(j)
                 entries.append(entry)
             item.addChildren(entries)
                 
@@ -334,21 +335,17 @@ class MapMusicEditor(QDialog):
         trackEditLayout.addWidget(self.musicRemove)
         editorLayout.addRow(trackEditLayout)
         
-        saveCloseLayout = QHBoxLayout()
-        self.saveButton = QPushButton("Save")
-        self.saveButton.clicked.connect(self.onSaveClose)
-        self.saveButton.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        closeLayout = QHBoxLayout()
         self.closeButton = QPushButton("Close")
-        self.closeButton.clicked.connect(self.onClose)
+        self.closeButton.clicked.connect(self.close)
         self.closeButton.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        saveCloseLayout.addWidget(self.saveButton)
-        saveCloseLayout.addWidget(self.closeButton)
+        closeLayout.addWidget(self.closeButton)
         
         contentLayout.addWidget(self.editorBox)
         
         layout.addWidget(self.importButton)
         layout.addWidget(self.clearButton)
         layout.addLayout(contentLayout)
-        layout.addLayout(saveCloseLayout)
+        layout.addLayout(closeLayout)
         self.setLayout(layout)
     
