@@ -11,6 +11,7 @@ from src.widgets.tile import TilesetDisplayGraphicsScene
 
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState
+    from src.main.main import MainApplication
 
 
 class SidebarTile(QWidget):
@@ -62,6 +63,19 @@ class SidebarTile(QWidget):
     
     def onTileSelect(self, tile: int):
         self.state.currentTile = tile
+    
+    def onTilePick(self, tile: int):   
+        mainApp: "MainApplication" = self.mapeditor.parent().parent().parent() # TODO fix the tabbar's reparenting doing... this
+        mainApp.tileWin.tilesetSelect.setCurrentText(self.tilesetSelect.currentText())
+        mainApp.tileWin.onTilesetSelect()
+        mainApp.tileWin.paletteGroupSelect.setCurrentText(self.paletteGroupSelect.currentText())
+        mainApp.tileWin.onPaletteGroupSelect()
+        mainApp.tileWin.paletteSelect.setCurrentText(self.paletteSelect.currentText())
+        mainApp.tileWin.onPaletteSelect()
+        mainApp.tileWin.onTileSelect(tile)
+        mainApp.tileWin.tileScene.moveCursorToTile(tile)
+        mainApp.tileWin.tileView.centerOn(*[i*32 for i in mainApp.tileWin.tileScene.tileIndexToPos(tile)])
+        mainApp.mainTabWin.setCurrentIndex(2)
 
     def fromSector(self, sector: Sector):
         self.tilesetSelect.setCurrentText(str(sector.tileset))
@@ -115,6 +129,7 @@ class SidebarTile(QWidget):
 
         self.scene = TilesetDisplayGraphicsScene(self.projectData)
         self.scene.tileSelected.connect(self.onTileSelect)
+        self.scene.tilePicked.connect(self.onTilePick)
         self.view = QGraphicsView()
         self.view.setScene(self.scene)
         # to be sure

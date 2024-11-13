@@ -957,6 +957,7 @@ class MapEditorScene(QGraphicsScene):
             self.undoStack.endMacro()
             
     def pickCollision(self, coords: EBCoords):
+        coords.restrictToMap()
         collision = self.collisionAt(coords)
         self.state.currentCollision = collision
         

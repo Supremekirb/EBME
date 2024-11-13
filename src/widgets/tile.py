@@ -297,6 +297,7 @@ class TileCollisionWidget(TileGraphicsWidget):
     
 class TilesetDisplayGraphicsScene(QGraphicsScene):
     tileSelected = Signal(int)
+    tilePicked = Signal(int)
         
     def __init__(self, projectData: ProjectData, horizontal: bool = False, rowSize: int = 6, forcedPalette: Palette|None=None):
         super().__init__()
@@ -331,8 +332,11 @@ class TilesetDisplayGraphicsScene(QGraphicsScene):
         
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         pos = EBCoords(*event.scenePos().toTuple())
-        self.tileSelected.emit(self.posToTileIndex(*pos.coordsTile()))
-        self.selectionIndicator.setPos(*pos.roundToTile())
+        if event.modifiers() in (Qt.KeyboardModifier.ControlModifier, Qt.KeyboardModifier.ShiftModifier):
+            self.tilePicked.emit(self.posToTileIndex(*pos.coordsTile()))
+        else:
+            self.tileSelected.emit(self.posToTileIndex(*pos.coordsTile()))
+            self.selectionIndicator.setPos(*pos.roundToTile())
         
         super().mousePressEvent(event)
     
