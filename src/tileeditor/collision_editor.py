@@ -84,6 +84,7 @@ class TileEditorCollisionPresetList(CollisionPresetList):
         item: PresetItem = self.list.currentItem()
         if item:
             self.state.currentCollision = item.value
+        self.state.tileEditor.collisionScene.update()
     
     def onAddClicked(self):
         super().onAddClicked()

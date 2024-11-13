@@ -5,8 +5,8 @@ from copy import copy
 
 from PIL import ImageQt
 from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, QSize, Qt, Signal
-from PySide6.QtGui import (QBrush, QColor, QPainter, QPaintEvent, QPixmap, QMouseEvent,
-                           QResizeEvent)
+from PySide6.QtGui import (QBrush, QColor, QMouseEvent, QPainter, QPaintEvent,
+                           QPixmap, QResizeEvent)
 from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
                                QGraphicsSceneMouseEvent, QSizePolicy, QWidget)
 
@@ -197,6 +197,12 @@ class TileGraphicsWidget(QWidget):
         painter.scale(2, 2)
         
         painter.drawImage(0, 0, ImageQt.ImageQt(self.currentTile.toImage(self.currentPalette, self.currentTileset)))
+        
+        if QSettings().value("mapeditor/ShowGrid", type=bool):
+            painter.scale(0.25, 0.25)
+            painter.setBrush(QPixmap(":/grids/32grid0.png"))
+            painter.drawRect(0, 0, 128, 128)
+            painter.scale(4, 4)
 
         return super().paintEvent(event)
 
@@ -281,6 +287,13 @@ class TileCollisionWidget(TileGraphicsWidget):
             
             painter.setBrush(QColor(colour))
             painter.drawRect((i % 4)*8, (i // 4)*8, 8, 8)
+    
+        if QSettings().value("mapeditor/ShowGrid", type=bool):
+            painter.setOpacity(1)
+            painter.scale(0.25, 0.25)
+            painter.setBrush(QPixmap(":/grids/32grid0.png"))
+            painter.drawRect(0, 0, 128, 128)
+            painter.scale(4, 4)
     
 class TilesetDisplayGraphicsScene(QGraphicsScene):
     tileSelected = Signal(int)

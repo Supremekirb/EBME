@@ -917,7 +917,10 @@ class MapEditorScene(QGraphicsScene):
                     self.undoStack.beginMacro("Place enemy tiles")
                     
                 action = ActionPlaceEnemyTile(tile, toPlace)
-                self.undoStack.push(action)            
+                self.undoStack.push(action)  
+                
+                self.refreshEnemyTile(tile.coords)
+                self.update(*tile.coords.coords(), 64, 64)         
                 
     def endPlacingEnemyTiles(self):
         if self.state.placingEnemyTiles:
@@ -1468,16 +1471,29 @@ class MapEditorScene(QGraphicsScene):
                     if self.state.mode == common.MODEINDEX.COLLISION or (self.state.mode == common.MODEINDEX.ALL and self.state.allModeShowsCollision):
                         painter.setOpacity(0.7)
                         painter.setPen(Qt.PenStyle.NoPen)
-                        for cx in range(0, 4):
-                            for cy in range(0, 4):
-                                collision = self.collisionAt(EBCoords.fromWarp(coords.coordsWarp()[0]+cx, coords.coordsWarp()[1]+cy))
-                                if collision:
-                                    try:
-                                        colour = presetColours[collision]
-                                    except KeyError:
-                                        colour = 0x303030
-                                    painter.setBrush(QColor.fromRgb(colour))
-                                    painter.drawRect((x*32)+(cx*8), (y*32)+(cy*8), 8, 8)
+                        
+                        tileset = self.projectData.getTileset(tile.tileset)
+                        collisionMap = tileset.tiles[tile.tile].collision
+                        if len(set(collisionMap)) > 1: # special-casing for if all the collision is the same
+                            for cx in range(0, 4):
+                                for cy in range(0, 4):
+                                    collision = collisionMap[cx + cy * 4] # slightly more performant to do it manually instead of collisionAt
+                                    if collision:
+                                        try:
+                                            colour = presetColours[collision]
+                                        except KeyError:
+                                            colour = 0x303030
+                                        painter.setBrush(QColor.fromRgb(colour))
+                                        painter.drawRect((x*32)+(cx*8), (y*32)+(cy*8), 8, 8)
+                        else: # all is the same - just draw 1 rect instead of 16
+                            try:
+                                colour = presetColours[collisionMap[0]]
+                            except KeyError:
+                                colour = 0x303030
+                            if colour:
+                                painter.setBrush(QColor.fromRgb(colour))
+                                painter.drawRect(x*32, y*32, 32, 32)
+                            
                         painter.setOpacity(1)
                     
                 except Exception:

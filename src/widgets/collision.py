@@ -288,6 +288,7 @@ class PresetItemDelegate(QStyledItemDelegate):
             preset.value = editor.value()
             if self.presetList._lastTile:
                 self.presetList.verifyTileCollision(self.presetList._lastTile)
+            self.presetList.savePresets()
             
     def initStyleOption(self, option: QStyleOptionViewItem, index: QModelIndex | QPersistentModelIndex):
         super().initStyleOption(option, index)

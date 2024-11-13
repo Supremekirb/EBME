@@ -716,11 +716,9 @@ class PaletteEditor(QWidget):
         self.openAction.triggered.connect(self.parent().projectWin.openAction.trigger)
         self.reloadAction = QAction(icons.ICON_RELOAD, "&Reload", shortcut=QKeySequence("Ctrl+R"))
         self.reloadAction.triggered.connect(self.parent().projectWin.reloadAction.trigger)
-        self.openSettingsAction = QAction(icons.ICON_SETTINGS, "Settings...")
-        self.openSettingsAction.triggered.connect(lambda: SettingsDialog.openSettings(self))
         self.menuFile.addActions([self.saveAction, self.openAction, self.reloadAction])
         self.menuFile.addSeparator()
-        self.menuFile.addAction(self.openSettingsAction)
+        self.menuFile.addAction(self.parent().sharedActionSettings)
         
         self.menuEdit = QMenu("&Edit")
         self.menuEdit.addActions([self.parent().sharedActionUndo, self.parent().sharedActionRedo])
@@ -744,14 +742,10 @@ class PaletteEditor(QWidget):
         self.menuTools.addActions([self.exportPaletteAction, self.importPaletteAction])
         
         self.menuHelp = QMenu("&Help")        
-        self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")
-        self.aboutAction.triggered.connect(lambda: AboutDialog.showAbout(self))
-        self.menuHelp.addAction(self.aboutAction)
-        
+        self.menuHelp.addAction(self.parent().sharedActionAbout)
         if not debug.SYSTEM_OUTPUT:
-            self.openDebugAction = QAction(icons.ICON_DEBUG, "Debug output")
-            self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
-            self.menuHelp.addAction(self.openDebugAction)
+            self.menuHelp.addAction(self.parent().sharedActionDebug)
+        self.menuHelp.addAction(self.parent().sharedActionReport)   
         
         self.menuItems = (self.menuFile, self.menuEdit, self.menuView, self.menuTools, self.menuHelp)
         

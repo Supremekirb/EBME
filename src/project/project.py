@@ -352,19 +352,13 @@ class Project(QWidget):
         self.reloadAction.triggered.connect(lambda: self.openDirectory(self.projectData.dir))
         self.menuFile.addActions([self.openAction, self.saveAction, self.reloadAction])
         self.menuFile.addSeparator()
-        self.openSettingsAction = QAction(icons.ICON_SETTINGS, "&Settings...")
-        self.openSettingsAction.triggered.connect(lambda: SettingsDialog.openSettings(self))
-        self.menuFile.addAction(self.openSettingsAction)
+        self.menuFile.addAction(self.mainWin.sharedActionSettings)
 
         self.menuHelp = QMenu("&Help")
-        self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")
-        self.aboutAction.triggered.connect(lambda: AboutDialog.showAbout(self))
-        self.menuHelp.addAction(self.aboutAction)
-        
+        self.menuHelp.addAction(self.mainWin.sharedActionAbout)
         if not debug.SYSTEM_OUTPUT:
-            self.openDebugAction = QAction(icons.ICON_DEBUG, "Debug output")
-            self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
-            self.menuHelp.addAction(self.openDebugAction)
+            self.menuHelp.addAction(self.mainWin.sharedActionDebug)
+        self.menuHelp.addAction(self.mainWin.sharedActionReport)
 
         self.menuItems = (self.menuFile, self.menuHelp)
 

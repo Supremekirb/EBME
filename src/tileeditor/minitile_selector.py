@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from PIL import ImageQt
 from PySide6.QtCore import QEvent, QPoint, QRectF, Qt
-from PySide6.QtGui import QColor, QMouseEvent, QPixmap
+from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPainter, QPixmap
 from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsRectItem,
                                QGraphicsScene, QGraphicsSceneMouseEvent,
                                QGraphicsView, QHBoxLayout, QLabel, QSizePolicy,
@@ -77,8 +77,8 @@ class MinitileScene(QGraphicsScene):
         self.destIndicator.hide()
         self.addItem(self.destIndicator)
         
-        self.grid = QGraphicsRectItem(self.sceneRect())
-        self.grid.setBrush(QPixmap(":/grids/8grid0.png"))
+        self.grid = MinitileSelectorGrid(self.sceneRect())
+        # self.grid.setBrush(QPixmap(":/grids/8grid0.png"))
         self.addItem(self.grid)
         self.grid.setZValue(97)
         self.grid.hide()
@@ -250,3 +250,15 @@ class MinitileHoverDisplay(QWidget):
             self.warningLabel.show()
         else:
             self.warningLabel.hide()
+            
+class MinitileSelectorGrid(QGraphicsRectItem):
+    def paint(self, painter: QPainter, option, a):
+        painter.scale(0.5, 0.5)
+        painter.setBrush(Qt.GlobalColor.black)
+        painter.setPen(Qt.GlobalColor.black)
+        
+        rect = self.rect().toRect()
+        for x in range((rect.width()//16)*2):
+            painter.drawLine(x*16, 0, x*16, rect.height()*2)
+            for y in range((rect.height()//16)*2):
+                painter.drawLine(0, y*16, rect.width()*2, y*16)

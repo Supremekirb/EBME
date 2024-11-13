@@ -210,11 +210,9 @@ class MapEditor(QWidget):
         self.openAction.triggered.connect(self.parent().projectWin.openAction.trigger)
         self.reloadAction = QAction(icons.ICON_RELOAD, "&Reload", shortcut=QKeySequence("Ctrl+R"))
         self.reloadAction.triggered.connect(self.parent().projectWin.reloadAction.trigger)
-        self.openSettingsAction = QAction(icons.ICON_SETTINGS, "Settings...")
-        self.openSettingsAction.triggered.connect(lambda: SettingsDialog.openSettings(self))
         self.menuFile.addActions([self.saveAction, self.openAction, self.reloadAction])
         self.menuFile.addSeparator()
-        self.menuFile.addAction(self.openSettingsAction)        
+        self.menuFile.addAction(self.parent().sharedActionSettings)        
 
         self.menuEdit = QMenu("&Edit")
         self.deleteAction = QAction(icons.ICON_DELETE, "&Delete", shortcut=QKeySequence(Qt.Key.Key_Delete))
@@ -258,6 +256,7 @@ class MapEditor(QWidget):
 
         self.gridAction = self.parent().sharedActionShowGrid
         self.gridAction.changed.connect(self.scene.toggleGrid)
+        self.gridAction.changed.connect(self.sidebarCollision.display.update)
         if self.gridAction.isChecked():
             self.scene.grid.show()
 
@@ -399,14 +398,10 @@ class MapEditor(QWidget):
         self.menuTools.addActions([self.renderMapAction, self.png2ftsAction, self.clearAction, self.mapMusicAction])
 
         self.menuHelp = QMenu("&Help")
-        self.aboutAction = QAction(icons.ICON_INFO, "&About EBME...")
-        self.aboutAction.triggered.connect(lambda: AboutDialog.showAbout(self))
-        self.menuHelp.addAction(self.aboutAction)
-        
+        self.menuHelp.addAction(self.parent().sharedActionAbout)
         if not debug.SYSTEM_OUTPUT:
-            self.openDebugAction = QAction(icons.ICON_DEBUG, "Debug output")
-            self.openDebugAction.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
-            self.menuHelp.addAction(self.openDebugAction)
+            self.menuHelp.addAction(self.parent().sharedActionDebug)
+        self.menuHelp.addAction(self.parent().sharedActionReport)
 
         self.menuItems = (self.menuFile, self.menuEdit, self.menuView, self.menuMode, self.menuGoto, self.menuTools, self.menuHelp)
 

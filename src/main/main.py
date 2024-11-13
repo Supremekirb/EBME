@@ -1,15 +1,17 @@
 import logging
 
 from PySide6.QtCore import QSettings, Qt, QTimer
-from PySide6.QtGui import (QAction, QFontDatabase, QIcon, QKeySequence,
-                           QUndoStack)
+from PySide6.QtGui import (QAction, QDesktopServices, QFontDatabase, QIcon,
+                           QKeySequence, QUndoStack)
 from PySide6.QtWidgets import (QLabel, QMainWindow, QMenuBar, QMessageBox,
                                QTabWidget, QWidget)
 
 import src.misc.common as common
 import src.project.project as project
 from src.mapeditor.map_editor import MapEditor
+from src.misc import debug as debug
 from src.misc import icons as icons
+from src.misc.dialogues import AboutDialog, SettingsDialog
 from src.paletteeditor.palette_editor import PaletteEditor
 from src.tileeditor.tile_editor import TileEditor
 from src.widgets.input import BaseChangerSpinbox
@@ -35,9 +37,7 @@ class MainApplication(QMainWindow):
 
         # TODO test for other platforms
         self.resize(common.DEFAULTEDITORWIDTH, common.DEFAULTEDITORHEIGHT)
-        self.setMinimumSize(common.MINEDITORWIDTH, common.MINEDITORHEIGHT) # ~ minimum map editor size on windows
-        self.setupUI()
-        
+        self.setMinimumSize(common.MINEDITORWIDTH, common.MINEDITORHEIGHT) # ~ minimum map editor size on windows        
         # set up shared actions
         self.sharedActionTileIDs = QAction("Show &tile IDs", shortcut=QKeySequence("Ctrl+T"))
         self.sharedActionTileIDs.setCheckable(True)
@@ -50,6 +50,7 @@ class MainApplication(QMainWindow):
         if QSettings().value("mapeditor/ShowGrid", type=bool):
             self.sharedActionShowGrid.trigger()
         self.sharedActionShowGrid.triggered.connect(lambda: QSettings().setValue("mapeditor/ShowGrid", self.sharedActionShowGrid.isChecked()))
+        self.sharedActionShowGrid.triggered.connect(lambda: QSettings().sync())
         
         self.sharedActionHex = QAction("Use &hexadecimal", shortcut=QKeySequence("Ctrl+H"))
         self.sharedActionHex.setCheckable(True)
@@ -63,6 +64,19 @@ class MainApplication(QMainWindow):
         self.sharedActionRedo = QAction(icons.ICON_REDO, "&Redo")
         self.sharedActionRedo.setShortcuts([QKeySequence("Ctrl+Y"), QKeySequence("Ctrl+Shift+Z")])
         self.sharedActionRedo.triggered.connect(self.undoStack.redo)
+        
+        self.sharedActionAbout = QAction(icons.ICON_INFO, "&About EBME...")
+        self.sharedActionAbout.triggered.connect(lambda: AboutDialog.showAbout(self))
+        self.sharedActionDebug = QAction(icons.ICON_DEBUG, "&Debug output...")
+        self.sharedActionDebug.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
+        self.sharedActionReport = QAction(icons.ICON_BUG, "&Report a bug...")
+        self.sharedActionReport.triggered.connect(lambda: QDesktopServices.openUrl("https://github.com/Supremekirb/EBME/issues/new"))
+        
+        self.sharedActionSettings = QAction(icons.ICON_SETTINGS, "&Settings...")
+        self.sharedActionSettings.triggered.connect(lambda: SettingsDialog.openSettings(self))
+        
+        self.setupUI()
+        
 
         # initialise EB fonts, because you need to do that after the program has begun and whatever
         # EBMain has monospaced numbers, so we use it in the map editor

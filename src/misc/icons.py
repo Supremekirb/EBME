@@ -64,6 +64,9 @@ def init_icons():
     global ICON_DEBUG
     ICON_DEBUG = icon("ph.terminal-window")
     
+    global ICON_BUG
+    ICON_BUG = icon("ph.bug-beetle")
+    
     global ICON_DELETE
     ICON_DELETE = icon("ph.trash")
     

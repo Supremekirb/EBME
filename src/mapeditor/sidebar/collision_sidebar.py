@@ -24,7 +24,9 @@ class SidebarCollision(QWidget):
     def onCurrentChanged(self):
         item: PresetItem = self.presets.list.currentItem()
         if item:
-            self.state.currentCollision = item.value   
+            self.state.currentCollision = item.value  
+        self.display.update()
+        self.mapeditor.scene.update() 
             
     def onCollisionPicked(self, collision: int):
         item = self.presets.getPreset(collision)
