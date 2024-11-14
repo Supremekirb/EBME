@@ -579,6 +579,7 @@ class MapEditorScene(QGraphicsScene):
                         if not absolute: # then add the mouse pos
                             inst.coords += EBCoords(*self.parent().view.mapToScene(
                                 self.parent().view._lastMousePos).toTuple())
+                            inst.coords.restrictToMap()
                             
                         self.addNPC(inst)
                     self.undoStack.endMacro()
@@ -635,6 +636,9 @@ class MapEditorScene(QGraphicsScene):
                         if not absolute:
                             trigger_.coords += EBCoords(*self.parent().view.mapToScene(
                                 self.parent().view._lastMousePos).toTuple())
+                            trigger_.coords.restrictToMap()
+                            trigger_.coords = EBCoords(*trigger_.coords.roundToWarp())
+                            trigger_.coords.restrictToMap()
                         
                         self.addTrigger(trigger_)
                     self.undoStack.endMacro()
@@ -838,6 +842,7 @@ class MapEditorScene(QGraphicsScene):
 
         # item = self.tileAt(coords)
         # if item:
+        coords.restrictToMap()
         toPlace = self.state.currentTile 
         tile = self.projectData.getTile(coords)
         if tile.tile != toPlace:

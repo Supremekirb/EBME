@@ -176,7 +176,7 @@ class MapEditorTrigger(QGraphicsPixmapItem):
                     else:
                         if not isMovingTriggers:
                             isMovingTriggers = True
-                            self.scene().undoStack.beginMacro("Move Triggers")
+                            self.scene().undoStack.beginMacro("Move triggers")
                         
                         i.setPos(coords.x, coords.y)
                         
