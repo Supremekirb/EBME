@@ -36,7 +36,7 @@ class MapEditorStatus(QWidget):
 
         self.contentLayout.setColumnStretch(6, 1)
         self.contentLayout.setContentsMargins(0, 0, 0, 0)
-        
+
         self.contentLayout.setColumnMinimumWidth(0, 110)
         self.contentLayout.setColumnMinimumWidth(1, 110)
         self.contentLayout.setColumnMinimumWidth(2, 110)
@@ -46,6 +46,8 @@ class MapEditorStatus(QWidget):
         self.contentLayout.setColumnMinimumWidth(6, 110)
 
         self.setLayout(self.contentLayout)
+
+        self.setFixedHeight(self.sizeHint().height())
 
     def updateCoords(self, coords = EBCoords):
         """Update labels for coordinates
@@ -65,7 +67,7 @@ class MapEditorStatus(QWidget):
             self.sectorCoords.setText("Sector: ----")
             self.sectorID.setText("Sector ID: ----")
             self.enemyCoords.setText("Enemy: ----")
-            
+
         else:
             self.pixelCoords.setText(f"Pixel: {coords.coords()}")
             self.warpCoords.setText(f"Warp: {coords.coordsWarp()}")
@@ -74,7 +76,7 @@ class MapEditorStatus(QWidget):
             self.sectorCoords.setText(f"Sector: {coords.coordsSector()}")
             self.sectorID.setText(f"Sector ID: {self.parent().projectData.getSector(coords).id}")
             self.enemyCoords.setText(f"Enemy: {coords.coordsEnemy()}")
-        
+
 
     def setZoom(self, zoom: int):
         """Update label for zoom level
@@ -83,7 +85,7 @@ class MapEditorStatus(QWidget):
             zoom (int): Zoom level (%)
         """
         self.zoom.setText(f"Zoom: {zoom}%")
-    
+
     # for type checking
     def parent(self) -> "MapEditor":
         return super().parent()
