@@ -230,9 +230,12 @@ class MapEditorNPC(QGraphicsPixmapItem):
         
     def sampleCollision(self) -> int:
         colliderTopLeft = self.mapToScene(self.collisionBounds.rect().topLeft())
+        colliderTopLeft = EBCoords(colliderTopLeft.x(), colliderTopLeft.y()+self.collisionBounds.y())
+        colliderTopLeft.restrictToMap()
         colliderBottomRight = self.mapToScene(self.collisionBounds.rect().bottomRight())
-        return self.scene().sampleCollisionRegion(EBCoords(colliderTopLeft.x(), colliderTopLeft.y()+self.collisionBounds.y()),
-                                                  EBCoords(colliderBottomRight.x()-1, colliderBottomRight.y()+self.collisionBounds.y()-1))
+        colliderBottomRight = EBCoords(colliderBottomRight.x()-1, colliderBottomRight.y()+self.collisionBounds.y()-1)
+        colliderBottomRight.restrictToMap()
+        return self.scene().sampleCollisionRegion(colliderTopLeft, colliderBottomRight)
     
     # reimplementing function to highlight the border as that obscures the vanilla Qt selection border
     def paint(self, painter: QPainter, option, a):        
