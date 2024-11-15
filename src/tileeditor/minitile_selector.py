@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from PIL import ImageQt
 from PySide6.QtCore import QEvent, QPoint, QRectF, Qt
-from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPainter, QPixmap
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPixmap
 from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsRectItem,
                                QGraphicsScene, QGraphicsSceneMouseEvent,
                                QGraphicsView, QHBoxLayout, QLabel, QSizePolicy,
@@ -65,14 +65,14 @@ class MinitileScene(QGraphicsScene):
         
         self.selector = QGraphicsRectItem()
         self.selector.setPen(QColor(Qt.GlobalColor.yellow))
-        self.selector.setRect(-1, -1, 10, 10)
+        self.selector.setRect(-0.5, -0.5, 9, 9)
         self.selector.setBrush(Qt.BrushStyle.NoBrush)
         self.selector.setZValue(100)
         self.addItem(self.selector)
         
         self.destIndicator = QGraphicsRectItem()
         self.destIndicator.setPen(QColor(Qt.GlobalColor.white))
-        self.destIndicator.setRect(-1, -1, 10, 10)
+        self.destIndicator.setRect(-0.5, -0.5, 9, 9)
         self.destIndicator.setBrush(Qt.BrushStyle.NoBrush)
         self.destIndicator.setZValue(98) # 99 is for hovering minitile
         self.destIndicator.hide()
