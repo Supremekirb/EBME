@@ -1,12 +1,15 @@
+import json
+import logging
 from copy import copy
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QSettings, Qt
-from PySide6.QtGui import (QAction, QColor, QKeySequence, QUndoCommand,
-                           QUndoStack)
-from PySide6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
-                               QMenu, QPushButton, QSizePolicy, QSplitter,
-                               QStyle, QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtGui import (QAction, QActionGroup, QColor, QKeySequence,
+                           QUndoCommand, QUndoStack)
+from PySide6.QtWidgets import (QApplication, QComboBox, QGroupBox, QHBoxLayout,
+                               QLabel, QMenu, QPushButton, QSizePolicy,
+                               QSplitter, QStyle, QToolButton, QVBoxLayout,
+                               QWidget)
 
 import src.misc.common as common
 import src.misc.debug as debug
@@ -94,7 +97,6 @@ class TileEditor(QWidget):
                 self.updateMinitile(c.minitile)
             elif isinstance(c, ActionChangeArrangement):
                 actionType = "arrangement"
-                self.updateTile(c.tile)
             elif isinstance(c, ActionChangeSubpaletteColour):
                 actionType = "colour"
                 self.onColourEdit()
@@ -107,11 +109,21 @@ class TileEditor(QWidget):
         
         match actionType:
             case "bitmap":
+                self.projectData.clobberTileGraphicsCache()
+                self.tileScene.update()
+                self.arrangementScene.update()
+                self.collisionScene.update()
+                self.minitileScene.renderTileset(self.state.currentTileset,
+                                                self.state.currentPaletteGroup,
+                                                self.state.currentPalette,
+                                                self.state.currentSubpalette)
                 self.fgScene.copyToScratch()
                 self.bgScene.copyToScratch()
                 self.fgScene.update()
                 self.bgScene.update()
             case "arrangement":
+                self.projectData.clobberTileGraphicsCache()
+                self.tileScene.update()
                 self.arrangementScene.update()
                 self.collisionScene.update()
             case "colour":
@@ -256,21 +268,13 @@ class TileEditor(QWidget):
         if action:
             self.undoStack.push(action)
         
-    def updateTile(self, tile: Tile|int):
-        if isinstance(tile, Tile):
-            tile = self.projectData.getTileset(self.state.currentTileset).tiles.index(tile)
-        self.projectData.clobberTileGraphicsCache()
-        self.tileScene.update()
-        self.arrangementScene.update()
-        self.collisionScene.update()
-        
     def updateMinitile(self, minitile: Minitile|int):
         if isinstance(minitile, int):
             minitile = self.projectData.getTileset(self.state.currentTileset).minitiles[minitile]
         
         minitile.BothToImage.cache_clear() 
         # TODO fix the following:
-        # the three instances of clearTileGraphicsCache() in this file should be more specific.
+        # the instances of clearTileGraphicsCache() in this file should be more specific.
         # however, if the current tileset/palette group/palette/subpalette doesn't match the
         # one we *should* be undoing (ie. it was changed), then cached graphics aren't invalidated.
         # in other words, we don't know the context of the change.
@@ -278,16 +282,6 @@ class TileEditor(QWidget):
         # it's less than ideal, but it doesn't seem to have too much of a performance impact.
         # Still... I'd like to do it properly. But I don't know where this data will go.
         # (the function does support specification as per definition and documentation)
-        
-        self.projectData.clobberTileGraphicsCache()
-        
-        self.tileScene.update()
-        self.arrangementScene.update()
-        self.collisionScene.update()
-        self.minitileScene.renderTileset(self.state.currentTileset,
-                                         self.state.currentPaletteGroup,
-                                         self.state.currentPalette,
-                                         self.state.currentSubpalette)
         
     def renderTiles(self):
         tileset = self.projectData.getTileset(self.state.currentTileset)
@@ -307,6 +301,93 @@ class TileEditor(QWidget):
             self.minitileScene.grid.show()
         else:
             self.minitileScene.grid.hide()
+            
+    def onCopyMinitile(self):
+        minitile = self.projectData.getTileset(self.state.currentTileset).minitiles[self.state.currentMinitile]
+        fg = minitile.foreground
+        bg = minitile.background
+        copied = json.dumps({"Type": "Minitile", "Data": {"FG": fg, "BG": bg}})
+        QApplication.clipboard().setText(copied)
+        
+    def onCopyArrangement(self):
+        tile = self.projectData.getTileset(self.state.currentTileset).tiles[self.state.currentTile]
+        arrangement = tile.metadata
+        copied = json.dumps({"Type": "Arrangement", "Data": {"Metadata": arrangement}})
+        QApplication.clipboard().setText(copied)
+        
+    def onCopyCollision(self):
+        tile = self.projectData.getTileset(self.state.currentTileset).tiles[self.state.currentTile]
+        collision = tile.collision
+        copied = json.dumps({"Type": "Collision", "Data": {"Collision": collision}})
+        QApplication.clipboard().setText(copied)
+        
+    def onCopyTile(self):
+        tile = self.projectData.getTileset(self.state.currentTileset).tiles[self.state.currentTile]
+        arrangement = tile.metadata
+        collision = tile.collision
+        copied = json.dumps({"Type": "Tile", "Data": {"Metadata": arrangement, "Collision": collision}})
+        QApplication.clipboard().setText(copied)
+        
+    def onPaste(self):
+        inMacro = False
+        try:
+            text = json.loads(QApplication.clipboard().text())
+            match text["Type"]:
+                case "Minitile":
+                    self.undoStack.beginMacro("Paste minitile")
+                    inMacro = True
+                    
+                    current = self.projectData.getTileset(self.state.currentTileset).minitiles[self.state.currentMinitile]
+                    self.undoStack.push(ActionChangeBitmap(current, text["Data"]["FG"], True))
+                    self.undoStack.push(ActionChangeBitmap(current, text["Data"]["BG"], False))
+                    
+                    self.undoStack.endMacro()
+                    inMacro = False
+                
+                case "Arrangement":
+                    self.undoStack.beginMacro("Paste tile arrangement")
+                    inMacro = True
+                    
+                    current = self.projectData.getTileset(self.state.currentTileset).tiles[self.state.currentTile]
+                    for index, i in enumerate(text["Data"]["Metadata"]):
+                        self.undoStack.push(ActionChangeArrangement(current, i, index))
+                        
+                    self.undoStack.endMacro()
+                    inMacro = False
+                    
+                case "Collision":
+                    self.undoStack.beginMacro("Paste tile collision")
+                    inMacro = True
+                    
+                    current = self.projectData.getTileset(self.state.currentTileset).tiles[self.state.currentTile]
+                    for index, i in enumerate(text["Data"]["Collision"]):
+                        self.undoStack.push(ActionChangeCollision(current, i, index))
+                    
+                    self.undoStack.endMacro()
+                    inMacro = False
+                
+                case "Tile":
+                    self.undoStack.beginMacro("Paste tile data")
+                    inMacro = True
+                    
+                    current = self.projectData.getTileset(self.state.currentTileset).tiles[self.state.currentTile]
+                    for index, i in enumerate(text["Data"]["Collision"]):
+                        self.undoStack.push(ActionChangeCollision(current, i, index))
+                    for index, i in enumerate(text["Data"]["Metadata"]):
+                        self.undoStack.push(ActionChangeArrangement(current, i, index))
+                    
+                    self.undoStack.endMacro()
+                    inMacro = False
+                
+        except json.decoder.JSONDecodeError:
+            if inMacro:
+                self.undoStack.endMacro()
+            logging.warning("Clipboard data is not valid for pasting.")
+        except Exception as e:
+            if inMacro:
+                self.undoStack.endMacro()
+            logging.warning(f"Failed to paste possibly valid data: {e}")
+            raise
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -468,6 +549,24 @@ class TileEditor(QWidget):
         self.menuFile.addAction(self.parent().sharedActionSettings)
         
         self.menuEdit = QMenu("&Edit")
+        self.copyMenu = QMenu("&Copy...")
+        self.copyMenu.setIcon(icons.ICON_COPY)
+        self.copyMinitileAction = QAction(icons.ICON_SUBPALETTE, "Copy &minitile graphics", shortcut=QKeySequence("Ctrl+C"))
+        self.copyMinitileAction.triggered.connect(self.onCopyMinitile)
+        self.copyArrangementAction = QAction(icons.ICON_TILESET, "Copy tile &arrangement", shortcut=QKeySequence("Ctrl+Shift+C"))
+        self.copyArrangementAction.triggered.connect(self.onCopyArrangement)
+        self.copyCollisionAction = QAction(icons.ICON_WALL, "Copy tile &collision", shortcut=QKeySequence("Ctrl+Alt+C"))
+        self.copyCollisionAction.triggered.connect(self.onCopyCollision)
+        self.copyAllTileAction = QAction(icons.ICON_SQUARE, "Copy entire &tile", shortcut=QKeySequence("Ctrl+Alt+Shift+C"))
+        self.copyAllTileAction.triggered.connect(self.onCopyTile)
+        self.copyMenu.addActions([self.copyMinitileAction, self.copyArrangementAction, self.copyCollisionAction, self.copyAllTileAction])
+        
+        self.pasteAction = QAction(icons.ICON_PASTE, "&Paste", shortcut=QKeySequence("Ctrl+V"))
+        self.pasteAction.triggered.connect(self.onPaste)
+        
+        self.menuEdit.addMenu(self.copyMenu)
+        self.menuEdit.addAction(self.pasteAction)
+        self.menuEdit.addSeparator()
         self.menuEdit.addActions([self.parent().sharedActionUndo, self.parent().sharedActionRedo])
         
         self.menuView = QMenu("&View")

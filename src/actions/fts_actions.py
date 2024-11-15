@@ -53,7 +53,9 @@ class ActionChangeBitmap(QUndoCommand):
         # minitile data isnt the same
         if self.bitmap != other.bitmap:
             return False
-        
+        # operates on wrong layer
+        if self.isForeground != other.isForeground:
+            return False        
         # success
         self.bitmap = other.bitmap
         return True

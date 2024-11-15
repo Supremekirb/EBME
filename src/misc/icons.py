@@ -145,11 +145,17 @@ def init_icons():
     global ICON_COORDS
     ICON_COORDS = icon("ph.crosshair-simple")
     
+    global ICON_SQUARE
+    ICON_SQUARE = icon("ph.square")
+    
     global ICON_RECT
     ICON_RECT = icon("ph.rectangle")
     
     global ICON_DIAMOND
     ICON_DIAMOND = icon("ph.diamond")
+    
+    global ICON_WALL
+    ICON_WALL = icon("ph.wall")
     
     global ICON_SPLIT
     ICON_SPLIT = icon("ph.git-merge")
