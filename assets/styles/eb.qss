@@ -20,9 +20,23 @@ QPushButton:hover {
     background-color: #7038D0;
 }
 
+QToolButton {
+    border: 2px solid #F7F7F7;
+    border-radius: 4px;
+    /* padding: 2px; */
+}
+
+QToolButton:hover {
+    background-color: #7038D0;
+}
+
 QCheckBox::indicator {
     border: 2px solid #F7F7F7;
     border-radius: 4px;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #7038D0;
 }
 
 QPushButton:pressed {

@@ -263,7 +263,7 @@ class MapMusicEditor(QDialog):
         if goto != None:
             for i in range(0, dialog.tree.topLevelItemCount()):
                 i = dialog.tree.topLevelItem(i)
-                if i.id == goto:
+                if i.hierachy.id == goto:
                     i.setSelected(True)
                     i.setExpanded(True)
                     dialog.show()

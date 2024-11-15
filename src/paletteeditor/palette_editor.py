@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
                                QHBoxLayout, QListWidget, QListWidgetItem,
                                QMenu, QMessageBox, QPushButton, QSpinBox,
                                QToolButton, QTreeWidgetItem, QVBoxLayout,
-                               QWidget)
+                               QWidget, QGridLayout)
 
 import src.misc.common as common
 import src.misc.debug as debug
@@ -564,12 +564,8 @@ class PaletteEditor(QWidget):
         
         editRowsLayout = QVBoxLayout()
         editRowsLayout.addStretch()
-        editTopRowLayout = QHBoxLayout()
-        editRowsLayout.addLayout(editTopRowLayout)
-        editMiddleRowLayout = QHBoxLayout()
-        editRowsLayout.addLayout(editMiddleRowLayout)
-        editBottomRowLayout = QHBoxLayout()
-        editRowsLayout.addLayout(editBottomRowLayout)
+        editRowsContent = QGridLayout()
+        editRowsLayout.addLayout(editRowsContent)
         editRowsLayout.addStretch()
         
         editOtherButtonsLayout = QHBoxLayout()
@@ -583,16 +579,15 @@ class PaletteEditor(QWidget):
             button.setFixedSize(24, 24)
             button.colourChanged.connect(lambda i=i: self.onTopColourChanged(i)) # bypass a rather curious lambda-in-loop side effect with i=i
             self.subpalette1Buttons.append(button)
-            editTopRowLayout.addWidget(button)
+            editRowsContent.addWidget(button, 0, i)
             
-            tempCopyButtonsLayout = QVBoxLayout()
             button = QToolButton()
             button.setIcon(icons.ICON_UP)
             button.setToolTip("Copy from bottom to top")
             button.clicked.connect(lambda _, i=i: self.transferColourUp(i)) # passes "isChecked" bool to first argument
             button.setDisabled(True)
             self.subpaletteTransferButtons.append(button)
-            tempCopyButtonsLayout.addWidget(button)
+            editRowsContent.addWidget(button, 1, i)
             
             button = QToolButton()
             button.setIcon(icons.ICON_DOWN)
@@ -600,15 +595,13 @@ class PaletteEditor(QWidget):
             button.clicked.connect(lambda _, i=i: self.transferColourDown(i))
             button.setDisabled(True)
             self.subpaletteTransferButtons.append(button)
-            tempCopyButtonsLayout.addWidget(button)
-            
-            editMiddleRowLayout.addLayout(tempCopyButtonsLayout)
+            editRowsContent.addWidget(button, 2, i)
             
             button = ColourButton()
             button.setFixedSize(24, 24)
             button.colourChanged.connect(lambda i=i: self.onBottomColourChanged(i))
             self.subpalette2Buttons.append(button)
-            editBottomRowLayout.addWidget(button)
+            editRowsContent.addWidget(button, 3, i)
         
         button = QToolButton()
         button.setIcon(icons.ICON_UP_DOUBLE)

@@ -19,6 +19,7 @@ import src.misc.debug as debug
 import src.misc.icons as icons
 import src.tileeditor.tile_editor as tile_editor
 from src.coilsnake.project_data import ProjectData
+from src.misc import flushrefs
 from src.misc.dialogues import AboutDialog, SettingsDialog
 from src.misc.worker import Worker
 from src.paletteeditor.palette_editor import PaletteEditor
@@ -142,6 +143,7 @@ class Project(QWidget):
         # successful load
         if isinstance(data, ProjectData):
             try:
+                flushrefs.flush() # VERY IMPORTANT I THINK
                 self.projectData = data
                 settings = QSettings()
                 settings.setValue("main/LastProjectPath", self.projectData.dir)
