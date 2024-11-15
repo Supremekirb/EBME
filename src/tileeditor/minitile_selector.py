@@ -30,10 +30,11 @@ class MinitileView(QGraphicsView):
         self.scene().hoverInfo.hide()
         super().leaveEvent(event)
         
-    def mouseMoveEvent(self, event: QMouseEvent):        
-        self.scene().hoverInfo.setGeometry(self.pos().x() + self.size().width() + 
-                                           self.scene().hoverInfo.layout().spacing() + 2, # TODO MULTIPLATFORM check if this leeway works on other platforms
-                                           self.pos().y() + self.size().height()//2,
+    def mouseMoveEvent(self, event: QMouseEvent):
+        globalBottomRight = self.mapToGlobal(self.rect().bottomRight())
+        globalTopRight = self.mapToGlobal(self.rect().topRight())
+        self.scene().hoverInfo.setGeometry(globalBottomRight.x(),
+                                           (globalBottomRight.y() + globalTopRight.y())//2 - self.scene().hoverInfo.height()//2,
                                            1, 1) # size arguments default to widget minimum if they're too small, which is what we want
         
         self.scene().hoverInfo.show()   
@@ -209,8 +210,6 @@ class TileEditorMinitile(QGraphicsPixmapItem):
     def boundingRect(self):
         return QRectF(0, 0, 8, 8)
 
-# TODO rewrite positioning code for this thing to play nice on several monitors
-# (can't test this at the time of commit)
 class MinitileHoverDisplay(QWidget):
     def __init__(self):
         super().__init__()
