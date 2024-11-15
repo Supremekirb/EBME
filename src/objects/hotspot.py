@@ -112,46 +112,77 @@ class MapEditorHotspot(QGraphicsRectItem):
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
         if self.scene().state.mode == common.MODEINDEX.HOTSPOT:
             if event.buttons() == Qt.MouseButton.LeftButton:
-                    if self.actionMode == MOUSEACTION.RESIZELEFT:
-                        self.setRect(self.rect().adjusted((event.scenePos().x()-self.rect().left())//8*8, 0, 0, 0))
-                    elif self.actionMode == MOUSEACTION.RESIZERIGHT:
-                        self.setRect(self.rect().adjusted(0, 0, (event.scenePos().x()-self.rect().right())//8*8, 0))
-                    elif self.actionMode == MOUSEACTION.RESIZETOP:
-                        self.setRect(self.rect().adjusted(0, (event.scenePos().y()-self.rect().top())//8*8, 0, 0))
-                    elif self.actionMode == MOUSEACTION.RESIZEBOTTOM:
-                        self.setRect(self.rect().adjusted(0, 0, 0, (event.scenePos().y()-self.rect().bottom())//8*8))
-                    elif self.actionMode == MOUSEACTION.RESIZETOPLEFT:
-                        self.setRect(self.rect().adjusted((event.scenePos().x()-self.rect().left())//8*8, (event.scenePos().y()-self.rect().top())//8*8, 0, 0))
-                    elif self.actionMode == MOUSEACTION.RESIZETOPRIGHT:
-                        self.setRect(self.rect().adjusted(0, (event.scenePos().y()-self.rect().top())//8*8, (event.scenePos().x()-self.rect().right())//8*8, 0))
-                    elif self.actionMode == MOUSEACTION.RESIZEBOTTOMLEFT:
-                        self.setRect(self.rect().adjusted((event.scenePos().x()-self.rect().left())//8*8, 0, 0, (event.scenePos().y()-self.rect().bottom())//8*8))
-                    elif self.actionMode == MOUSEACTION.RESIZEBOTTOMRIGHT:
-                        self.setRect(self.rect().adjusted(0, 0, (event.scenePos().x()-self.rect().right())//8*8, (event.scenePos().y()-self.rect().bottom())//8*8))
-                    elif self.actionMode == MOUSEACTION.MOVE:
-                        # moving should also use the rect, not set the pos
-                        # otherwise things break
-                        # idk why they have rect offset AND pos stuff
-                        dx = (event.scenePos().x()-self.rect().left()-self._mousePressOffset[0])//8*8
-                        dy = (event.scenePos().y()-self.rect().top()-self._mousePressOffset[1])//8*8
-                        self.setRect(self.rect().adjusted(dx, dy, dx, dy))
-                        
-                    # minimum size
-                    # BUG: resizing past minimum on the left and top causes it to move
-                    rect = self.rect()
-                    rect.setWidth(max(8, self.rect().width()))
-                    rect.setHeight(max(8, self.rect().height()))
-                    self.setRect(rect)                
-                        
-                    # don't go oob
-                    if self.rect().left() < 0:
-                        self.setRect(self.rect().adjusted(-self.rect().left(), 0, -self.rect().left(), 0))
-                    if self.rect().right() > common.EBMAPWIDTH:
-                        self.setRect(self.rect().adjusted(common.EBMAPWIDTH-self.rect().right(), 0, common.EBMAPWIDTH-self.rect().right(), 0))
-                    if self.rect().top() < 0:
-                        self.setRect(self.rect().adjusted(0, -self.rect().top(), 0, -self.rect().top()))
-                    if self.rect().bottom() > common.EBMAPHEIGHT:
-                        self.setRect(self.rect().adjusted(0, common.EBMAPHEIGHT-self.rect().bottom(), 0, common.EBMAPHEIGHT-self.rect().bottom()))
+                pos = event.scenePos().toPoint()
+                if pos.x() < 0:
+                    pos.setX(0)
+                if pos.x() >= common.EBMAPWIDTH:
+                    pos.setX(common.EBMAPWIDTH-1)
+                
+                if pos.y() < 0:
+                    pos.setY(0)
+                if pos.y() >= common.EBMAPHEIGHT:
+                    pos.setY(common.EBMAPHEIGHT-1)
+                
+                if self.actionMode == MOUSEACTION.RESIZELEFT:
+                    if pos.x() >= self.rect().right(): # manual clamp only necessary for left and top resizing
+                        pos.setX(self.rect().right()-1)
+                    self.setRect(self.rect().adjusted((pos.x()-self.rect().left())//8*8, 0, 0, 0))
+                    
+                elif self.actionMode == MOUSEACTION.RESIZERIGHT:
+                    self.setRect(self.rect().adjusted(0, 0, (pos.x()-self.rect().right())//8*8, 0))
+                    
+                elif self.actionMode == MOUSEACTION.RESIZETOP:
+                    if pos.y() >= self.rect().bottom(): # manual clamp only necessary for left and top resizing
+                        pos.setY(self.rect().bottom()-1)
+                    self.setRect(self.rect().adjusted(0, (pos.y()-self.rect().top())//8*8, 0, 0))
+                    
+                elif self.actionMode == MOUSEACTION.RESIZEBOTTOM:
+                    self.setRect(self.rect().adjusted(0, 0, 0, (pos.y()-self.rect().bottom())//8*8))
+                    
+                elif self.actionMode == MOUSEACTION.RESIZETOPLEFT:
+                    if pos.x() >= self.rect().right(): # manual clamp only necessary for left and top resizing
+                        pos.setX(self.rect().right()-1)
+                    if pos.y() >= self.rect().bottom(): # manual clamp only necessary for left and top resizing
+                        pos.setY(self.rect().bottom()-1)
+                    self.setRect(self.rect().adjusted((pos.x()-self.rect().left())//8*8, (pos.y()-self.rect().top())//8*8, 0, 0))
+                    
+                elif self.actionMode == MOUSEACTION.RESIZETOPRIGHT:
+                    if pos.y() >= self.rect().bottom(): # manual clamp only necessary for left and top resizing
+                        pos.setY(self.rect().bottom()-1)
+                    self.setRect(self.rect().adjusted(0, (pos.y()-self.rect().top())//8*8, (pos.x()-self.rect().right())//8*8, 0))
+                    
+                elif self.actionMode == MOUSEACTION.RESIZEBOTTOMLEFT:
+                    if pos.x() >= self.rect().right(): # manual clamp only necessary for left and top resizing
+                        pos.setX(self.rect().right()-1)
+                    self.setRect(self.rect().adjusted((pos.x()-self.rect().left())//8*8, 0, 0, (pos.y()-self.rect().bottom())//8*8))
+                    
+                elif self.actionMode == MOUSEACTION.RESIZEBOTTOMRIGHT:
+                    self.setRect(self.rect().adjusted(0, 0, (pos.x()-self.rect().right())//8*8, (pos.y()-self.rect().bottom())//8*8))
+                    
+                elif self.actionMode == MOUSEACTION.MOVE:
+                    # moving should also use the rect, not set the pos
+                    # otherwise things break
+                    # idk why they have rect offset AND pos stuff
+                    dx = (pos.x()-self.rect().left()-self._mousePressOffset[0])//8*8
+                    dy = (pos.y()-self.rect().top()-self._mousePressOffset[1])//8*8
+                    self.setRect(self.rect().adjusted(dx, dy, dx, dy))
+                    
+                # minimum size
+                rect = self.rect()
+                rect.setWidth(max(8, self.rect().width()))
+                rect.setHeight(max(8, self.rect().height()))
+                self.setRect(rect)                
+                    
+                # don't go oob
+                # this is redundant since the bug fix, but I won't remove it just in case
+                if self.rect().left() < 0:
+                    self.setRect(self.rect().adjusted(-self.rect().left(), 0, -self.rect().left(), 0))
+                if self.rect().right() > common.EBMAPWIDTH:
+                    self.setRect(self.rect().adjusted(common.EBMAPWIDTH-self.rect().right(), 0, common.EBMAPWIDTH-self.rect().right(), 0))
+                if self.rect().top() < 0:
+                    self.setRect(self.rect().adjusted(0, -self.rect().top(), 0, -self.rect().top()))
+                if self.rect().bottom() > common.EBMAPHEIGHT:
+                    self.setRect(self.rect().adjusted(0, common.EBMAPHEIGHT-self.rect().bottom(), 0, common.EBMAPHEIGHT-self.rect().bottom()))
                             
             super().mouseMoveEvent(event)
         
