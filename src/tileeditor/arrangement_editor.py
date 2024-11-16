@@ -31,12 +31,12 @@ class TileArrangementWidget(TileGraphicsWidget):
         # use current minitile
         metadata = self.currentTile.getMetadata(index) - self.currentTile.getMinitileID(index) + self.state.currentMinitile
         
-        # reset hflip and vflip flags
+        # # reset hflip and vflip flags
         metadata = metadata & ~0xC000
         
         # use current subpalette
-        metadata -= self.currentTile.getMinitileSubpalette(index) << 10
-        metadata += self.state.currentSubpalette << 10
+        metadata = metadata & ~0x1C00
+        metadata += (self.state.currentSubpalette + 2) << 10
         
         action = ActionChangeArrangement(self.currentTile, metadata, index)
         action.setText("Place minitile")
