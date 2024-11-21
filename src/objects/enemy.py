@@ -24,7 +24,7 @@ class EnemyTile:
 
 class EnemyMapGroup:
     """Enemy tile groups"""
-    colours = []
+    colours = {}
     def __init__(self, groupID: int, flag: int, colour: tuple|None, 
                  subgroup1: dict, subgroup2: dict, subgroup1rate = int, subgroup2rate = int):
         self.groupID = groupID
@@ -39,7 +39,7 @@ class EnemyMapGroup:
         else:
             self.colour = colour
 
-        EnemyMapGroup.colours.append(EnemyMapGroup.colourGen(self.groupID))
+        EnemyMapGroup.colours[self.groupID] = EnemyMapGroup.colourGen(self.groupID)
 
     @staticmethod
     def colourGen(i: int) -> tuple[int, int, int]:

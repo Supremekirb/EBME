@@ -14,8 +14,6 @@ from src.widgets import input
 def flush():
     npc.MapEditorNPC.instances = []
     enemy.MapEditorEnemyTile.instances = []
-    enemy.MapEditorEnemyTile.brushes = {} # yes this is a dict
-    enemy.EnemyMapGroup.colours = [] # this is probably patching a normal bug
     trigger.MapEditorTrigger.instances = []
     warp.MapEditorWarp.instances = []
     input.BaseChangerSpinbox.instances = []
