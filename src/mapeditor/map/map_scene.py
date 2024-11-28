@@ -47,6 +47,7 @@ from src.misc.dialogues import ClearDialog
 from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
+from src.objects.sector import Sector
 from src.objects.warp import MapEditorWarp
 
 if TYPE_CHECKING:
@@ -887,6 +888,14 @@ class MapEditorScene(QGraphicsScene):
 
         sector = self.projectData.getSector(coords)
         self.parent().sidebarTile.fromSector(sector)
+    
+    def tileScratchSpacePicked(self, tile: int, tileset: int, palettegroup: int, palette: int):
+        self.state.currentTile = tile
+        self.parent().sidebarTile.selectTile(tile)
+        
+        # i honestly do not care
+        self.parent().sidebarTile.fromSector(Sector(-1, -1, -1, palette, palettegroup, tileset,
+                                                    "", "", "", "", "", -1, -1))
 
     def refreshTile(self, coords: EBCoords):
         """refresh a tile at this location.

@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
                                QProgressBar, QPushButton, QSizePolicy,
                                QVBoxLayout, QWidget)
 
+from src.misc.scratch import TileScratchSpace
 import src.coilsnake.load as load
 import src.coilsnake.save as save
 import src.mapeditor.map_editor as map_editor
@@ -151,6 +152,16 @@ class Project(QWidget):
                 self.addRecent(self.projectData.getProjectName(), self.projectData.dir)
                 
                 try:
+                    self.updateStatusLabel("Loading things...") # needs to come first b/c of connections
+                    self.statusLabel.repaint()
+                    try:
+                        self.mainWin.tileScratchSpace = TileScratchSpace(self.projectData, self.mainWin)
+                    except Exception as e:
+                        common.showErrorMsg(title="Error loading tile scratch space", text="An error occured while loading the tile scratch space.", info=str(e))
+                        self.updateStatusLabel("Error loading tile scratch space.")
+                        logging.warning(f"Error loading tile scratch space: {traceback.format_exc()}")
+                        raise
+                    
                     self.updateStatusLabel("Loading map editor...")
                     self.statusLabel.repaint() # otherwise it may not show before we actually process the next bit
                     try:

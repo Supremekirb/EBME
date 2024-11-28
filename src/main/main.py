@@ -1,8 +1,8 @@
 import logging
 
-from PySide6.QtCore import QSettings, Qt, QTimer
+from PySide6.QtCore import QSettings, Qt
 from PySide6.QtGui import (QAction, QDesktopServices, QFontDatabase, QIcon,
-                           QKeySequence, QUndoStack)
+                           QKeySequence)
 from PySide6.QtWidgets import (QLabel, QMainWindow, QMenuBar, QMessageBox,
                                QTabWidget, QWidget)
 
@@ -12,6 +12,7 @@ from src.mapeditor.map_editor import MapEditor
 from src.misc import debug as debug
 from src.misc import icons as icons
 from src.misc.dialogues import AboutDialog, SettingsDialog
+from src.misc.scratch import TileScratchSpace
 from src.paletteeditor.palette_editor import PaletteEditor
 from src.tileeditor.tile_editor import TileEditor
 from src.widgets.input import BaseChangerSpinbox
@@ -74,6 +75,10 @@ class MainApplication(QMainWindow):
         
         self.sharedActionSettings = QAction(icons.ICON_SETTINGS, "&Settings...")
         self.sharedActionSettings.triggered.connect(lambda: SettingsDialog.openSettings(self))
+        
+        self.tileScratchSpace: TileScratchSpace = None # created after project load
+        self.sharedActionTileSpace = QAction(icons.ICON_EASEL, "Tile scratch space...")
+        self.sharedActionTileSpace.triggered.connect(lambda: self.tileScratchSpace.show()) # needs to be lambda because it is None right now
         
         self.setupUI()
         

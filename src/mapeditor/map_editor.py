@@ -395,7 +395,8 @@ class MapEditor(QWidget):
         self.clearAction.triggered.connect(self.scene.onClear)
         self.mapMusicAction = QAction(icons.ICON_MUSIC_LIST, "&Map music editor...")
         self.mapMusicAction.triggered.connect(lambda: MapMusicEditor.openMapMusicEditor(self, self.scene.undoStack, self.projectData))
-        self.menuTools.addActions([self.renderMapAction, self.png2ftsAction, self.clearAction, self.mapMusicAction])
+        self.menuTools.addActions([self.renderMapAction, self.png2ftsAction, self.clearAction, self.mapMusicAction, self.parent().sharedActionTileSpace])
+        self.parent().tileScratchSpace.scene.tileSelected.connect(self.scene.tileScratchSpacePicked)
 
         self.menuHelp = QMenu("&Help")
         self.menuHelp.addAction(self.parent().sharedActionAbout)

@@ -388,6 +388,18 @@ class TileEditor(QWidget):
                 self.undoStack.endMacro()
             logging.warning(f"Failed to paste possibly valid data: {e}")
             raise
+    
+    def tileScratchSpacePicked(self, tile: int, tileset: int, palettegroup: int, palette: int):
+        self.state.currentTile = tile
+        self.tilesetSelect.setCurrentText(str(tileset))
+        self.paletteGroupSelect.setCurrentText(str(palettegroup))
+        self.paletteSelect.setCurrentText(str(palette))
+        self.tileScene.moveCursorToTile(tile)
+        self.tileView.centerOn(self.tileScene.selectionIndicator)
+        self.onTilesetSelect()
+        self.onTileSelect(tile)
+        self.arrangementScene.update()
+        self.collisionScene.update()
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -589,7 +601,8 @@ class TileEditor(QWidget):
         self.renderMinitilesAction.triggered.connect(self.renderMiniiles)
         self.autoRearrangeAction = QAction(icons.ICON_AUTO_REARRANGE, "&Auto minitile rearranger...")
         self.autoRearrangeAction.triggered.connect(self.onAutoRearrange)
-        self.menuTools.addActions([self.renderTilesAction, self.renderMinitilesAction, self.autoRearrangeAction])
+        self.menuTools.addActions([self.renderTilesAction, self.renderMinitilesAction, self.autoRearrangeAction, self.parent().sharedActionTileSpace])
+        self.parent().tileScratchSpace.scene.tileSelected.connect(self.tileScratchSpacePicked)
         
         self.menuHelp = QMenu("&Help")        
         self.menuHelp.addAction(self.parent().sharedActionAbout)
