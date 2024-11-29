@@ -119,6 +119,11 @@ class Project(QWidget):
 
             self.window().setWindowTitle("EBME")
             self.updateStatusLabel("Loading project...")
+            
+            # close non-blocking project-related dialogues
+            # only do it if they exist (ie. we loaded a project)
+            if self.mainWin.tileScratchSpace:
+                self.mainWin.tileScratchSpace.close()
 
             self.loadingProgress.setMaximum(0)
             self.loadingProgress.setMinimum(0)

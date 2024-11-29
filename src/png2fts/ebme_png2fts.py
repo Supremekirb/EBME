@@ -1,4 +1,3 @@
-import sys
 from PySide6.QtCore import (QObject, QProcess, QSettings, QTemporaryFile,
                             QThread, Signal)
 
@@ -25,7 +24,7 @@ class EBME_png2fts(QObject):
 
         self.png2ftsThread = QThread()
         self.png2ftsProcess = QProcess()
-        self.png2ftsProcess.setProgram(sys.executable)
+        self.png2ftsProcess.setProgram("python") # TODO double-check if it's possible to use the bundled Python (it may not be?)
 
         userPath = QSettings().value("programs/png2fts", type=str)
         if userPath != "":

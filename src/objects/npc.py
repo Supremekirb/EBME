@@ -336,6 +336,7 @@ class MapEditorNPC(QGraphicsPixmapItem):
         
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
         if (not self.isDummy) and self.scene().state.mode == common.MODEINDEX.NPC:
+            self.setSelected(True)
             menu = QMenu()
             menu.addAction(icons.ICON_NEW, "New NPC",
                         lambda: self.scene().newNPC(EBCoords(event.scenePos().x(), event.scenePos().y())))

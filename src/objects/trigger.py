@@ -8,9 +8,9 @@ from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
                                QGraphicsSceneMouseEvent, QMenu)
 
 import src.misc.common as common
+import src.misc.icons as icons
 from src.actions.trigger_actions import ActionMoveTrigger
 from src.misc.coords import EBCoords
-import src.misc.icons as icons
 
 if TYPE_CHECKING:
     from src.mapeditor.map.map_scene import MapEditorScene
@@ -190,6 +190,7 @@ class MapEditorTrigger(QGraphicsPixmapItem):
     
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
         if self.scene().state.mode == common.MODEINDEX.TRIGGER:
+            self.setSelected(True)
             menu = QMenu()
             menu.addAction(icons.ICON_NEW, "New trigger",
                         lambda: self.scene().newTrigger(EBCoords(event.scenePos().x(), event.scenePos().y())))

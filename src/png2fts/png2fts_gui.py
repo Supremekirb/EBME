@@ -72,7 +72,7 @@ class png2ftsMapEditorGui(QDialog):
         self.cancelButton.setEnabled(True)
 
     def setupUI(self):
-        self.disclaimer = QLabel("png2fts support is still somewhat experimental.\nUse at your own risk!")
+        self.disclaimer = QLabel("png2fts support is still somewhat experimental.\nUse at your own risk!\nYou need Python installed on your system to use png2fts.")
 
         self.pngInputLayout = QHBoxLayout()
         self.pngInput = QLineEdit()

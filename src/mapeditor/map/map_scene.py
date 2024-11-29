@@ -127,7 +127,10 @@ class MapEditorScene(QGraphicsScene):
         self.populateTriggers()
         self.populateHotspots()
         self.populateWarps()
-        # self.populateTiles()
+        
+        self.dontUpdateModeNextAction = False
+        """Avoid updating the current mode when pushing an action to the stack. Unset after the action is received. Won't affect undo/redo later on."""
+        self._lastCoords = EBCoords(0, 0)
     
     def updateSelected(self):
         match self.state.mode:
@@ -380,11 +383,6 @@ class MapEditorScene(QGraphicsScene):
         # do this *always* to be safe        
         commands.append(command)
         
-        progressDialog = QProgressDialog(f'Executing "{command.text()}"...', "NONCANCELLABLE", 0, len(commands))
-        progressDialog.setCancelButton(None) # no cancel button
-        progressDialog.setWindowFlag(Qt.WindowCloseButtonHint, False) # no system close button, either
-        progressDialog.setWindowModality(Qt.WindowModal)
-        
         for c in commands:
             if isinstance(c, ActionPlaceTile):
                 actionType = "tile"
@@ -451,45 +449,47 @@ class MapEditorScene(QGraphicsScene):
                 
             if isinstance(c, ActionChangeCollision):
                 actionType = "collision"
-            
-            progressDialog.setValue(progressDialog.value()+1)
-        
-        # progressDialog.setValue(progressDialog.maximum())
-        progressDialog.close()
 
         match actionType:
             case "tile":
-                self.parent().sidebar.setCurrentIndex(common.MODEINDEX.TILE)
+                if not self.dontUpdateModeNextAction:
+                    self.parent().sidebar.setCurrentIndex(common.MODEINDEX.TILE)
             case "npc":
-                self.parent().sidebar.setCurrentIndex(common.MODEINDEX.NPC)
+                if not self.dontUpdateModeNextAction:
+                    self.parent().sidebar.setCurrentIndex(common.MODEINDEX.NPC)
                 if self.state.currentNPCInstances != []:
                     self.parent().sidebarNPC.fromNPCInstances()
             case "trigger":
-                self.parent().sidebar.setCurrentIndex(common.MODEINDEX.TRIGGER)
+                if not self.dontUpdateModeNextAction:
+                    self.parent().sidebar.setCurrentIndex(common.MODEINDEX.TRIGGER)
                 if self.state.currentTriggers != []:
                     self.parent().sidebarTrigger.fromTriggers()
             case "sector":
-                self.parent().sidebar.setCurrentIndex(common.MODEINDEX.SECTOR)
+                if not self.dontUpdateModeNextAction:
+                    self.parent().sidebar.setCurrentIndex(common.MODEINDEX.SECTOR)
                 if self.state.currentSectors != []:
                     self.parent().sidebarSector.fromSectors()   
             case "enemy":
-                self.parent().sidebar.setCurrentIndex(common.MODEINDEX.ENEMY)
+                if not self.dontUpdateModeNextAction:
+                    self.parent().sidebar.setCurrentIndex(common.MODEINDEX.ENEMY)
                 self.parent().sidebarEnemy.selectEnemyTile(self.state.currentEnemyTile)
-                # if self.state.currentEnemyTiles != []:
-                #     self.parent().sidebarEnemy.fromEnemyTiles()
             case "hotspot":
-                self.parent().sidebar.setCurrentIndex(common.MODEINDEX.HOTSPOT)
+                if not self.dontUpdateModeNextAction:
+                    self.parent().sidebar.setCurrentIndex(common.MODEINDEX.HOTSPOT)
                 self.parent().sidebarHotspot.fromHotspot()
             case "warp":
-                self.parent().sidebar.setCurrentIndex(common.MODEINDEX.WARP)
+                if not self.dontUpdateModeNextAction:
+                    self.parent().sidebar.setCurrentIndex(common.MODEINDEX.WARP)
                 self.parent().sidebarWarp.fromWarp()
             case "collision":
-                self.parent().sidebar.setCurrentIndex(common.MODEINDEX.COLLISION)
+                if not self.dontUpdateModeNextAction:
+                    self.parent().sidebar.setCurrentIndex(common.MODEINDEX.COLLISION)
                 self.parent().sidebarCollision.display.update()
                 if self.parent().sidebarCollision.presets._lastTile:
                     self.parent().sidebarCollision.presets.verifyTileCollision(self.parent().sidebarCollision.presets._lastTile)
     
         self.update()
+        self.dontUpdateModeNextAction = False # unset after action is pushed
 
     def onCopy(self):
         match self.state.mode:
@@ -684,7 +684,13 @@ class MapEditorScene(QGraphicsScene):
         """
         self.state.tempMode = index
 
-    def onChangeMode(self, index: int):           
+    def onChangeMode(self, index: int):
+        event = QGraphicsSceneMouseEvent(QGraphicsSceneMouseEvent.Type.MouseButtonRelease)
+        event.setScenePos(QPoint(*self._lastCoords.coords()))
+        self.mouseReleaseEvent(event)
+        for i in self.selectedItems():
+            i.mouseReleaseEvent(event)
+                   
         if index == common.MODEINDEX.SECTOR:
             self.sectorSelect.show()
         else:

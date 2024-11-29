@@ -91,7 +91,8 @@ class SidebarHotspot(QWidget):
             self.mapeditor.scene.undoStack.push(action)
             self.mapeditor.scene.refreshHotspot(hotspot.id)
     
-        if self.hotspotComment.toPlainText() != hotspot.comment:
+        # when plaintext is empty, it returns "", but an empty comment is None
+        if (self.hotspotComment.toPlainText() != hotspot.comment) and not (self.hotspotComment.toPlainText() == "" and hotspot.comment == None):
             action = ActionChangeHotspotComment(hotspot, self.hotspotComment.toPlainText())
             
             self.mapeditor.scene.undoStack.push(action)

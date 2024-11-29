@@ -337,7 +337,9 @@ class SidebarTrigger(QWidget):
                 index = (i.coords.coordsWarp()[0] % 4) + (i.coords.coordsWarp()[1] % 4) * 4
                 commands.append(ActionChangeCollision(tile, collision|common.COLLISIONBITS.TRIGGER, index))
         if commands:
+            self.mapeditor.scene.dontUpdateModeNextAction = True
             self.mapeditor.scene.undoStack.push(MultiActionWrapper(commands, "Fix trigger collision"))
+            self.fromTriggers() # refresh to remove warning
         
         
     def setupUI(self):
