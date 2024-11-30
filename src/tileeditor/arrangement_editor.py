@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QPoint, QSettings, Qt
 from PySide6.QtGui import QMouseEvent
 
 from src.actions.fts_actions import ActionChangeArrangement
@@ -17,7 +17,10 @@ class TileArrangementWidget(TileGraphicsWidget):
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
             if Qt.KeyboardModifier.ShiftModifier in event.modifiers() or Qt.KeyboardModifier.ControlModifier in event.modifiers():
-                self.pickMinitile(event.pos())
+                if (Qt.KeyboardModifier.AltModifier in event.modifiers()) ^ QSettings().value("main/alternateMinitilePick", False, type=bool):
+                    self.pickMinitile(event.pos(), nosubpal=True)
+                else:
+                    self.pickMinitile(event.pos())
             else:
                 self.placeMinitile(event.pos())
         elif event.button() == Qt.MouseButton.RightButton:
@@ -72,13 +75,15 @@ class TileArrangementWidget(TileGraphicsWidget):
         action.setText("Modify minitile mirroring/flipping")
         self.state.tileEditor.undoStack.push(action)
         
-    def pickMinitile(self, pos: QPoint):
+    def pickMinitile(self, pos: QPoint, nosubpal: bool=False):
         index = self.indexAtPos(pos)
         if index == None:
             return
         
         minitile = self.currentTile.getMinitileID(index)
         self.state.tileEditor.selectMinitile(minitile)
-        subpalette = self.currentTile.getMinitileSubpalette(index)
-        self.state.tileEditor.paletteView.setSubpaletteIndex(subpalette)
-        self.state.tileEditor.onSubpaletteSelect()
+        
+        if not nosubpal:
+            subpalette = self.currentTile.getMinitileSubpalette(index)
+            self.state.tileEditor.paletteView.setSubpaletteIndex(subpalette)
+            self.state.tileEditor.onSubpaletteSelect()
