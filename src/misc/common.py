@@ -71,6 +71,13 @@ MINEDITORHEIGHT = 310
 # Max number of recent projects to remember
 MAXRECENTS = 32
 
+LINEENDINGINDEX = IntEnum("LINEENDINGINDEX", ["AUTO", # python default
+                                              "UNIX", # LF
+                                              "WINDOWS", # CR LF
+                                              "MAC", # CR
+                                              ],
+                                              start=0) 
+
 MAPZVALUES = IntEnum("MAPZVALUES", ["TILE", # actual map graphics
                                     "IMPORTEDMAP", # png2fts map preview
                                     "GRID", # the grid

@@ -357,10 +357,16 @@ class SettingsDialog(QDialog):
         self.noCtrlZoom = QCheckBox("")
         self.absolutePaste = QCheckBox("")
         self.alternateMinitilePick = QCheckBox("")
+        self.eol = QComboBox()
+        self.eol.addItems(["Auto (Recommended)",
+                           "LF (Unix, macOS, EBProjEd compatibility)",
+                           "CR LF (Windows)",
+                           "CR (macOS < 10.0 compatibility)"])
         self.generalLayout.addRow("Load most recent project on startup:", self.loadLastProject)
         self.generalLayout.addRow("Zoom without holding Ctrl:", self.noCtrlZoom)
         self.generalLayout.addRow("Paste NPCs and triggers at original locations:", self.absolutePaste)
         self.generalLayout.addRow("Pick minitiles without subpalettes by default (otherwise hold Alt):", self.alternateMinitilePick)
+        self.generalLayout.addRow("Line endings when saving:", self.eol)
         
         self.personalisationBox = QGroupBox("Personalisation")
         self.personalisationLayout = QFormLayout()
@@ -449,6 +455,7 @@ class SettingsDialog(QDialog):
         self.noCtrlZoom.setChecked(self.settings.value("main/noCtrlZoom", False, type=bool))
         self.absolutePaste.setChecked(self.settings.value("main/absolutePaste", False, type=bool))
         self.alternateMinitilePick.setChecked(self.settings.value("main/alternateMinitilePick", False, type=bool))
+        self.eol.setCurrentIndex(self.settings.value("main/lineEnding", 0, type=int))
         self.applicationTheme.setCurrentText(self.settings.value("personalisation/applicationTheme", QApplication.style().objectName(), type=str))
         self.smoothGoto.setCurrentText(self.settings.value("personalisation/smoothGoto", "Always enabled", type=str))
         self.showUndoRedo.setChecked(self.settings.value("main/showUndoRedo", True, type=bool))
@@ -462,6 +469,7 @@ class SettingsDialog(QDialog):
         self.settings.setValue("main/absolutePaste", self.absolutePaste.isChecked())
         self.settings.setValue("main/alternateMinitilePick", self.alternateMinitilePick.isChecked())
         self.settings.setValue("main/showUndoRedo", self.showUndoRedo.isChecked())
+        self.settings.setValue("main/lineEnding", self.eol.currentIndex())
         
         self.settings.setValue("personalisation/applicationTheme", self.applicationTheme.currentText())
         self.settings.setValue("personalisation/smoothGoto", self.smoothGoto.currentText())
