@@ -3,7 +3,8 @@ import os
 import traceback
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QSettings, QThread, QTimer
+import requests
+from PySide6.QtCore import QSettings, Qt, QThread, QTimer
 from PySide6.QtGui import QAction, QKeySequence, QPixmap
 from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
                                QHBoxLayout, QLabel, QLineEdit, QListWidget,
@@ -11,7 +12,6 @@ from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
                                QProgressBar, QPushButton, QSizePolicy,
                                QVBoxLayout, QWidget)
 
-from src.misc.scratch import TileScratchSpace
 import src.coilsnake.load as load
 import src.coilsnake.save as save
 import src.mapeditor.map_editor as map_editor
@@ -22,6 +22,7 @@ import src.tileeditor.tile_editor as tile_editor
 from src.coilsnake.project_data import ProjectData
 from src.misc import flushrefs
 from src.misc.dialogues import AboutDialog, SettingsDialog
+from src.misc.scratch import TileScratchSpace
 from src.misc.worker import Worker
 from src.paletteeditor.palette_editor import PaletteEditor
 
@@ -351,6 +352,7 @@ class Project(QWidget):
 
         self.window().setWindowTitle(f"EBME - {self.projectData.getProjectName()} - {self.projectData.dir}")
         
+    # TODO make this undo-able
     def changeProjectInfo(self):
         if hasattr(self, "projectData"):
             self.projectData.projectSnake['Title'] = self.projectTitleInput.text()
@@ -359,6 +361,23 @@ class Project(QWidget):
             self.projectDescInput.blockSignals(True) # so we don't want to trigger this function again
             self.projectData.projectSnake['Description'] = self.projectDescInput.toPlainText()
             self.projectDescInput.blockSignals(False)
+            
+            
+    def checkForUpdates(self):
+        try:
+            response = requests.get(f"https://api.github.com/repos/{common.OWNER}/{common.REPOSITORY}/releases/latest")
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            self.versionStatus.setText(f"Error {e.errno} fetching update info.")
+            raise
+        except Exception as e:
+            self.versionStatus.setText("Error fetching update info.")
+            raise
+        latest = response.json()["tag_name"]
+        if latest != common.VERSION:
+            self.versionStatus.setText(f"Update available! {common.VERSION} --> {latest}. <a href='https://github.com/{common.OWNER}/{common.REPOSITORY}/releases/latest'>Download it here.</a>")
+        else:
+            self.versionStatus.setText("You are up to date!")
 
     def setupUI(self):
         self.menuFile = QMenu("&File")
@@ -428,9 +447,17 @@ class Project(QWidget):
 
         self.ebmeInfo = QGroupBox("EBME Changelog")
         self.ebmeInfoLayout = QVBoxLayout()
-
-        self.currentVersion = QLabel(f"You're on version {common.VERSION}.")
-        self.ebmeInfoLayout.addWidget(self.currentVersion)
+        
+        self.versionStatusLayout = QHBoxLayout()
+        self.versionStatus = QLabel(f"You're on version {common.VERSION}.")
+        self.versionStatus.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
+        self.versionStatus.setOpenExternalLinks(True)
+        self.checkForUpdatesButton = QPushButton("Check for update")
+        self.checkForUpdatesButton.clicked.connect(self.checkForUpdates)
+        self.checkForUpdatesButton.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.versionStatusLayout.addWidget(self.checkForUpdatesButton)
+        self.versionStatusLayout.addWidget(self.versionStatus)
+        self.ebmeInfoLayout.addLayout(self.versionStatusLayout)
 
         self.ebmeChangelog = QPlainTextEdit()
         self.ebmeChangelog.setPlainText(common.CHANGELOG)

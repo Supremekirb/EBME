@@ -71,7 +71,7 @@ class MainApplication(QMainWindow):
         self.sharedActionDebug = QAction(icons.ICON_DEBUG, "&Debug output...")
         self.sharedActionDebug.triggered.connect(lambda: debug.DebugOutputDialog.openDebug(self))
         self.sharedActionReport = QAction(icons.ICON_BUG, "&Report a bug...")
-        self.sharedActionReport.triggered.connect(lambda: QDesktopServices.openUrl("https://github.com/Supremekirb/EBME/issues/new"))
+        self.sharedActionReport.triggered.connect(lambda: QDesktopServices.openUrl(f"https://github.com/{common.OWNER}/{common.REPOSITORY}/issues/new"))
         
         self.sharedActionSettings = QAction(icons.ICON_SETTINGS, "&Settings...")
         self.sharedActionSettings.triggered.connect(lambda: SettingsDialog.openSettings(self))

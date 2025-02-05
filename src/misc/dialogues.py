@@ -249,7 +249,7 @@ class AboutDialog(QDialog):
         unlicenseButton.clicked.connect(lambda: EBMELicenseDialog.showLicense(self))
         form.addRow(unlicenseButton)
         
-        repoLink = QLabel('<a href="https://github.com/Supremekirb/EBME" style=color:#7038D0>Visit the repository on GitHub.</a>')
+        repoLink = QLabel(f'<a href="https://github.com/{common.OWNER}/{common.REPOSITORY}" style=color:#7038D0>Visit the repository on GitHub.</a>')
         repoLink.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
         repoLink.setOpenExternalLinks(True)
         form.addRow(repoLink)

@@ -53,6 +53,10 @@ Full changelog: Help -> About EBME -> Visit the repository on GitHub.
 Initial release! Thank you for waiting for so long :)
 """
 
+# for getting updates
+REPOSITORY = "EBME"
+OWNER = "SupremeKirb"
+
 # in pixels
 EBMAPWIDTH = 8192
 EBMAPHEIGHT = 10240
