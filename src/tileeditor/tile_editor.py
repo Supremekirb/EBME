@@ -22,6 +22,7 @@ from src.actions.misc_actions import MultiActionWrapper
 from src.coilsnake.fts_interpreter import Minitile, Tile
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AutoMinitileRearrangerDialog,
+                                FindUnusedMinitilesDialog,
                                 RenderMinitilesDialog, RenderTilesDialog,
                                 SettingsDialog)
 from src.tileeditor.arrangement_editor import TileArrangementWidget
@@ -267,6 +268,9 @@ class TileEditor(QWidget):
         
         if action:
             self.undoStack.push(action)
+            
+    def onFindUnused(self):
+        FindUnusedMinitilesDialog.findUnusedMinitiles(self, self.projectData, self.state.currentTileset)
         
     def updateMinitile(self, minitile: Minitile|int):
         if isinstance(minitile, int):
@@ -601,7 +605,9 @@ class TileEditor(QWidget):
         self.renderMinitilesAction.triggered.connect(self.renderMiniiles)
         self.autoRearrangeAction = QAction(icons.ICON_AUTO_REARRANGE, "&Auto minitile rearranger...")
         self.autoRearrangeAction.triggered.connect(self.onAutoRearrange)
-        self.menuTools.addActions([self.renderTilesAction, self.renderMinitilesAction, self.autoRearrangeAction, self.parent().sharedActionTileSpace])
+        self.findUnusedAction = QAction(icons.ICON_UNUSED_OBJECT, "&Unused minitile finder...")
+        self.findUnusedAction.triggered.connect(self.onFindUnused)
+        self.menuTools.addActions([self.renderTilesAction, self.renderMinitilesAction, self.autoRearrangeAction, self.findUnusedAction, self.parent().sharedActionTileSpace])
         self.parent().tileScratchSpace.scene.tileSelected.connect(self.tileScratchSpacePicked)
         
         self.menuHelp = QMenu("&Help")        

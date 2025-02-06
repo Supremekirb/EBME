@@ -45,7 +45,6 @@ class MinitileView(QGraphicsView):
         return super().scene()
     
 class MinitileScene(QGraphicsScene):
-    MINITILE_COUNT = 512
     MINITILE_WIDTH = 16
     
     def __init__(self, parent: "TileEditor", projectData: ProjectData):
@@ -53,7 +52,7 @@ class MinitileScene(QGraphicsScene):
         
         self.projectData = projectData
         
-        self.setSceneRect(0, 0, 8*self.MINITILE_WIDTH, 8*self.MINITILE_COUNT//self.MINITILE_WIDTH)
+        self.setSceneRect(0, 0, 8*self.MINITILE_WIDTH, 8*common.MAXMINITILES//self.MINITILE_WIDTH)
         
         self.setBackgroundBrush(Qt.GlobalColor.white)
         
@@ -87,7 +86,7 @@ class MinitileScene(QGraphicsScene):
         self._mouseDownPos = QPoint()
         
         # populate
-        for i in range(self.MINITILE_COUNT):
+        for i in range(common.MAXMINITILES):
             minitile = TileEditorMinitile()
             minitile.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(
                 projectData.tilesets[0].minitiles[i].BothToImage(
@@ -109,10 +108,10 @@ class MinitileScene(QGraphicsScene):
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         pos = event.scenePos()
         x = common.cap(pos.x() // 8, 0, self.MINITILE_WIDTH-1)
-        y = common.cap(pos.y() // 8, 0, (self.MINITILE_COUNT/self.MINITILE_WIDTH)-1)
+        y = common.cap(pos.y() // 8, 0, (common.MAXMINITILES/self.MINITILE_WIDTH)-1)
             
         index = int(y * self.MINITILE_WIDTH + x)
-        if index not in range(self.MINITILE_COUNT):
+        if index not in range(common.MAXMINITILES):
             return super().mouseMoveEvent(event)
 
         if Qt.MouseButton.LeftButton in event.buttons():
@@ -143,12 +142,12 @@ class MinitileScene(QGraphicsScene):
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         pos = event.scenePos()
         x = common.cap(pos.x() // 8, 0, self.MINITILE_WIDTH)
-        y = common.cap(pos.y() // 8, 0, self.MINITILE_COUNT/self.MINITILE_WIDTH)
+        y = common.cap(pos.y() // 8, 0, common.MAXMINITILES/self.MINITILE_WIDTH)
         
         if event.button() == Qt.MouseButton.LeftButton:
             self._mouseDownPos = QPoint(x*8, y*8)
             index = int(y * self.MINITILE_WIDTH + x)
-            if index not in range(self.MINITILE_COUNT):
+            if index not in range(common.MAXMINITILES):
                 return super().mousePressEvent(event)
             
             self.selector.setPos(x*8, y*8)
@@ -159,9 +158,9 @@ class MinitileScene(QGraphicsScene):
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
         pos = event.scenePos()
         x = common.cap(pos.x() // 8, 0, self.MINITILE_WIDTH)
-        y = common.cap(pos.y() // 8, 0, self.MINITILE_COUNT/self.MINITILE_WIDTH)
+        y = common.cap(pos.y() // 8, 0, common.MAXMINITILES/self.MINITILE_WIDTH)
         index = int(y * self.MINITILE_WIDTH + x)
-        if index not in range(self.MINITILE_COUNT):
+        if index not in range(common.MAXMINITILES):
             return super().mouseReleaseEvent(event)
         
         if event.button() == Qt.MouseButton.LeftButton:
@@ -183,7 +182,7 @@ class MinitileScene(QGraphicsScene):
         return super().mouseReleaseEvent(event)
 
     def moveCursorToMinitile(self, minitile: int):
-        if minitile >= self.MINITILE_COUNT: raise ValueError(f"Minitile must be in range 0-{self.MINITILE_COUNT}! Recieved {minitile}")
+        if minitile >= common.MAXMINITILES: raise ValueError(f"Minitile must be in range 0-{common.MAXMINITILES}! Recieved {minitile}")
         
         x = minitile % self.MINITILE_WIDTH
         y = minitile // self.MINITILE_WIDTH

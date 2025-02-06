@@ -66,7 +66,7 @@ class FullTileset:
         ### Returns
         `minitiles` - a list of Minitile objects"""
         minitiles: list[Minitile] = []
-        for t in range(0, 512*3, 3): # 512 minitiles per tileset, three lines per minitile
+        for t in range(0, common.MAXMINITILES*3, 3): # 512 minitiles per tileset, three lines per minitile
             bg = []
             fg = []
             for i in range(0, 32*2, 1): # 32 bytes per bitmap (byte = 2 characters)

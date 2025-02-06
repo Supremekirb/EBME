@@ -701,7 +701,7 @@ class RenderMinitilesDialog(QDialog):
         
         self.renderRows = QSpinBox()
         self.renderRows.setMinimum(1)
-        self.renderRows.setMaximum(512)
+        self.renderRows.setMaximum(common.MAXMINITILES)
         self.renderRows.setValue(16)
         
         form.addRow("Rows", self.renderRows)
@@ -740,7 +740,7 @@ class RenderMinitilesDialog(QDialog):
     
     def renderImage(self):
         h = self.renderRows.value()
-        w = ceil(512/self.renderRows.value())
+        w = ceil(common.MAXMINITILES/self.renderRows.value())
         gaps = self.renderWithGaps.isChecked()
         
         image = QImage(w*8+(gaps*w), h*8+(gaps*h), QImage.Format.Format_ARGB32)
@@ -1263,4 +1263,73 @@ class AdvancedPalettePreviewDialog(QDialog):
     @staticmethod
     def advancedPalettePreview(parent, projectData: ProjectData):
         dialog = AdvancedPalettePreviewDialog(parent, projectData)
+        dialog.exec()
+        
+        
+class FindUnusedMinitilesDialog(QDialog):
+    def __init__(self, parent, projectData: ProjectData):
+        super().__init__(parent)
+        self.setWindowTitle("Find Unused Minitiles")
+        self.projectData = projectData
+        
+        layout = QFormLayout()
+        self.setLayout(layout)
+        
+        label = QLabel("Find IDs of minitiles in this tileset that aren't used.")
+        label.setWordWrap(True)
+        layout.addRow(label)
+        
+        self.tilesetInput = QSpinBox()
+        self.tilesetInput.setMaximum(len(self.projectData.tilesets)-1)
+        layout.addRow("Tileset", self.tilesetInput)
+        
+        self.buttons = QDialogButtonBox()
+        self.buttons.addButton(QDialogButtonBox.StandardButton.Ok)
+        
+        self.buttons.button(QDialogButtonBox.StandardButton.Ok).clicked.connect(self.findUnused)
+        layout.addRow(self.buttons)
+        
+        self.resultsLabel = QLabel("Choose a tileset and press OK.")
+        self.resultsLabel.setWordWrap(True)
+        layout.addRow(self.resultsLabel)
+        
+        self.copyResultButton = QPushButton(icons.ICON_COPY, "Copy result")
+        self.copyResultButton.clicked.connect(self.copyResult)
+        layout.addRow(self.copyResultButton)
+        
+    def findUnused(self):
+        try:
+            unused = set(range(0, common.MAXMINITILES))
+            tileset = self.projectData.getTileset(self.tilesetInput.value())
+            
+            for tile in tileset.tiles:
+                for i in range(16):
+                    unused.discard(tile.getMinitileID(i))
+            
+            resultString = f"Unused in tileset {tileset.id}\n"
+            if unused:
+                for i in unused:
+                    resultString += f"{i}, "
+                resultString = resultString.removesuffix(", ")
+            else:
+                resultString += "All minitiles are used."
+            
+            self.resultsLabel.setText(resultString)
+                    
+        except Exception as e:
+            logging.warning(traceback.format_exc())
+            return common.showErrorMsg("Unable to find unused minitiles",
+                                       f"There was an issue when finding unused minitiles.",
+                                       str(e))
+    
+    def copyResult(self):
+        text = self.resultsLabel.text()
+        if text != "Choose a tileset and press OK.": # dont copy the default output...
+            QApplication.clipboard().setText(text)
+    
+    @staticmethod
+    def findUnusedMinitiles(parent, projectData: ProjectData, initTileset: int|None=None):
+        dialog = FindUnusedMinitilesDialog(parent, projectData)
+        if initTileset:
+            dialog.tilesetInput.setValue(initTileset)
         dialog.exec()

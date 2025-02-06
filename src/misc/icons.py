@@ -169,6 +169,9 @@ def init_icons():
     global ICON_AUTO_REARRANGE
     ICON_AUTO_REARRANGE = icon("ph.swap")
     
+    global ICON_UNUSED_OBJECT
+    ICON_UNUSED_OBJECT = icon("ph.placeholder")
+    
     global ICON_EASEL
     ICON_EASEL = icon("ph.presentation")
     
