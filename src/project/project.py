@@ -20,6 +20,7 @@ import src.misc.debug as debug
 import src.misc.icons as icons
 import src.tileeditor.tile_editor as tile_editor
 from src.coilsnake.project_data import ProjectData
+from src.gnat.gnat_attack import GnatAttack
 from src.misc import flushrefs
 from src.misc.dialogues import AboutDialog, SettingsDialog
 from src.misc.scratch import TileScratchSpace
@@ -198,15 +199,27 @@ class Project(QWidget):
                         logging.warning(f"Error loading palette editor: {traceback.format_exc()}")
                         raise
                     
+                    self.updateStatusLabel("Loading Gnat Attack...")
+                    self.statusLabel.repaint()
+                    try:
+                        self.mainWin.gnatWin = GnatAttack(self.projectData, self.mainWin)
+                    except Exception as e:
+                        common.showErrorMsg(title="Error loading Gnat Attack", text="An error occured while loading Gnat Attack.", info=str(e))
+                        self.updateStatusLabel("Error loading Gnat Attack.")
+                        logging.warning(f"Error loading Gnat Attack: {traceback.format_exc()}")
+                        raise
+                                            
                 except: pass # we've already shown an error message and logged it, so just continue
                 
                 else:
+                    self.mainWin.mainTabWin.removeTab(4)
                     self.mainWin.mainTabWin.removeTab(3)
                     self.mainWin.mainTabWin.removeTab(2)
                     self.mainWin.mainTabWin.removeTab(1)
                     self.mainWin.mainTabWin.addTab(self.mainWin.mapWin, "Map Editor")
                     self.mainWin.mainTabWin.addTab(self.mainWin.tileWin, "Tile Editor")
                     self.mainWin.mainTabWin.addTab(self.mainWin.paletteWin, "Palette Editor")
+                    self.mainWin.mainTabWin.addTab(self.mainWin.gnatWin, "☕")
                     
                     self.updateStatusLabel(f"Project: {self.projectData.getProjectName()}")
                     self.enableEditors()

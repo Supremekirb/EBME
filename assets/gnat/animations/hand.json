@@ -1,0 +1,52 @@
+{
+    "frames": {
+        "idle":  [0,  0,  16, 40,  0, 0],
+        "swat1": [16, 0,  16, 40,  0, 0],
+        "swat2": [32, 0,  16, 40,  0, 0],
+        "hit1":  [48, 0,  32, 24,  0, 0],
+        "hit2":  [48, 24, 32, 24,  0, 0],
+        "hurt1": [0,  40, 32, 32,  0, 0],
+        "hurt2": [32, 40, 16, 16,  0, 0],
+        "hurt3": [32, 56, 8,  8,   0, 0],
+        "large": [48, 48, 32, 24, -6, 0]
+    },
+    "animations": {
+        "idle": {
+            "loop": 0,
+            "frames": [
+                {"name": "idle", "duration": 60}
+            ]
+        },
+        "swat": {
+            "loop": -1,
+            "frames": [
+                {"name": "swat1", "duration": 4},
+                {"name": "swat2", "duration": 6}
+            ]
+        },
+        "hit": {
+            "loop": -1,
+            "frames": [
+                {"name": "swat1", "duration": 4},
+                {"name": "hit1", "duration": 3},
+                {"name": "hit2", "duration": 3}
+            ]
+        },
+        "hurt": {
+            "loop": -1,
+            "frames": [
+                {"name": "hurt3", "duration": 8},
+                {"name": "hurt2", "duration": 8},
+                {"name": "hurt1", "duration": 34},
+                {"name": "hurt2", "duration": 8},
+                {"name": "hurt3", "duration": 8}
+            ]
+        },
+        "large": {
+            "loop": 0,
+            "frames": [
+                {"name": "large", "duration": 60}
+            ]
+        }
+    }
+}

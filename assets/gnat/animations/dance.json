@@ -1,0 +1,58 @@
+{
+    "frames": {
+        "crouch": [0,   0, 16, 16, 0, 0],
+        "stand":  [16,  0, 16, 16, 0, 0],
+        "jump":   [32,  0, 16, 16, 0, -4],
+        "rub1":   [48,  0, 16, 16, 0, 0],
+        "rub2":   [64,  0, 16, 16, 0, 0],
+        "spin1":  [80,  0, 16, 16, 0, 0],
+        "spin2":  [96,  0, 16, 16, 0, 0],
+        "spin3":  [112, 0, 16, 16, 0, 0]
+    },
+    "animations": {
+        "idle": {
+            "loop": 0,
+            "frames": [
+                {"name": "crouch", "duration": 60}
+            ]
+        },
+        "dance": {
+            "loop": 0,
+            "frames": [
+                {"name": "crouch", "duration": 8},
+                {"name": "stand", "duration": 16},
+                {"name": "crouch", "duration": 16},
+                {"name": "stand", "duration": 16},
+                {"name": "crouch", "duration": 16},
+                {"name": "stand", "duration": 16},
+                {"name": "crouch", "duration": 16},
+                {"name": "stand", "duration": 16},
+                {"name": "crouch", "duration": 16},
+                {"name": "stand", "duration": 16},
+                {"name": "crouch", "duration": 16},
+                {"name": "stand", "duration": 16},
+                {"name": "crouch", "duration": 16},
+                {"name": "stand", "duration": 16},
+                {"name": "jump", "duration": 16},
+                {"name": "stand", "duration": 16},
+                {"name": "jump", "duration": 16},
+                {"name": "rub2", "duration": 16},
+                {"name": "rub1", "duration": 16},
+                {"name": "rub2", "duration": 16},
+                {"name": "rub1", "duration": 16},
+                {"name": "rub2", "duration": 16},
+                {"name": "rub1", "duration": 16},
+                {"name": "rub2", "duration": 16},
+                {"name": "rub1", "duration": 16},
+                {"name": "crouch", "duration": 32},
+                {"name": "rub1", "duration": 4},
+                {"name": "spin2", "duration": 4},
+                {"name": "spin3", "duration": 4},
+                {"name": "spin1", "duration": 4},
+                {"name": "rub1", "duration": 4},  
+                {"name": "spin3", "duration": 4},
+                {"name": "crouch", "duration": 8}
+            ]
+        }
+    }
+}

@@ -71,4 +71,16 @@
         <file alias="EBME.desktop">assets/misc/EBME.desktop</file>
         <file alias="LICENSE">LICENSE</file>
     </qresource>
+    <qresource prefix="gnat">
+        <file alias="spritesheets/bg1.png">assets/gnat/spritesheets/bg1.png</file>
+        <file alias="spritesheets/bg2.png">assets/gnat/spritesheets/bg2.png</file>
+        <file alias="spritesheets/bg3.png">assets/gnat/spritesheets/bg3.png</file>
+        <file alias="spritesheets/hand.png">assets/gnat/spritesheets/hand.png</file>
+        <file alias="spritesheets/bonus.png">assets/gnat/spritesheets/bonus.png</file>
+        <file alias="spritesheets/rank.png">assets/gnat/spritesheets/rank.png</file>
+        <file alias="spritesheets/pause.png">assets/gnat/spritesheets/pause.png</file>
+        <file alias="spritesheets/lever.png">assets/gnat/spritesheets/lever.png</file>
+        <file alias="spritesheets/dance.png">assets/gnat/spritesheets/dance.png</file>
+
+    </qresource>
 </RCC>

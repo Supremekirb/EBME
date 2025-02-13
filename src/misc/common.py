@@ -76,6 +76,14 @@ MINEDITORHEIGHT = 310
 # Max number of recent projects to remember
 MAXRECENTS = 32
 
+GNATZVALUES = IntEnum("GNATZVALUES", ["GAMEPLAY",
+                                      "MASK",
+                                      "HAND",
+                                      "TEXT",
+                                      "PAUSEBG",
+                                      "PAUSELEVER",
+                                      "PAUSEHAND"])
+
 LINEENDINGINDEX = IntEnum("LINEENDINGINDEX", ["AUTO", # python default
                                               "UNIX", # LF
                                               "WINDOWS", # CR LF
