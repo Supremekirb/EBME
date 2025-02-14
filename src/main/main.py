@@ -140,7 +140,7 @@ class MainApplication(QMainWindow):
         if isinstance(new, GnatAttack):
             new: GnatAttack
             if not new.gameScene.animationTimer.paused:
-                new.gameScene.pause(QPoint(128, 122))
+                new.gameScene.pause()
                 
     def updateTitle(self):
         title = self.window().windowTitle()

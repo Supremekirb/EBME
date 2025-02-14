@@ -81,6 +81,6 @@
         <file alias="spritesheets/pause.png">assets/gnat/spritesheets/pause.png</file>
         <file alias="spritesheets/lever.png">assets/gnat/spritesheets/lever.png</file>
         <file alias="spritesheets/dance.png">assets/gnat/spritesheets/dance.png</file>
-
+        <file alias="spritesheets/gnat1.png">assets/gnat/spritesheets/gnat1.png</file>
     </qresource>
 </RCC>
