@@ -135,7 +135,7 @@ class AnimatedGraphicsItem(QGraphicsObject):
                     self.currentSpriteFrame = self.currentAnimation.frames[self.frameIndex].frame
                     self.prepareGeometryChange() # this is necessary. See documentation
             except IndexError:
-                    pass
+                    raise
                 
                 
     def paint(self, painter: QPainter, style: QStyleOptionGraphicsItem, widget: QWidget):

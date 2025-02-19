@@ -9,9 +9,11 @@ from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsPolygonItem,
 import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
 from src.gnat import scripting
-from src.gnat.animation import AnimatedGraphicsItem, AnimationTimer
-from src.gnat.gnat import Gnat1
+from src.gnat.animation import AnimationTimer
+from src.gnat.bonus import BonusHand
+from src.gnat.game_state import GameState
 from src.gnat.hand import GnatAttackHand
+from src.gnat.spawning import LevelSpawnManger
 from src.gnat.ui import UILife, UIPauseScreen, UIRank, UIScore
 
 
@@ -21,7 +23,7 @@ class GameScene(QGraphicsScene):
         self.projectData = projectData
         self.setBackgroundBrush(Qt.GlobalColor.white)
         
-        self.animationTimer = AnimationTimer()
+        self.animationTimer = AnimationTimer(16)
         self.animationTimer.tick.connect(lambda: self.views()[0].viewport().repaint())
         self.animationTimer.tick.connect(lambda: scripting.step())
 
@@ -48,29 +50,22 @@ class GameScene(QGraphicsScene):
         
         self.setBackgroundBrush(QPixmap(":/gnat/spritesheets/bg1.png"))
         
-        # item2 = QGraphicsTextItem("LEVEL")
-        # item2.setFont("Mario Paint Letters")
-        # item2.setDefaultTextColor(Qt.GlobalColor.black)
-        # item2.setPos(16, 48)
-        # self.addItem(item2)
+        self.gameState = GameState(self, self.animationTimer)
         
-        gnat = Gnat1(self.animationTimer)
-        gnat.setPos(128, 64)
-        self.addItem(gnat)
-        
-        gnat = Gnat1(self.animationTimer)
-        gnat.setPos(134, 64)
-        self.addItem(gnat)
-        
-        gnat = Gnat1(self.animationTimer)
-        gnat.setPos(128, 80)
-        self.addItem(gnat)
+        self.levelSpawnManager = LevelSpawnManger(common.absolutePath("assets/gnat/levels/1.json"))
+        self.levelSpawnManager.startSpawning()
         
         self.handCursor = GnatAttackHand(self.animationTimer)
         self.handCursor.setPos(QPoint(120, 104))
         self.addItem(self.handCursor)
         
         self.pause()
+        
+    def addLife(self):
+        BonusHand()
+        
+    def newLevel(self, level: int):
+        self.levelSpawnManager = LevelSpawnManger(common.absolutePath(f"assets/gnat/levels/{str(level)}.json"))
         
     def pause(self, pos: QPoint = QPoint(128, 122)):
         self.handCursor.hide()
@@ -79,8 +74,8 @@ class GameScene(QGraphicsScene):
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         if not self.animationTimer.paused:
             if event.button() == Qt.MouseButton.LeftButton:
-                self.scoreItem.reduce()
-                self.handCursor.swat(event.scenePos().toPoint())
+                # self.scoreItem.reduce()
+                self.handCursor.swat()
             elif event.button() == Qt.MouseButton.RightButton:
                 self.pause(event.scenePos().toPoint())
             

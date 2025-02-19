@@ -34,11 +34,11 @@ class ScriptedAnimatedItem(AnimatedGraphicsItem):
         # kinda weirdly jerky two-frame movement of the gnats
         # in the original game
         if not velocityEachFrame:
-            self.setPos(self.calculateTargetPos().toPoint())
+            self.setPos(self.calculateTargetPos())
             
         for i in range(0, length):
             if velocityEachFrame:
-                self.setPos(self.calculateTargetPos().toPoint())
+                self.setPos(self.calculateTargetPos())
             await _frame()
             
     def calculateTargetPos(self):

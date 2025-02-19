@@ -26,11 +26,11 @@ class GnatAttackHand(AnimatedGraphicsItem):
         
         self.swatting = False
         
-    def swat(self, pos: QPoint):
+    def swat(self):
         if not self.swatting:
             self.swatting = True
             
-            intersecting = self.scene().items(QRect(pos.x(), pos.y(), 16, 16))
+            intersecting = self.scene().items(QRect(self.pos().x()-8, self.pos().y()-8, 16, 16))
             
             landedHit = False
             for i in intersecting:
@@ -49,7 +49,7 @@ class GnatAttackHand(AnimatedGraphicsItem):
         self.play(self.getAnimation("idle"))
         
     def setPos(self, pos: QPoint):
-        super().setPos(QPoint(common.cap(pos.x(), 16, 224), common.cap(pos.y(), 16, 192)))
+        super().setPos(QPoint(common.cap(pos.x(), 24, 232), common.cap(pos.y(), 24, 200)))
         
     def tickAnimation(self):
         if self.respawnInvincible > 0:
