@@ -1,9 +1,8 @@
 from typing import TYPE_CHECKING
 
+import src.misc.common as common
 from src.gnat.animation import AnimationTimer
 from src.gnat.scripting import ScriptedAnimatedItem
-
-import src.misc.common as common
 
 if TYPE_CHECKING:
     from src.gnat.game_scene import GameScene
@@ -75,7 +74,7 @@ class GameState:
             inst.score -= 1
             inst.gameScene.scoreItem.setScore(inst.score)
             if inst.score in (25, 50, 75):
-                inst.gameScene.addLife()
+                inst.gameScene.spawnLife()
         else:
             inst.nextLevel()
         

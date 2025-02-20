@@ -1,7 +1,7 @@
 import json
 import typing
 
-from src.gnat.gnat import Gnat1
+from src.gnat.gnat import Attack, Bomb, Gnat, Spawner
 
 
 class LevelSpawnManger:
@@ -41,13 +41,13 @@ class EnemyFactory:
     def __init__(self, type: typing.Literal["gnat", "spawner", "bomb", "attack"], max: int, count: int):
         match type:
             case "gnat":
-                self.enemyType = Gnat1
+                self.enemyType = Gnat
             case "spawner":
-                self.enemyType = Gnat1
+                self.enemyType = Spawner
             case "bomb":
-                self.enemyType = Gnat1
+                self.enemyType = Bomb
             case "attack":
-                self.enemyType = Gnat1
+                self.enemyType = Attack
             case _:
                 raise ValueError(f"'{type}' not a valid enemy type!")
         

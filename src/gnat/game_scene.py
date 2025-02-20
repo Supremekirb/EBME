@@ -1,10 +1,10 @@
-import enum
+import math
 
-from PySide6.QtCore import QPoint, QRect
+from PySide6.QtCore import QPoint, QRect, QPointF
 from PySide6.QtGui import QBrush, QColor, QPixmap, QPolygon, Qt
 from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsPolygonItem,
                                QGraphicsScene, QGraphicsSceneMouseEvent,
-                               QGraphicsTextItem)
+                               QGraphicsTextItem, QGraphicsItem)
 
 import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
@@ -59,9 +59,20 @@ class GameScene(QGraphicsScene):
         self.handCursor.setPos(QPoint(120, 104))
         self.addItem(self.handCursor)
         
+        self.lastPos = QPoint(0, 0)
+        
         self.pause()
         
-    def addLife(self):
+    def getProximityToHand(self, pos: QPointF):
+        return abs(math.dist(pos.toTuple(), self.handCursor.pos().toTuple()))
+    
+    def getAngleToHand(self, pos: QPointF):
+        return math.atan2(self.handCursor.x() - pos.x(), self.handCursor.y() - pos.y())
+    
+    def isIntersectingWithHand(self, item: QGraphicsItem):
+        return self.handCursor in self.collidingItems(item)
+        
+    def spawnLife(self):
         BonusHand()
         
     def newLevel(self, level: int):
@@ -84,5 +95,7 @@ class GameScene(QGraphicsScene):
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
         self.handCursor.setPos(event.scenePos().toPoint())
         self.pauseScreen.setHandPos(event.scenePos().toPoint())
+        
+        self.lastPos = event.scenePos().toPoint()
         
         return super().mouseMoveEvent(event)
