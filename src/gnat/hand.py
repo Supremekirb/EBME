@@ -54,7 +54,7 @@ class GnatAttackHand(AnimatedGraphicsItem):
         if last == self.getAnimation("hurt"):
             self.swatting = False # in case we got hit during
             self.hurting = False
-            self.respawnInvincible = 120
+            self.respawnInvincible = GnatAttackHand.INVINCIBLE_TIME
             GameState.takeLife()
             self.setPos(GameState.INSTANCE.gameScene.lastPos)
         self.play(self.getAnimation("idle"))

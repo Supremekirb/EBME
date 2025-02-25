@@ -76,7 +76,8 @@ MINEDITORHEIGHT = 310
 # Max number of recent projects to remember
 MAXRECENTS = 32
 
-GNATZVALUES = IntEnum("GNATZVALUES", ["GAMEPLAY",
+GNATZVALUES = IntEnum("GNATZVALUES", ["ATTACKS",
+                                      "GAMEPLAY",
                                       "MASK",
                                       "HAND",
                                       "TEXT",

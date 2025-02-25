@@ -1,10 +1,10 @@
 import math
 
-from PySide6.QtCore import QPoint, QRect, QPointF
+from PySide6.QtCore import QPoint, QPointF, QRect
 from PySide6.QtGui import QBrush, QColor, QPixmap, QPolygon, Qt
-from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsPolygonItem,
-                               QGraphicsScene, QGraphicsSceneMouseEvent,
-                               QGraphicsTextItem, QGraphicsItem)
+from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
+                               QGraphicsPolygonItem, QGraphicsScene,
+                               QGraphicsSceneMouseEvent, QGraphicsTextItem)
 
 import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
@@ -13,7 +13,7 @@ from src.gnat.animation import AnimationTimer
 from src.gnat.bonus import BonusHand
 from src.gnat.game_state import GameState
 from src.gnat.hand import GnatAttackHand
-from src.gnat.spawning import LevelSpawnManger
+from src.gnat.levels import LevelSpawnManger
 from src.gnat.ui import UILife, UIPauseScreen, UIRank, UIScore
 
 

@@ -41,8 +41,9 @@ class GameState:
     def removeEnemy(enemy: ScriptedAnimatedItem):
         inst = GameState.INSTANCE
         inst.enemiesOnScreen.discard(enemy)
-        inst.gameScene.removeItem(enemy)
+        # inst.gameScene.removeItem(enemy)
         inst.gameScene.levelSpawnManager.onEnemyDeath(enemy)
+        enemy.deleteLater()
         
         
     @staticmethod

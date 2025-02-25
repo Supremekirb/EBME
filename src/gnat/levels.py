@@ -1,7 +1,10 @@
 import json
 import typing
 
-from src.gnat.gnat import Attack, Bomb, Gnat, Spawner
+from src.gnat.gnat import Gnat
+from src.gnat.spawner import Spawner
+from src.gnat.bomb import Bomb
+from src.gnat.attack import Attack
 
 
 class LevelSpawnManger:

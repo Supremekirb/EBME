@@ -82,6 +82,8 @@
         <file alias="spritesheets/lever.png">assets/gnat/spritesheets/lever.png</file>
         <file alias="spritesheets/dance.png">assets/gnat/spritesheets/dance.png</file>
         <file alias="spritesheets/gnat.png">assets/gnat/spritesheets/gnat.png</file>
+        <file alias="spritesheets/spawner.png">assets/gnat/spritesheets/spawner.png</file>
         <file alias="spritesheets/bomb.png">assets/gnat/spritesheets/bomb.png</file>
+        <file alias="spritesheets/mini.png">assets/gnat/spritesheets/mini.png</file>
     </qresource>
 </RCC>

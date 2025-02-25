@@ -133,7 +133,16 @@ class AnimatedGraphicsItem(QGraphicsObject):
                             self.frameIndex = self.currentAnimation.loop
                         
                     self.currentSpriteFrame = self.currentAnimation.frames[self.frameIndex].frame
-                    self.prepareGeometryChange() # this is necessary. See documentation
+                    try:
+                        self.prepareGeometryChange() # this is necessary. See documentation
+                    except RuntimeError:
+                        # this happens bc of something to do with the internal object
+                        # being deleted, and then we call this afterwards...
+                        # there was another issue which I couldn't figure out where
+                        # the entire program would just crash with no error and
+                        # the random tinkering I did to fix it wound up throwing
+                        # this error a bunch instead. Better than a crash...
+                        pass 
             except IndexError:
                     raise
                 
