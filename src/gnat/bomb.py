@@ -46,6 +46,7 @@ class Bomb(ScriptedAnimatedItem):
             self.vy = 0
             self.state = Bomb.STATES.DYING
             self.play(self.getAnimation("death"))
+            GameState.playSFX("bombdie")
             GameState.takeScore()
             # remove after we have fallen
             return True
@@ -66,6 +67,7 @@ class Bomb(ScriptedAnimatedItem):
                 case Bomb.STATES.DYING:
                     self.vy += 0.5
                     if self.y() > 224:
+                        GameState.playSFX("bombland")
                         GameState.removeEnemy(self)
                         return
                     await self.pause()
@@ -139,6 +141,7 @@ class Bomb(ScriptedAnimatedItem):
                     
                     if self.fuseTimer < 1:
                         self.play(self.getAnimation("boom"))
+                        GameState.playSFX("boom")
                         self.state = Bomb.STATES.EXPLODING
                         
                     # move towards hand

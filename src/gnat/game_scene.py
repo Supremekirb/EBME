@@ -14,6 +14,7 @@ from src.gnat.bonus import BonusHand
 from src.gnat.game_state import GameState
 from src.gnat.hand import GnatAttackHand
 from src.gnat.levels import LevelSpawnManger
+from src.gnat.sound import SoundManager
 from src.gnat.ui import UILife, UIPauseScreen, UIRank, UIScore
 
 
@@ -26,6 +27,8 @@ class GameScene(QGraphicsScene):
         self.animationTimer = AnimationTimer(16)
         self.animationTimer.tick.connect(lambda: self.views()[0].viewport().repaint())
         self.animationTimer.tick.connect(lambda: scripting.step())
+        
+        self.soundManager = SoundManager(common.absolutePath("assets/gnat/sound/sound.json"))
 
         screenMask = QGraphicsPolygonItem(QPolygon(QRect(0, 0, 256, 224)).subtracted(QRect(16, 16, 224, 192)))
         screenMask.setBrush(Qt.GlobalColor.black)

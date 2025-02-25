@@ -47,6 +47,7 @@ class Gnat(ScriptedAnimatedItem):
             self.vy = 0
             self.state = Gnat.STATES.DYING
             self.play(self.getAnimation("death"))
+            GameState.playSFX("gnatdie")
             GameState.takeScore()
             # remove after we have fallen
             return True
@@ -58,6 +59,7 @@ class Gnat(ScriptedAnimatedItem):
                 case Gnat.STATES.DYING:
                     self.vy += 0.5
                     if self.y() > 224:
+                        GameState.playSFX("gnatland")
                         GameState.removeEnemy(self)
                         return
                     await self.pause()

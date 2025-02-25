@@ -1,0 +1,18 @@
+{
+    "bgm": [
+    ],
+    "sfx": [
+        {"name": "bombdie", "path": "assets/gnat/sound/sfx/bombdie.wav"},
+        {"name": "bombland", "path": "assets/gnat/sound/sfx/bombland.wav"},
+        {"name": "bonus", "path": "assets/gnat/sound/sfx/bonus.wav"},
+        {"name": "boom", "path": "assets/gnat/sound/sfx/boom.wav"},
+        {"name": "gnatdie", "path": "assets/gnat/sound/sfx/gnatdie.wav"},
+        {"name": "gnatland", "path": "assets/gnat/sound/sfx/gnatland.wav"},
+        {"name": "hurt", "path": "assets/gnat/sound/sfx/hurt.wav"},
+        {"name": "lever", "path": "assets/gnat/sound/sfx/lever.wav"},
+        {"name": "spawn", "path": "assets/gnat/sound/sfx/spawn.wav"},
+        {"name": "spawnerdie", "path": "assets/gnat/sound/sfx/spawnerdie.wav"},
+        {"name": "spawnerland", "path": "assets/gnat/sound/sfx/spawnerland.wav"},
+        {"name": "swing", "path": "assets/gnat/sound/sfx/swing.wav"}
+    ]
+}

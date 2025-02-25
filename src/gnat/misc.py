@@ -45,16 +45,17 @@ class Mini(ScriptedAnimatedItem):
                 self.vy = math.cos(angle) * 2
                 self.chaseTimer -= 1
                 
-                if GameState.INSTANCE.gameScene.isIntersectingWithHand(self):
+            
+            if not (0 < self.x() < 256 and 0 < self.y() < 224):
+                GameState.INSTANCE.gameScene.removeItem(self)
+                return
+            
+            if GameState.INSTANCE.gameScene.isIntersectingWithHand(self):
                     # unique behaviour where we disappear if we hurt the hand
                     # (not if we don't hurt it though...)
                     if not GameState.INSTANCE.gameScene.handCursor.hurting and not GameState.INSTANCE.gameScene.handCursor.respawnInvincible:
                         GameState.INSTANCE.gameScene.removeItem(self)
                         GameState.INSTANCE.gameScene.handCursor.hurt()
                         return
-            
-            if not (0 < self.x() < 256 and 0 < self.y() < 224):
-                GameState.INSTANCE.gameScene.removeItem(self)
-                return
             
             await self.pause()

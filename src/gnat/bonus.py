@@ -37,7 +37,8 @@ class BonusHand(ScriptedAnimatedItem):
         GameState.addLife()
         GameState.removeEnemy(self)
         self.endingScript = True
-        return False # dont play hit animation
+        GameState.playSFX("bonus")
+        return True
         
     async def script(self):
         while True:

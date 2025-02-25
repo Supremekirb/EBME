@@ -48,6 +48,7 @@ class Spawner(ScriptedAnimatedItem):
             self.vy = 0
             self.state = Spawner.STATES.DYING
             self.play(self.getAnimation("death"))
+            GameState.playSFX("spawnerdie")
             GameState.takeScore()
             # remove after we have fallen
             return True
@@ -56,6 +57,7 @@ class Spawner(ScriptedAnimatedItem):
     def onNonLoopingAnimationEnd(self, last):
         if last == self.getAnimation("prepareSpawn"):
             self.state = Spawner.STATES.DOSPAWN
+            GameState.playSFX("spawn")
             self.play(self.getAnimation("spawn"))
         if last == self.getAnimation("spawn"):
             self.state = Spawner.STATES.FLYING
@@ -73,6 +75,7 @@ class Spawner(ScriptedAnimatedItem):
                 case Spawner.STATES.DYING:
                     self.vy += 0.5
                     if self.y() > 224:
+                        GameState.playSFX("spawnerland")
                         GameState.removeEnemy(self)
                         return
                     await self.pause()

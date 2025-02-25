@@ -42,10 +42,12 @@ class GnatAttackHand(AnimatedGraphicsItem):
                 self.play(self.getAnimation("hit"))
             else:
                 self.play(self.getAnimation("swat"))
+                GameState.playSFX("swing")
                 
     def hurt(self):
         if not self.hurting and self.respawnInvincible <= 0:
             self.hurting = True
+            GameState.playSFX("hurt")
             self.play(self.getAnimation("hurt"))
         
     def onNonLoopingAnimationEnd(self, last: Animation):

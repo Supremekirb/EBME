@@ -25,7 +25,11 @@ class GameState:
         self.rank = 0
         
         self.enemiesOnScreen: set[ScriptedAnimatedItem] = set()
-        
+    
+    @staticmethod
+    def playSFX(name: str):
+        inst = GameState.INSTANCE
+        inst.gameScene.soundManager.playSFX(name)
         
     @staticmethod
     def getAnimationTimer():

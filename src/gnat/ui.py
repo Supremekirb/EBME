@@ -8,6 +8,7 @@ import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
 from src.gnat.animation import (AnimatedGraphicsItem, AnimationTimer,
                                 loadAnimations)
+from src.gnat.game_state import GameState
 
 
 class UIScore(QGraphicsTextItem):
@@ -97,6 +98,7 @@ class UILever(AnimatedGraphicsItem):
     def pull(self):
         if not self.disabled:
             self.disabled = True
+            GameState.playSFX("lever")
             self.play(self.getAnimation("pull"))
     
     def reset(self):
