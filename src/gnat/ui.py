@@ -196,3 +196,4 @@ class UIPauseScreen(QGraphicsPixmapItem):
     def onResume(self):
         self.hide()
         self.animationTimerToPause.resume()
+        self.scene().soundManager.currentBGM.resume()

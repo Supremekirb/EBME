@@ -1,5 +1,6 @@
 {
     "bgm": [
+        {"name": "regular1", "path": "assets/gnat/sound/bgm/regular1.ogg", "loop": 2.234}
     ],
     "sfx": [
         {"name": "bombdie", "path": "assets/gnat/sound/sfx/bombdie.wav"},

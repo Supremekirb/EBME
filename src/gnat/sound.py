@@ -1,66 +1,90 @@
+import asyncio
 import json
 
-from PySide6.QtCore import QUrl
-from PySide6.QtMultimedia import QSoundEffect
+import pygame
 
 import src.misc.common as common
 
+# Using PyGame here as opposed to Qt because
+# Qt's QSoundEffect class causes weird 
+# stuttering when sound effects are played
+# for some reason, at least for me.
 
-class OneShotSoundEffect(QSoundEffect):
-    def __init__(self, path: str):
-        super().__init__()
-        self.setSource(QUrl.fromLocalFile(common.absolutePath(path)))
-        self.setLoopCount(0)
-        self.setVolume(0.25)
+pygame.init()
+pygame.mixer.init()
 
-class BGMSoundEffect(QSoundEffect):
+loop = asyncio.get_event_loop()
+
+async def _tick():
+    await asyncio.sleep(0)
+
+
+class SoundEffect(pygame.mixer.Sound):
     def __init__(self, path: str):
-        super().__init__()
-        self.setSource(path)
-        self.setLoopCount(QSoundEffect.Loop.Infinite)
-        self.setVolume(0.25)
+        super().__init__(common.absolutePath(path))    
+
+
+class BGM():
+    def __init__(self, path: str, loop: float):
+        self.path = path
+        self.loop = loop
+        self.running = False
     
+    def load(self):
+        pygame.mixer.music.unload()
+        pygame.mixer.music.load(common.absolutePath(self.path), "ogg")
+        
+    def play(self):
+        pygame.mixer.music.play(0)
+        self.running = True
+        loop.create_task(self._musicLoopTask())
+        
+    def stop(self):
+        pygame.mixer.music.stop()
+        pygame.mixer.music.unload()
+        self.running = False # exits loop
+        
+    def pause(self):
+        pygame.mixer.music.pause()
+    
+    def resume(self):
+        pygame.mixer.music.unpause()
+        
+    async def _musicLoopTask(self):
+        while self.running:
+            if not pygame.mixer.music.get_busy():
+                pygame.mixer.music.play(0, self.loop)
+            await _tick()
+                
+
 class SoundManager:
     def __init__(self, path: str):
-        self.sfx: dict[str, OneShotSoundEffect] = {}
-        self.bgm: dict[str, BGMSoundEffect] = {}
+        self.sfx: dict[str, SoundEffect] = {}
+        self.bgm: dict[str, BGM] = {}
         
-        self.currentBGM: BGMSoundEffect = None
+        self.currentBGM: BGM = None
         
         with open(path) as file:
             sounds = json.load(file)
             
             for i in sounds["sfx"]:
-                self.sfx[i["name"]] = OneShotSoundEffect(i["path"])
+                self.sfx[i["name"]] = SoundEffect(i["path"])
                 
             for i in sounds["bgm"]:
-                self.bgm[i["name"]] = BGMSoundEffect(i["path"])
-                
-    def pauseBGM(self):
-        if self.currentBGM:
-            self.currentBGM.setVolume(0)
-    
-    def resumeBGM(self):
-        if self.currentBGM:
-            self.currentBGM.setVolume(0.25)
+                self.bgm[i["name"]] = BGM(i["path"], i["loop"])
                 
     def playBGM(self, name: str):
-        """Pass an empty string to stop BGM playback"""
-        if name == "":
-            bgm = None
-        else:
-            try:
-                bgm = self.bgm[name]
-            except KeyError:
-                raise ValueError(f"No BGM called {name}!")
+        try:
+            bgm = self.bgm[name]
+        except KeyError:
+            raise ValueError(f"No BGM called {name}!")
         
-        if self.currentBGM:
-            self.currentBGM.stop()
-        
-        if bgm:
-            bgm.play()
+        if self.currentBGM: self.currentBGM.stop()
         
         self.currentBGM = bgm
+        
+        self.currentBGM.load()
+        self.currentBGM.play()
         
         
     def playSFX(self, name: str):

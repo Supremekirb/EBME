@@ -29,6 +29,8 @@ class GameScene(QGraphicsScene):
         self.animationTimer.tick.connect(lambda: scripting.step())
         
         self.soundManager = SoundManager(common.absolutePath("assets/gnat/sound/sound.json"))
+        
+        self.soundManager.playBGM("regular1")
 
         screenMask = QGraphicsPolygonItem(QPolygon(QRect(0, 0, 256, 224)).subtracted(QRect(16, 16, 224, 192)))
         screenMask.setBrush(Qt.GlobalColor.black)
@@ -84,6 +86,7 @@ class GameScene(QGraphicsScene):
     def pause(self, pos: QPoint = QPoint(128, 122)):
         self.handCursor.hide()
         self.pauseScreen.onPause(pos)
+        self.soundManager.currentBGM.pause()
         
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         if not self.animationTimer.paused:
