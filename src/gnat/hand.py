@@ -14,8 +14,8 @@ class GnatAttackHand(AnimatedGraphicsItem):
     ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/hand.json"))
     INVINCIBLE_TIME = 180
     
-    def __init__(self, animationTimer: AnimationTimer):
-        super().__init__(animationTimer, QPixmap(":/gnat/spritesheets/hand.png"), GnatAttackHand.ANIMATIONS)
+    def __init__(self):
+        super().__init__(GameState.getAnimationTimer(), QPixmap(":/gnat/spritesheets/hand.png"), GnatAttackHand.ANIMATIONS)
         self.setZValue(common.GNATZVALUES.HAND)
         
         self.play(self.getAnimation("idle"))
@@ -58,7 +58,7 @@ class GnatAttackHand(AnimatedGraphicsItem):
             self.hurting = False
             self.respawnInvincible = GnatAttackHand.INVINCIBLE_TIME
             GameState.takeLife()
-            self.setPos(GameState.INSTANCE.gameScene.lastPos)
+            self.setPos(GameState.getScene().lastPos)
         self.play(self.getAnimation("idle"))
         
     def setPos(self, pos: QPoint):

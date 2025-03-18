@@ -1,6 +1,6 @@
 import asyncio
 
-from PySide6.QtCore import QPoint, QPointF
+from PySide6.QtCore import QPointF
 from PySide6.QtGui import QPixmap
 
 from src.gnat.animation import AnimatedGraphicsItem, Animation, AnimationTimer
@@ -14,21 +14,28 @@ def step():
 async def _frame():
     # 0 awaits the next iteration
     await asyncio.sleep(0)
+
+class Script():
+    def __init__(self):
+        loop.create_task(self.script())
     
+    async def script(self): # intended to be virtual
+        while True:
+            await self.pause
+        
+    async def pause(self, length: int=1):
+        for i in range(0, length):
+            await _frame()
+        
     
-class ScriptedAnimatedItem(AnimatedGraphicsItem):
+class ScriptedAnimatedItem(AnimatedGraphicsItem, Script):
     def __init__(self, animationTimer: AnimationTimer, pixmap: QPixmap, animations: list[Animation]):
         super().__init__(animationTimer, pixmap, animations)
         
         self.vx = 0
         self.vy = 0
-        
-        loop.create_task(self.script())
     
-    async def script(self): # virtual
-        while True:
-            await self.pause()
-    
+    # Overwrites Script.pause() and adds velocity support
     async def pause(self, length: int=1, velocityEachFrame: bool = True):
         # set velocityEachFrame to False and length to 2 to replicate the
         # kinda weirdly jerky two-frame movement of the gnats

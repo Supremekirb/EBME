@@ -143,12 +143,12 @@ class UIDance(AnimatedGraphicsItem):
         
         
 class UIPauseScreen(QGraphicsPixmapItem):
-    def __init__(self, animationTimerToPause: AnimationTimer):
+    def __init__(self):
         super().__init__()
         self.setPixmap(QPixmap(":/gnat/spritesheets/pause.png"))
         self.setZValue(common.GNATZVALUES.PAUSEBG)
         
-        self.animationTimerToPause = animationTimerToPause
+        # personal animation timer for our own animations
         self.animationTimer = AnimationTimer()
         
         self.resumeLever = UILever(self.animationTimer)
@@ -182,7 +182,6 @@ class UIPauseScreen(QGraphicsPixmapItem):
         self.hand.setPos(QPoint(common.cap(pos.x(), 0, 103), common.cap(pos.y(), 0, 111)))
         
     def onPause(self, pos: QPoint):
-        self.animationTimerToPause.pause()
         self.setPos((common.cap(pos.x()-48, 32, 120)//8)*8,
                     (common.cap(pos.y()-64, 32, 80)//8)*8)
         
@@ -195,5 +194,4 @@ class UIPauseScreen(QGraphicsPixmapItem):
         
     def onResume(self):
         self.hide()
-        self.animationTimerToPause.resume()
-        self.scene().soundManager.currentBGM.resume()
+        GameState.resumeGame()

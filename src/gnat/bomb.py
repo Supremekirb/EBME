@@ -93,7 +93,7 @@ class Bomb(ScriptedAnimatedItem):
                     await self.pause(2, False)
                 
                 case Bomb.STATES.FLYING:
-                    if GameState.INSTANCE.gameScene.getProximityToHand(self.pos()) < 50:
+                    if GameState.getScene().getProximityToHand(self.pos()) < 50:
                         self.play(self.getAnimation("fuse"))
                         self.state = Bomb.STATES.CHASING
                     
@@ -145,7 +145,7 @@ class Bomb(ScriptedAnimatedItem):
                         self.state = Bomb.STATES.EXPLODING
                         
                     # move towards hand
-                    angle = GameState.INSTANCE.gameScene.getAngleToHand(self.pos())
+                    angle = GameState.getScene().getAngleToHand(self.pos())
                     self.vx = math.sin(angle) * 6
                     self.vy = math.cos(angle) * 6 
                     
@@ -153,12 +153,12 @@ class Bomb(ScriptedAnimatedItem):
                 
                 case Bomb.STATES.EXPLODING:
                     # move towards hand also
-                    angle = GameState.INSTANCE.gameScene.getAngleToHand(self.pos())
+                    angle = GameState.getScene().getAngleToHand(self.pos())
                     self.vx = math.sin(angle) * 6
                     self.vy = math.cos(angle) * 6
                     
-                    if GameState.INSTANCE.gameScene.isIntersectingWithHand(self):
-                        GameState.INSTANCE.gameScene.handCursor.hurt()
+                    if GameState.getScene().isIntersectingWithHand(self):
+                        GameState.getScene().handCursor.hurt()
                     
                     await self.pause(2, False)
                         

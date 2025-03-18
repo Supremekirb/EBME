@@ -11,9 +11,10 @@ from src.coilsnake.project_data import ProjectData
 from src.gnat import scripting
 from src.gnat.animation import AnimationTimer
 from src.gnat.bonus import BonusHand
+from src.gnat.cutscene import RoundStartDisplay, ScreenFader
 from src.gnat.game_state import GameState
 from src.gnat.hand import GnatAttackHand
-from src.gnat.levels import LevelSpawnManger
+from src.gnat.levels import LevelManager
 from src.gnat.sound import SoundManager
 from src.gnat.ui import UILife, UIPauseScreen, UIRank, UIScore
 
@@ -27,10 +28,6 @@ class GameScene(QGraphicsScene):
         self.animationTimer = AnimationTimer(16)
         self.animationTimer.tick.connect(lambda: self.views()[0].viewport().repaint())
         self.animationTimer.tick.connect(lambda: scripting.step())
-        
-        self.soundManager = SoundManager(common.absolutePath("assets/gnat/sound/sound.json"))
-        
-        self.soundManager.playBGM("regular1")
 
         screenMask = QGraphicsPolygonItem(QPolygon(QRect(0, 0, 256, 224)).subtracted(QRect(16, 16, 224, 192)))
         screenMask.setBrush(Qt.GlobalColor.black)
@@ -47,7 +44,13 @@ class GameScene(QGraphicsScene):
         self.addItem(self.rankItem)
         self.rankItem.setRank(0)
         
-        self.pauseScreen = UIPauseScreen(self.animationTimer)
+        self.roundDisplayItem = RoundStartDisplay()
+        self.addItem(self.roundDisplayItem)
+        
+        self.screenFaderItem = ScreenFader()
+        self.addItem(self.screenFaderItem)
+        
+        self.pauseScreen = UIPauseScreen()
         self.addItem(self.pauseScreen)
         self.pauseScreen.hide()
         
@@ -55,18 +58,16 @@ class GameScene(QGraphicsScene):
         
         self.setBackgroundBrush(QPixmap(":/gnat/spritesheets/bg1.png"))
         
-        self.gameState = GameState(self, self.animationTimer)
+        self.gameState = GameState(self)
         
-        self.levelSpawnManager = LevelSpawnManger(common.absolutePath("assets/gnat/levels/1.json"))
-        self.levelSpawnManager.startSpawning()
-        
-        self.handCursor = GnatAttackHand(self.animationTimer)
+        self.handCursor = GnatAttackHand()
         self.handCursor.setPos(QPoint(120, 104))
         self.addItem(self.handCursor)
         
-        self.lastPos = QPoint(0, 0)
+        self.gameState.pauseGame()
         
-        self.pause()
+        self.lastPos = QPoint(0, 0)
+
         
     def getProximityToHand(self, pos: QPointF):
         return abs(math.dist(pos.toTuple(), self.handCursor.pos().toTuple()))
@@ -79,22 +80,16 @@ class GameScene(QGraphicsScene):
         
     def spawnLife(self):
         BonusHand()
-        
-    def newLevel(self, level: int):
-        self.levelSpawnManager = LevelSpawnManger(common.absolutePath(f"assets/gnat/levels/{str(level)}.json"))
-        
-    def pause(self, pos: QPoint = QPoint(128, 122)):
-        self.handCursor.hide()
-        self.pauseScreen.onPause(pos)
-        self.soundManager.currentBGM.pause()
-        
+
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         if not self.animationTimer.paused:
             if event.button() == Qt.MouseButton.LeftButton:
                 # self.scoreItem.reduce()
+                # self.screenFaderItem.alpha = 255
+                # self.screenFaderItem.fadeFromBlack(10, 1)
                 self.handCursor.swat()
             elif event.button() == Qt.MouseButton.RightButton:
-                self.pause(event.scenePos().toPoint())
+                self.gameState.pauseGame(event.scenePos().toPoint())
             
         return super().mousePressEvent(event)
     

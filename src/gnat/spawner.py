@@ -83,13 +83,16 @@ class Spawner(ScriptedAnimatedItem):
                 case Spawner.STATES.SPAWNING:
                     if int(self.x()) in range(36, 200):
                         self.state = Spawner.STATES.FLYING
-                        
-                    if self.x() <= 64:
-                        self.vx = 3
-                        self.targetSpeed = 3
+                        self.targetSpeed = 0
+                        self.play(self.getAnimation("prepareSpawn"))
+                    
                     else:
-                        self.vx = -3
-                        self.targetSpeed = -3
+                        if self.x() <= 64:
+                            self.vx = 3
+                            self.targetSpeed = 3
+                        else:
+                            self.vx = -3
+                            self.targetSpeed = -3
                     
                     await self.pause(2, False)
                 

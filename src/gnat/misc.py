@@ -26,36 +26,36 @@ class Mini(ScriptedAnimatedItem):
         
         self.setPos(pos)
         
-        GameState.INSTANCE.gameScene.addItem(self)
+        GameState.getScene().addItem(self)
         
     async def script(self):
         while True:
             # for the first few moments, our turning radius is limited
             # 
             if self.initialMovementTimer > 0:
-                self.angle += (GameState.INSTANCE.gameScene.getAngleToHand(self.pos()) - self.angle) / 10
+                self.angle += (GameState.getScene().getAngleToHand(self.pos()) - self.angle) / 10
                 self.vx = math.sin(self.angle) * 2
                 self.vy = math.cos(self.angle) * 2
                 self.initialMovementTimer -= 1
                 
             # afterwards we just chase the hand perfectly
             elif self.chaseTimer > 0:
-                angle = GameState.INSTANCE.gameScene.getAngleToHand(self.pos())
+                angle = GameState.getScene().getAngleToHand(self.pos())
                 self.vx = math.sin(angle) * 2
                 self.vy = math.cos(angle) * 2
                 self.chaseTimer -= 1
                 
             
             if not (0 < self.x() < 256 and 0 < self.y() < 224):
-                GameState.INSTANCE.gameScene.removeItem(self)
+                GameState.getScene().removeItem(self)
                 return
             
-            if GameState.INSTANCE.gameScene.isIntersectingWithHand(self):
+            if GameState.getScene().isIntersectingWithHand(self):
                     # unique behaviour where we disappear if we hurt the hand
                     # (not if we don't hurt it though...)
-                    if not GameState.INSTANCE.gameScene.handCursor.hurting and not GameState.INSTANCE.gameScene.handCursor.respawnInvincible:
-                        GameState.INSTANCE.gameScene.removeItem(self)
-                        GameState.INSTANCE.gameScene.handCursor.hurt()
+                    if not GameState.getScene().handCursor.hurting and not GameState.getScene().handCursor.respawnInvincible:
+                        GameState.getScene().removeItem(self)
+                        GameState.getScene().handCursor.hurt()
                         return
             
             await self.pause()

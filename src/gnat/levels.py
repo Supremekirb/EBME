@@ -1,22 +1,19 @@
 import json
 import typing
 
-from src.gnat.gnat import Gnat
-from src.gnat.spawner import Spawner
-from src.gnat.bomb import Bomb
-from src.gnat.attack import Attack
 
-
-class LevelSpawnManger:
+class LevelManager:
     def __init__(self, fp: str):
         self.waves: list[Wave] = []
         self.currentWave: Wave = None
+        self.music: str = None
         
         self.read(fp)
         
     def read(self, fp: str):
         with open(fp) as file:
             levelObj = json.load(file)
+            self.music = levelObj["music"]
             for wave in levelObj["waves"]:
                 enemies = []
                 for enemy in wave["enemies"]:
@@ -44,12 +41,16 @@ class EnemyFactory:
     def __init__(self, type: typing.Literal["gnat", "spawner", "bomb", "attack"], max: int, count: int):
         match type:
             case "gnat":
+                from src.gnat.gnat import Gnat
                 self.enemyType = Gnat
             case "spawner":
+                from src.gnat.spawner import Spawner
                 self.enemyType = Spawner
             case "bomb":
+                from src.gnat.bomb import Bomb
                 self.enemyType = Bomb
             case "attack":
+                from src.gnat.attack import Attack
                 self.enemyType = Attack
             case _:
                 raise ValueError(f"'{type}' not a valid enemy type!")

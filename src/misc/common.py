@@ -81,9 +81,10 @@ GNATZVALUES = IntEnum("GNATZVALUES", ["ATTACKS",
                                       "MASK",
                                       "HAND",
                                       "TEXT",
+                                      "SCREENFX",
                                       "PAUSEBG",
                                       "PAUSELEVER",
-                                      "PAUSEHAND"])
+                                      "PAUSEHAND",])
 
 LINEENDINGINDEX = IntEnum("LINEENDINGINDEX", ["AUTO", # python default
                                               "UNIX", # LF

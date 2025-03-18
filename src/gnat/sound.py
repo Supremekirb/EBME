@@ -1,6 +1,9 @@
 import asyncio
 import json
+import os
 
+# disable annoying pygame "Hello" message before importing
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 import pygame
 
 import src.misc.common as common
@@ -72,14 +75,23 @@ class SoundManager:
                 
             for i in sounds["bgm"]:
                 self.bgm[i["name"]] = BGM(i["path"], i["loop"])
-                
+    
+    def pauseBGM(self):
+        if self.currentBGM: self.currentBGM.pause()
+        
+    def resumeBGM(self):
+        if self.currentBGM: self.currentBGM.resume()
+    
+    def stopBGM(self):
+        if self.currentBGM: self.currentBGM.stop()
+        
     def playBGM(self, name: str):
         try:
             bgm = self.bgm[name]
         except KeyError:
             raise ValueError(f"No BGM called {name}!")
         
-        if self.currentBGM: self.currentBGM.stop()
+        self.stopBGM()
         
         self.currentBGM = bgm
         

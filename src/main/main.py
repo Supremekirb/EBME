@@ -137,10 +137,11 @@ class MainApplication(QMainWindow):
             for i in new.menuItems:
                 self.menu.addMenu(i)
                 
+        # Pause Gnat Attack
         if isinstance(new, GnatAttack):
-            new: GnatAttack
-            if not new.gameScene.animationTimer.paused:
-                new.gameScene.pause()
+            self.gnatWin.gameScene.gameState.switchedToTab()
+        else:
+            self.gnatWin.gameScene.gameState.pauseGame()
                 
     def updateTitle(self):
         title = self.window().windowTitle()

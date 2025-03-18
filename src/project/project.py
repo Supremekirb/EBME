@@ -202,6 +202,8 @@ class Project(QWidget):
                     self.updateStatusLabel("Loading Gnat Attack...")
                     self.statusLabel.repaint()
                     try:
+                        if isinstance(self.mainWin.gnatWin, GnatAttack):
+                            self.mainWin.gnatWin.gameScene.gameState.stopBGM()
                         self.mainWin.gnatWin = GnatAttack(self.projectData, self.mainWin)
                     except Exception as e:
                         common.showErrorMsg(title="Error loading Gnat Attack", text="An error occured while loading Gnat Attack.", info=str(e))
