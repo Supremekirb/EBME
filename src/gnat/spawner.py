@@ -1,5 +1,4 @@
 import random
-import time
 from enum import IntEnum
 
 from PySide6.QtCore import QPoint

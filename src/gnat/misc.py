@@ -51,11 +51,40 @@ class Mini(ScriptedAnimatedItem):
                 return
             
             if GameState.getScene().isIntersectingWithHand(self):
-                    # unique behaviour where we disappear if we hurt the hand
-                    # (not if we don't hurt it though...)
-                    if not GameState.getScene().handCursor.hurting and not GameState.getScene().handCursor.respawnInvincible:
-                        GameState.getScene().removeItem(self)
-                        GameState.getScene().handCursor.hurt()
-                        return
+                # unique behaviour where we disappear if we hurt the hand
+                # (not if we don't hurt it though...)
+                if not GameState.getScene().handCursor.hurting and not GameState.getScene().handCursor.respawnInvincible:
+                    GameState.getScene().removeItem(self)
+                    GameState.getScene().handCursor.hurt()
+                    return
             
+            await self.pause()
+    
+class AttackProjectile(ScriptedAnimatedItem):
+    ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/projectile.json"))
+    def __init__(self, pos: QPoint, vx: float, vy: float):
+        super().__init__(GameState.getAnimationTimer(), QPixmap(":/gnat/spritesheets/projectile.png"), AttackProjectile.ANIMATIONS)
+        self.setZValue(common.GNATZVALUES.ATTACKS)
+        
+        self.play(self.getAnimation("regular"))
+        
+        self.setPos(pos)
+        
+        self.vx = vx
+        self.vy = vy
+        
+        GameState.getScene().addItem(self)
+    
+    async def script(self):
+        while True:
+            if not (0 < self.x() < 256 and 0 < self.y() < 224):
+                GameState.getScene().removeItem(self)
+                return
+
+            if GameState.getScene().isIntersectingWithHand(self):
+                if not GameState.getScene().handCursor.hurting and not GameState.getScene().handCursor.respawnInvincible:
+                    GameState.getScene().removeItem(self)
+                    GameState.getScene().handCursor.hurt()
+                    return
+
             await self.pause()

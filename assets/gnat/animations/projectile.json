@@ -1,0 +1,28 @@
+{
+    "frames": {
+        "reg1":  [0,  0, 8, 8, -4, -4],
+        "reg2":  [8,  0, 8, 8, -4, -4],
+        "reg3":  [16, 0, 8, 8, -4, -4],
+        "boss1": [0,  8, 8, 8, -4, -4],
+        "boss2": [8,  8, 8, 8, -4, -4],
+        "boss3": [16, 8, 8, 8, -4, -4]
+    },
+    "animations": {
+        "regular": {
+            "loop": 0,
+            "frames": [
+                {"name": "reg1", "duration": 3},
+                {"name": "reg2", "duration": 3},
+                {"name": "reg3", "duration": 3}
+            ]
+        },
+        "boss": {
+            "loop": 0,
+            "frames": [
+                {"name": "boss1", "duration": 3},
+                {"name": "boss2", "duration": 3},
+                {"name": "boss3", "duration": 3}
+            ]
+        }
+    }
+}

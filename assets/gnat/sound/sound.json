@@ -3,6 +3,9 @@
         {"name": "regular1", "path": "assets/gnat/sound/bgm/regular1.ogg", "loop": 2.234}
     ],
     "sfx": [
+        {"name": "attack", "path": "assets/gnat/sound/sfx/attack.wav"},
+        {"name": "attackdie", "path": "assets/gnat/sound/sfx/attackdie.wav"},
+        {"name": "attackland", "path": "assets/gnat/sound/sfx/attackland.wav"},
         {"name": "bombdie", "path": "assets/gnat/sound/sfx/bombdie.wav"},
         {"name": "bombland", "path": "assets/gnat/sound/sfx/bombland.wav"},
         {"name": "bonus", "path": "assets/gnat/sound/sfx/bonus.wav"},

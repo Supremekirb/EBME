@@ -31,7 +31,7 @@ class RoundStartCutsceneHandler(Script):
         await fader.waitForFade()
         
         display.show()
-        await self.pause(120)
+        await self.pause(60)
         display.hide()
         
         src.gnat.game_state.GameState.playCurrentLevelBGM()
