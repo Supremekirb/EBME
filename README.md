@@ -30,6 +30,11 @@ MacOS users will have to download the source code themselves. See [DEVELOPMENT.m
 
 If you want development builds, you can get the latest one [from nightly.link here](https://nightly.link/Supremekirb/EBME/workflows/build_push/main). Note that these may contain bugs and unfinished features! You can also access development builds [on GitHub here](https://github.com/Supremekirb/EBME/actions) by opening the workflow run you want.
 
+## My software is telling me it's a virus!
+Thankfully it isn't a virus. Unfortunately antiviruses often return false positives for EBME (see below for why). It's safe to add an exception to your antivirus software to stop it bugging you about EBME. Look up details for your OS/antivirus software.
+
+This is because EBME is written in Python, but distributed as an executable file. For various reasons, this is somewhat nonstandard, and also ACTUAL viruses often use Python in this way. As such, lots of antiviruses have come to see the pattern as "Python in an EXE = bad". Hopefully, eventually enough people will download EBME and add exceptions that antiviruses will learn that it's safe - the same happened with CoilSnake for a time. And if you're still unsure, the source code is available for you to read and understand.
+
 ## Screenshots
 
 ![The map editor](assets/readme/mapeditor.png)
