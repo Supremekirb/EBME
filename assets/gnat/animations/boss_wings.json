@@ -1,0 +1,44 @@
+{
+    "frames": {
+        "downl":   [0,  0,  24, 16, 24,  2],
+        "normall": [24, 0,  24, 16, 24, 10],
+        "upl":     [48, 0,  24, 16, 20, 16],
+        "downr":   [0,  16, 24, 16, 0,   2],
+        "normalr": [24, 16, 24, 16, 0,  10],
+        "upr":     [48, 16, 24, 16, 4,  16]
+    },
+    "animations": {
+        "flyl": {
+            "loop": 0,
+            "frames": [
+                {"name": "downl", "duration": 5},
+                {"name": "normall", "duration": 3},
+                {"name": "upl", "duration": 5}
+            ]
+        },
+        "flyr": {
+            "loop": 0,
+            "frames": [
+                {"name": "downr", "duration": 5},
+                {"name": "normalr", "duration": 3},
+                {"name": "upr", "duration": 5}
+            ]
+        },
+        "fastl": {
+            "loop": 0,
+            "frames": [
+                {"name": "downl", "duration": 3},
+                {"name": "normall", "duration": 2},
+                {"name": "upl", "duration": 3}
+            ]
+        },
+        "fastr": {
+            "loop": 0,
+            "frames": [
+                {"name": "downr", "duration": 3},
+                {"name": "normalr", "duration": 2},
+                {"name": "upr", "duration": 3}
+            ]
+        }
+    }
+} 

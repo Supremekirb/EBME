@@ -1,0 +1,15 @@
+{
+    "frames": {
+        "walk1": [0,  0, 16, 32, 0, 32],
+        "walk2": [16, 0, 16, 32, 0, 32]
+    },
+    "animations": {
+        "walk": {
+            "loop": 0,
+            "frames": [
+                {"name": "walk1", "duration": 6},
+                {"name": "walk2", "duration": 6}
+            ]
+        }
+    }
+}

@@ -1,0 +1,59 @@
+{
+    "frames": {
+        "normal": [0,  0,  32, 32, 16, 30],
+        "blink1": [32, 0,  32, 32, 16, 30],
+        "blink2": [64, 0,  32, 32, 16, 30],
+        "blink3": [0,  32, 32, 32, 16, 30],
+        "angry":  [32, 32, 32, 32, 16, 30],
+        "laugh":  [64, 32, 32, 32, 16, 30],
+        "hit1":   [0,  64, 32, 32, 16, 30],
+        "hit2":   [32, 64, 32, 32, 16, 30],
+        "hit3":   [64, 64, 32, 32, 16, 30],
+        "flash":  [96, 64, 32, 32, 16, 30]
+    },
+    "animations": {
+        "normal": {
+            "loop": 0,
+            "frames": [
+                {"name": "normal", "duration": 60}
+            ]
+        },
+        "blink": {
+            "loop": -1,
+            "frames": [
+                {"name": "blink1", "duration": 6},
+                {"name": "blink2", "duration": 6},
+                {"name": "blink3", "duration": 6},
+                {"name": "blink2", "duration": 6},
+                {"name": "blink1", "duration": 6}
+            ]
+        },
+        "hit": {
+            "loop": -1,
+            "frames": [
+                {"name": "hit1", "duration": 6},
+                {"name": "hit2", "duration": 6},
+                {"name": "hit3", "duration": 6}
+            ]
+        },
+        "flash": {
+            "loop": 0,
+            "frames": [
+                {"name": "hit1", "duration": 6},
+                {"name": "flash", "duration": 6}
+            ]
+        },
+        "laugh": {
+            "loop": 0,
+            "frames": [
+                {"name": "laugh", "duration": 60}
+            ]
+        },
+        "angry": {
+            "loop": 0,
+            "frames": [
+                {"name": "angry", "duration": 60}
+            ]
+        }
+    }
+}

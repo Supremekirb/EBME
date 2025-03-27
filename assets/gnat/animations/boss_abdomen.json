@@ -1,0 +1,30 @@
+{
+    "frames": {
+        "normal": [0,  0, 32, 24, 16, 0],
+        "inward": [32, 0, 32, 24, 16, 0]
+    },
+    "animations": {     
+        "normal": {
+            "loop": 0,
+            "frames": [
+                {"name": "normal", "duration": 60}
+            ]
+        },
+        "inward": {
+            "loop": 0,
+            "frames": [
+                {"name": "inward", "duration": 60}
+            ]
+        },
+        "fast": {
+            "loop": 0,
+            "frames": [
+                {"name": "normal", "duration": 4},
+                {"name": "inward", "duration": 4},
+                {"name": "normal", "duration": 4},
+                {"name": "inward", "duration": 4},
+                {"name": "normal", "duration": 4} 
+            ]
+        }
+    }
+}

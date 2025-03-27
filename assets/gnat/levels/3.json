@@ -21,7 +21,7 @@
             "enemies": [
                 {"name": "gnat", "max": 2, "count": 6},
                 {"name": "attack", "max": 2, "count": 7},
-                {"name": "spawner", "max": 2, "count": 8}
+                {"name": "spawner", "max": 2, "count": 7}
             ]
         },
         {

@@ -1,0 +1,38 @@
+{
+    "frames": {
+        "spawn1": [48, 16, 8,  8,  4, 0],
+        "spawn2": [0,  0,  16, 16, 8, 0],
+        "spawn3": [16, 0,  16, 16, 8, 0],
+        "spawn4": [32, 0,  16, 16, 8, 0],
+        "spawn5": [48, 0,  16, 16, 8, 0],
+        "spawn6": [0,  16, 16, 16, 8, 0],
+        "spawn7": [16, 16, 16, 16, 8, 0],
+        "spawn8": [32, 16, 16, 16, 8, 0],
+        "smoke1": [64, 0,  16, 16, 8, 0],
+        "smoke2": [80, 0,  16, 16, 8, 0],
+        "smoke3": [64, 16, 16, 16, 8, 0]
+    },
+    "animations": {
+        "spawn": {
+            "loop": -1,
+            "frames": [
+                {"name": "spawn1", "duration": 6},
+                {"name": "spawn2", "duration": 6},
+                {"name": "spawn3", "duration": 6},
+                {"name": "spawn4", "duration": 6},
+                {"name": "spawn5", "duration": 6},
+                {"name": "spawn6", "duration": 6},
+                {"name": "spawn7", "duration": 6},
+                {"name": "spawn8", "duration": 6}
+            ]
+        },
+        "smoke": {
+            "loop": 0,
+            "frames": [
+                {"name": "smoke1", "duration": 6},
+                {"name": "smoke2", "duration": 6},
+                {"name": "smoke3", "duration": 6}
+            ]
+        }
+    }
+}

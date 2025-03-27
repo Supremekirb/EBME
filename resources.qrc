@@ -87,5 +87,16 @@
         <file alias="spritesheets/mini.png">assets/gnat/spritesheets/mini.png</file>
         <file alias="spritesheets/attack.png">assets/gnat/spritesheets/attack.png</file>
         <file alias="spritesheets/projectile.png">assets/gnat/spritesheets/projectile.png</file>
+        <file alias="spritesheets/bobomb.png">assets/gnat/spritesheets/bobomb.png</file>
+        <file alias="spritesheets/boss_abdomen.png">assets/gnat/spritesheets/boss_abdomen.png</file>
+        <file alias="spritesheets/boss_arms.png">assets/gnat/spritesheets/boss_arms.png</file>
+        <file alias="spritesheets/boss_head.png">assets/gnat/spritesheets/boss_head.png</file>
+        <file alias="spritesheets/boss_particle.png">assets/gnat/spritesheets/boss_particle.png</file>
+        <file alias="spritesheets/boss_thorax.png">assets/gnat/spritesheets/boss_thorax.png</file>
+        <file alias="spritesheets/boss_wings.png">assets/gnat/spritesheets/boss_wings.png</file>
+        <file alias="spritesheets/galoomba.png">assets/gnat/spritesheets/galoomba.png</file>
+        <file alias="spritesheets/koopa.png">assets/gnat/spritesheets/koopa.png</file>
+        <file alias="spritesheets/luigi.png">assets/gnat/spritesheets/luigi.png</file>
+        <file alias="spritesheets/spiny.png">assets/gnat/spritesheets/spiny.png</file>
     </qresource>
 </RCC>

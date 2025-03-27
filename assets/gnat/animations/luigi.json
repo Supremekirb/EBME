@@ -1,0 +1,32 @@
+{
+    "frames": {
+        "jump":  [0,  0, 16, 24, 0, 24],
+        "spinf": [16, 0, 16, 24, 0, 24],
+        "spinb": [32, 0, 16, 24, 0, 24],
+        "peace": [48, 0, 16, 24, 0, 24],
+        "walk1": [64, 0, 16, 24, 0, 24],
+        "walk2": [80, 0, 16, 24, 0, 24],
+        "turn":  [96, 0, 16, 24, 0, 24]
+    },
+    "animations": {
+        "walk": {
+            "loop": 0,
+            "frames": [
+                {"name": "walk1", "duration": 6},
+                {"name": "walk2", "duration": 6}
+            ]
+        },
+        "jump": {
+            "loop": 0,
+            "frames": [
+                {"name": "jump", "duration": 60}
+            ]
+        },
+        "peace": {
+            "loop": 0,
+            "frames": [
+                {"name": "peace", "duration": 60}
+            ]
+        }
+    }
+}

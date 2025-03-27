@@ -80,18 +80,18 @@ class Spawner(ScriptedAnimatedItem):
                     await self.pause()
                 
                 case Spawner.STATES.SPAWNING:
-                    if int(self.x()) in range(36, 200):
+                    if int(self.x()) in range(20, 216):
                         self.state = Spawner.STATES.FLYING
                         self.targetSpeed = 0
                         self.play(self.getAnimation("prepareSpawn"))
                     
                     else:
                         if self.x() <= 64:
-                            self.vx = 3
-                            self.targetSpeed = 3
+                            self.vx = 2
+                            self.targetSpeed = 2
                         else:
-                            self.vx = -3
-                            self.targetSpeed = -3
+                            self.vx = -2
+                            self.targetSpeed = -2
                     
                     await self.pause(2, False)
                 
@@ -113,7 +113,7 @@ class Spawner(ScriptedAnimatedItem):
                         self.play(self.getAnimation("prepareSpawn"))                        
                         
                      # bounce off walls (only horizontally)
-                    if not 16 < targetPos.x() < 200:
+                    if not 20 < targetPos.x() < 216:
                         self.vx *= -1
                         self.targetSpeed *= -1
                         

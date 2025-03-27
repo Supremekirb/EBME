@@ -137,7 +137,7 @@ class Bomb(ScriptedAnimatedItem):
                     
                 
                 case Bomb.STATES.CHASING:
-                    self.fuseTimer -= 1
+                    self.fuseTimer -= 2
                     
                     if self.fuseTimer < 1:
                         self.play(self.getAnimation("boom"))

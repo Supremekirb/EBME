@@ -141,12 +141,13 @@ class GameState:
     @staticmethod
     def takeScore():
         inst = GameState.INSTANCE
-        if inst.score > 0:
+        if inst.score > 1:
             inst.score -= 1
             inst.scene.scoreItem.setScore(inst.score)
             if inst.score in (25, 50, 75):
                 inst.scene.spawnLife()
         else:
+            # (spawn boss actually...)
             inst.beginNextLevel()
     
     @staticmethod

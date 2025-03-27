@@ -1,0 +1,13 @@
+{
+    "frames": {
+        "normal": [0,  0, 32, 24, 16, 0]
+    },
+    "animations": {
+        "normal": {
+            "loop": 0,
+            "frames": [
+                {"name": "normal", "duration": 60}
+            ]
+        }
+    }
+}
