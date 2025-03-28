@@ -11,6 +11,7 @@ from src.coilsnake.project_data import ProjectData
 from src.gnat import scripting
 from src.gnat.animation import AnimationTimer
 from src.gnat.bonus import BonusHand
+from src.gnat.boss import Boss
 from src.gnat.cutscene import RoundStartDisplay, ScreenFader
 from src.gnat.game_state import GameState
 from src.gnat.hand import GnatAttackHand
@@ -80,6 +81,9 @@ class GameScene(QGraphicsScene):
         
     def spawnLife(self):
         BonusHand()
+        
+    def spawnBoss(self):
+        Boss()
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         if not self.animationTimer.paused:

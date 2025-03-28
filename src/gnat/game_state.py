@@ -138,6 +138,7 @@ class GameState:
         inst = GameState.INSTANCE
         inst.score = 100
         inst.scene.scoreItem.setScore(inst.score)
+        inst.scene.scoreItem.show()
     @staticmethod
     def takeScore():
         inst = GameState.INSTANCE
@@ -147,12 +148,12 @@ class GameState:
             if inst.score in (25, 50, 75):
                 inst.scene.spawnLife()
         else:
-            # (spawn boss actually...)
-            inst.beginNextLevel()
+            inst.scene.scoreItem.hide()
+            inst.getScene().spawnBoss()
     
     @staticmethod
     def beginNextLevel():
-        inst = GameState.INSTANCE
+        inst = GameState.INSTANCE       
         if inst.level < 3:
             inst.level += 1
             pass # other next level logic
@@ -167,8 +168,10 @@ class GameState:
     @staticmethod
     def _nextLevel():
         inst = GameState.INSTANCE
-        inst.levelManager = LevelManager(common.absolutePath(f"assets/gnat/levels/{str(inst.level)}.json"))
-        inst.levelManager.startSpawning()
+        # inst.levelManager = LevelManager(common.absolutePath(f"assets/gnat/levels/{str(inst.level)}.json"))
+        # inst.levelManager.startSpawning()
+        inst.score = 1
+        inst.takeScore()
         
     @staticmethod
     def addRank():

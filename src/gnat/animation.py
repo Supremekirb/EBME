@@ -89,7 +89,7 @@ class AnimatedGraphicsItem(QGraphicsObject):
         self.currentAnimation: Animation|None = None
         self.currentSpriteFrame: SpriteFrame|None = None
         
-        self.colorR = 0
+        self.tint = QBrush(QColor(0, 0, 0, 0))
         
         super().__init__()
         
@@ -149,13 +149,30 @@ class AnimatedGraphicsItem(QGraphicsObject):
                 
     def paint(self, painter: QPainter, style: QStyleOptionGraphicsItem, widget: QWidget):
         if self.currentSpriteFrame:
+            image = self.spritesheet.copy()
+            
+            if self.tint.color() == QColor(0, 0, 0, 0):
+                if hasattr(self.parentItem(), "tint"):
+                    self.tint = self.parentItem().tint
+                    
+            if self.tint.color().alpha() > 0:
+                tintPainter = QPainter(image)
+                tintPainter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceAtop)
+                tintPainter.setBrush(self.tint)
+                tintPainter.drawRect(image.rect())
+                tintPainter.end()
+
             painter.drawImage(self.currentSpriteFrame.offset,
-                              self.spritesheet,
+                              image,
                               self.currentSpriteFrame.rect)
             
+            # DEBUG
             # painter.setBrush(Qt.BrushStyle.NoBrush)
             # painter.setPen(Qt.GlobalColor.red)
             # painter.drawRect(self.boundingRect())
+            # painter.setPen(Qt.GlobalColor.cyan)
+            # painter.setBrush(Qt.GlobalColor.cyan)
+            # painter.drawEllipse(0, 0, 5, 5)
             
     def boundingRect(self):
         if self.currentSpriteFrame:

@@ -111,6 +111,12 @@ class ScreenFader(QGraphicsRectItem, Script):
         self.pauseTime = 1
         
         self.setBrush(self.maskBrush)
+        
+    def setAlpha(self, alpha):
+        self.alpha = alpha
+        self.targetAlpha = alpha
+        self.maskBrush.setColor(QColor(0, 0, 0, self.alpha))
+        self.setBrush(self.maskBrush)
     
     def fadeToBlack(self, delta=1, pause=1):
         self.alpha = 0
