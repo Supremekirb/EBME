@@ -1,23 +1,28 @@
 {
     "frames": {
-        "upopenl":    [0,  0,  16, 16, 16, 16],
-        "upclosel":   [16, 0,  16, 16, 16, 16],
-        "midopenl":   [32, 16, 16, 16, 16,  8],
-        "midclosel":  [32, 0,  16, 16, 16,  8],
-        "downopenl":  [0,  16, 16, 16, 16,  0],
-        "downclosel": [16, 16, 16, 16, 16,  0],
-        "upperupl":   [48, 16, 8,  8,  8,   8],
-        "uppermidl":  [48, 0,  8,  8,  8,   4],
-        "upperdownl": [48, 8,  8,  8,  8,   0],
-        "upopenr":    [40, 32, 16, 16, 0,  16],
-        "upcloser":   [24, 32, 16, 16, 0,  16],
-        "midopenr":   [8,  48, 16, 16, 0,   8],
-        "midcloser":  [8,  32, 16, 16, 0,   8],
-        "downopenr":  [40, 48, 16, 16, 0,   0],
-        "downcloser": [24, 48, 16, 16, 0,   0],
-        "upperupr":   [0,  48, 8,  8,  0,   8],
-        "uppermidr":  [0,  32, 8,  8,  0,   4],
-        "upperdownr": [0,  40, 8,  8,  0,   0]
+        "upopenl":    [0,  0,  16, 16, 0, -12],
+        "midupopenl": [0,  0,  16, 16, -2,-7],
+        "midopenl":   [32, 16, 16, 16, -4,  0],
+        "updownopenl":  [0,  16, 16, 16, 0, 1],
+        "middownopenl":  [0,  16, 16, 16, -2, 5],
+        "downopenl":  [0,  16, 16, 16, -1,  9],
+        "downclosel": [16, 16, 16, 16, -1,  9],
+
+        "upperupl":   [48, 16, 8,  8,  12,  1],
+        "uppermidl":  [48, 0,  8,  8,  12,  4],
+        "upperdownl": [48, 8,  8,  8,  12,  5],
+
+        "upopenr":    [40, 32, 16, 16, 48, -12],
+        "midupopenr": [40, 32, 16, 16, 50, -7],
+        "midopenr":   [8,  48, 16, 16, 52,   0],
+        "updownopenr":  [40, 48, 16, 16, 48, 1],
+        "middownopenr":  [40, 48, 16, 16, 50, 5],
+        "downopenr":  [40, 48, 16, 16, 49,   9],
+        "downcloser": [24, 48, 16, 16, 49,   9],
+        
+        "upperupr":   [0,  48, 8,  8,  44,   1],
+        "uppermidr":  [0,  32, 8,  8,  44,   4],
+        "upperdownr": [0,  40, 8,  8,  44,   5]
     },
     "animations": {
         "upopenl": {
@@ -26,10 +31,10 @@
                 {"name": "upopenl", "duration": 60}
             ]
         },
-        "upclosel": {
+        "midupopenl": {
             "loop": 0,
             "frames": [
-                {"name": "upclosel", "duration": 60}
+                {"name": "midupopenl", "duration": 60}
             ]
         },
         "midopenl": {
@@ -38,10 +43,16 @@
                 {"name": "midopenl", "duration": 60}
             ]
         },
-        "midclosel": {
+        "updownopenl": {
             "loop": 0,
             "frames": [
-                {"name": "midclosel", "duration": 60}
+                {"name": "updownopenl", "duration": 60}
+            ]
+        },
+        "middownopenl": {
+            "loop": 0,
+            "frames": [
+                {"name": "middownopenl", "duration": 60}
             ]
         },
         "downopenl": {
@@ -80,10 +91,10 @@
                 {"name": "upopenr", "duration": 60}
             ]
         },
-        "upcloser": {
+        "midupopenr": {
             "loop": 0,
             "frames": [
-                {"name": "upcloser", "duration": 60}
+                {"name": "midupopenr", "duration": 60}
             ]
         },
         "midopenr": {
@@ -92,10 +103,16 @@
                 {"name": "midopenr", "duration": 60}
             ]
         },
-        "midcloser": {
+        "updownopenr": {
             "loop": 0,
             "frames": [
-                {"name": "midcloser", "duration": 60}
+                {"name": "updownopenr", "duration": 60}
+            ]
+        },
+        "middownopenr": {
+            "loop": 0,
+            "frames": [
+                {"name": "middownopenr", "duration": 60}
             ]
         },
         "downopenr": {

@@ -30,6 +30,10 @@ class Boss(ScriptedAnimatedItem):
         self.abdomen = BossAbdomen(self)
         self.wingL = BossWingLeft(self)
         self.wingR = BossWingRight(self)
+        self.shoulderL = BossShoulderLeft(self)
+        self.shoulderR = BossShoulderRight(self)
+        self.handL = BossHandLeft(self)
+        self.handR = BossHandRight(self)
         
         self.play(self.getAnimation("normal"))
         
@@ -39,14 +43,16 @@ class Boss(ScriptedAnimatedItem):
         self.setY(64)
         
         self.hp = 20
+        self.hitCooldown = 0
         
         self.hide()
         
         GameState.addEnemy(self)
         
     def swatted(self):
-        if self.state == Boss.STATES.NORMAL:
+        if self.state == Boss.STATES.NORMAL and not self.hitCooldown:
             self.hp -= 1
+            self.hitCooldown = 30
             # annoying little formula to replicate the way the red tint works in the original...
             # - tinting starts on the 10th hit
             # - tinting increases every subsequent 2 hits
@@ -62,6 +68,12 @@ class Boss(ScriptedAnimatedItem):
     
     async def script(self):
         while True:
+            if self.hitCooldown > 0:
+                self.hitCooldown -= 1
+                self.setVisible(not self.isVisible())
+            elif self.hitCooldown == 0:
+                self.setVisible(True)
+            
             match self.state:
                 case Boss.STATES.SPAWNING:
                     self.hide()
@@ -121,3 +133,31 @@ class BossWingRight(AnimatedGraphicsItem):
         self.setParentItem(parent)
         self.play(self.getAnimation("flyr"))
         self.setFlag(AnimatedGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent)
+
+class BossShoulderLeft(AnimatedGraphicsItem):
+    ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/boss_arms.json"))
+    def __init__(self, parent: "Boss"):
+        super().__init__(GameState.getAnimationTimer(), QPixmap(":/gnat/spritesheets/boss_arms.png"), BossShoulderLeft.ANIMATIONS)
+        self.setParentItem(parent)
+        self.play(self.getAnimation("uppermidl"))
+        
+class BossShoulderRight(AnimatedGraphicsItem):
+    ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/boss_arms.json"))
+    def __init__(self, parent: "Boss"):
+        super().__init__(GameState.getAnimationTimer(), QPixmap(":/gnat/spritesheets/boss_arms.png"), BossShoulderRight.ANIMATIONS)
+        self.setParentItem(parent)
+        self.play(self.getAnimation("uppermidr"))
+        
+class BossHandLeft(AnimatedGraphicsItem):
+    ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/boss_arms.json"))
+    def __init__(self, parent: "Boss"):
+        super().__init__(GameState.getAnimationTimer(), QPixmap(":/gnat/spritesheets/boss_arms.png"), BossHandLeft.ANIMATIONS)
+        self.setParentItem(parent)
+        self.play(self.getAnimation("middownopenl"))
+        
+class BossHandRight(AnimatedGraphicsItem):
+    ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/boss_arms.json"))
+    def __init__(self, parent: "Boss"):
+        super().__init__(GameState.getAnimationTimer(), QPixmap(":/gnat/spritesheets/boss_arms.png"), BossHandRight.ANIMATIONS)
+        self.setParentItem(parent)
+        self.play(self.getAnimation("middownopenr"))
