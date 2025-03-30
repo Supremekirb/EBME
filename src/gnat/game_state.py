@@ -55,6 +55,16 @@ class GameState:
     def playBGM(name: str):
         inst = GameState.INSTANCE
         inst.soundManager.playBGM(name)
+    @staticmethod
+    def playBossBGM():
+        inst = GameState.INSTANCE
+        if inst.rank == 15:
+            if inst.level == 3:
+                GameState.playBGM("finalboss")
+            else:
+                GameState.playBGM("hardboss")
+        else:
+            GameState.playBGM("boss")
     
     @staticmethod
     def pauseBGM():
@@ -72,8 +82,10 @@ class GameState:
     @staticmethod
     def playCurrentLevelBGM():
         inst = GameState.INSTANCE
-        inst.soundManager.playBGM("regular1")
-        # inst.soundManager.playBGM(f"regular{str(inst.level)}")
+        if inst.rank == 15:
+            inst.soundManager.playBGM(f"hard{str(inst.level)}")
+        else:
+            inst.soundManager.playBGM(f"regular{str(inst.level)}")
         
         
     @staticmethod
@@ -119,7 +131,7 @@ class GameState:
     @staticmethod
     def addLife():
         inst = GameState.INSTANCE
-        if inst.lives <= 6:
+        if inst.lives < 6:
             inst.lives += 1
             inst.scene.livesItem.setLifeCount(inst.lives)
     @staticmethod
@@ -176,7 +188,7 @@ class GameState:
     @staticmethod
     def addRank():
         inst = GameState.INSTANCE
-        if inst.rank < 16:
+        if inst.rank < 15:
             inst.rank += 1
             inst.scene.rankItem.setRank(inst.rank)
         else:

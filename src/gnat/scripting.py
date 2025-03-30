@@ -35,8 +35,8 @@ class ScriptedAnimatedItem(AnimatedGraphicsItem, Script):
         self.vx = 0
         self.vy = 0
     
-    # Overwrites Script.pause() and adds velocity support
-    async def pause(self, length: int=1, velocityEachFrame: bool = True):
+    # Overwrites Script.pause(), adds velocity support and lock support
+    async def pause(self, length: int=1, velocityEachFrame: bool = True, lock: asyncio.Event|None=None):
         # set velocityEachFrame to False and length to 2 to replicate the
         # kinda weirdly jerky two-frame movement of the gnats
         # in the original game
@@ -46,6 +46,8 @@ class ScriptedAnimatedItem(AnimatedGraphicsItem, Script):
         for i in range(0, length):
             if velocityEachFrame:
                 self.setPos(self.calculateTargetPos())
+            if isinstance(lock, asyncio.Event):
+                await lock.wait()
             await _frame()
             
     def calculateTargetPos(self):

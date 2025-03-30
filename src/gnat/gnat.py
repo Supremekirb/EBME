@@ -47,7 +47,9 @@ class Gnat(ScriptedAnimatedItem):
             self.vy = 0
             self.state = Gnat.STATES.DYING
             self.play(self.getAnimation("death"))
-            GameState.playSFX("gnatdie")
+            if GameState.INSTANCE.level == 3:
+                GameState.playSFX(random.choice(("gnatdie", "gnatdie2")))
+            else: GameState.playSFX("gnatdie")
             GameState.takeScore()
             # remove after we have fallen
             return True

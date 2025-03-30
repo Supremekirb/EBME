@@ -1,8 +1,8 @@
 from PySide6.QtCore import QPoint, QRect, QRectF, Signal
 from PySide6.QtGui import QBrush, QColor, QPixmap, Qt
-from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
-                               QGraphicsRectItem, QGraphicsScene,
-                               QGraphicsTextItem)
+from PySide6.QtWidgets import (QApplication, QGraphicsItem,
+                               QGraphicsPixmapItem, QGraphicsRectItem,
+                               QGraphicsScene, QGraphicsTextItem)
 
 import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
@@ -157,6 +157,7 @@ class UIPauseScreen(QGraphicsPixmapItem):
         self.resumeLever.setParentItem(self)
         
         self.quitLever = UILever(self.animationTimer)
+        self.quitLever.pulled.connect(self.onExit)
         self.quitLever.setPos(10, 81)
         self.quitLever.setParentItem(self)
         
@@ -195,3 +196,7 @@ class UIPauseScreen(QGraphicsPixmapItem):
     def onResume(self):
         self.hide()
         GameState.resumeGame()
+
+    def onExit(self):
+        self.resumeLever.reset()
+        QApplication.closeAllWindows()
