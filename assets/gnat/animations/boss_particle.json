@@ -1,29 +1,36 @@
 {
     "frames": {
-        "spawn1": [48, 16, 8,  8,  4, 0],
-        "spawn2": [0,  0,  16, 16, 8, 0],
-        "spawn3": [16, 0,  16, 16, 8, 0],
-        "spawn4": [32, 0,  16, 16, 8, 0],
-        "spawn5": [48, 0,  16, 16, 8, 0],
-        "spawn6": [0,  16, 16, 16, 8, 0],
-        "spawn7": [16, 16, 16, 16, 8, 0],
-        "spawn8": [32, 16, 16, 16, 8, 0],
-        "smoke1": [64, 0,  16, 16, 8, 0],
-        "smoke2": [80, 0,  16, 16, 8, 0],
-        "smoke3": [64, 16, 16, 16, 8, 0]
+        "spawn1": [48, 16, 8,  8,  -4, 0],
+        "spawn2": [0,  0,  16, 16, -8, 0],
+        "spawn3": [16, 0,  16, 16, -8, 0],
+        "spawn4": [32, 0,  16, 16, -8, 0],
+        "spawn5": [48, 0,  16, 16, -8, 0],
+        "spawn6": [0,  16, 16, 16, -8, 0],
+        "spawn7": [16, 16, 16, 16, -8, 0],
+        "spawn8": [32, 16, 16, 16, -8, 0],
+        "smoke1": [64, 0,  16, 16, -8, 0],
+        "smoke2": [80, 0,  16, 16, -8, 0],
+        "smoke3": [64, 16, 16, 16, -8, 0],
+        "flame1": [80, 16, 8,  8,  -4, 0],
+        "flame2": [88, 16, 8,  8,  -4, 0],
+        "none":   [56, 16, 8,  8,  -4, 0]
     },
     "animations": {
         "spawn": {
             "loop": -1,
             "frames": [
-                {"name": "spawn1", "duration": 6},
-                {"name": "spawn2", "duration": 6},
-                {"name": "spawn3", "duration": 6},
-                {"name": "spawn4", "duration": 6},
-                {"name": "spawn5", "duration": 6},
-                {"name": "spawn6", "duration": 6},
-                {"name": "spawn7", "duration": 6},
-                {"name": "spawn8", "duration": 6}
+                {"name": "spawn1", "duration": 1},
+                {"name": "spawn2", "duration": 9},
+                {"name": "spawn3", "duration": 9},
+                {"name": "spawn4", "duration": 14},
+                {"name": "spawn5", "duration": 14},
+                {"name": "spawn6", "duration": 14},
+                {"name": "spawn5", "duration": 14},
+                {"name": "spawn6", "duration": 14},
+                {"name": "spawn5", "duration": 14},
+                {"name": "spawn6", "duration": 14},
+                {"name": "spawn7", "duration": 9},
+                {"name": "spawn8", "duration": 9}
             ]
         },
         "smoke": {
@@ -32,6 +39,19 @@
                 {"name": "smoke1", "duration": 6},
                 {"name": "smoke2", "duration": 6},
                 {"name": "smoke3", "duration": 6}
+            ]
+        },
+        "flame": {
+            "loop": 0,
+            "frames": [
+                {"name": "flame1", "duration": 3},
+                {"name": "flame2", "duration": 3}
+            ]
+        },
+        "none": {
+            "loop": 0,
+            "frames": [
+                {"name": "none", "duration": 60}
             ]
         }
     }

@@ -25,6 +25,56 @@
         "upperdownr": [0,  40, 8,  8,  44,   5]
     },
     "animations": {
+        "idlel": {
+            "loop": 0,
+            "frames": [
+                {"name": "downclosel", "duration": 8},
+                {"name": "downopenl", "duration": 8},
+                {"name": "downclosel", "duration": 8},
+                {"name": "downopenl", "duration": 8},
+                {"name": "downclosel", "duration": 8},
+                {"name": "downopenl", "duration": 25}
+            ]
+        },
+        "idler": {
+            "loop": 0,
+            "frames": [
+                {"name": "downcloser", "duration": 8},
+                {"name": "downopenr", "duration": 8},
+                {"name": "downcloser", "duration": 8},
+                {"name": "downopenr", "duration": 8},
+                {"name": "downcloser", "duration": 8},
+                {"name": "downopenr", "duration": 25}
+            ]
+        },
+        "hitl": {
+            "loop": -1,
+            "frames": [
+                {"name": "midopenl", "duration": 6},
+                {"name": "upopenl", "duration": 9}
+            ]
+        },
+        "hitr": {
+            "loop": -1,
+            "frames": [
+                {"name": "midopenr", "duration": 6},
+                {"name": "upopenr", "duration": 9}
+            ]
+        },
+        "upperhitl": {
+            "loop": -1,
+            "frames": [
+                {"name": "uppermidl", "duration": 6},
+                {"name": "upperupl", "duration": 9}
+            ]
+        },
+        "upperhitr": {
+            "loop": -1,
+            "frames": [
+                {"name": "uppermidr", "duration": 6},
+                {"name": "upperupr", "duration": 9}
+            ]
+        },
         "upopenl": {
             "loop": 0,
             "frames": [

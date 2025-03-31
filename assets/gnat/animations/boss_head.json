@@ -21,26 +21,32 @@
         "blink": {
             "loop": 0,
             "frames": [
-                {"name": "blink1", "duration": 6},
-                {"name": "blink2", "duration": 6},
-                {"name": "blink3", "duration": 6},
-                {"name": "blink2", "duration": 6},
-                {"name": "blink1", "duration": 6}
+                {"name": "blink1", "duration": 8},
+                {"name": "blink2", "duration": 8},
+                {"name": "blink3", "duration": 8},
+                {"name": "blink2", "duration": 8},
+                {"name": "blink1", "duration": 8},
+                {"name": "normal", "duration": 16}
             ]
         },
         "hit": {
             "loop": -1,
             "frames": [
                 {"name": "hit1", "duration": 6},
-                {"name": "hit2", "duration": 6},
-                {"name": "hit3", "duration": 6}
+                {"name": "hit2", "duration": 9}
             ]
         },
         "flash": {
             "loop": 0,
             "frames": [
-                {"name": "hit1", "duration": 6},
-                {"name": "flash", "duration": 6}
+                {"name": "hit1", "duration": 5},
+                {"name": "flash", "duration": 5}
+            ]
+        },
+        "postfire": {
+            "loop": 0,
+            "frames": [
+                {"name": "hit1", "duration": 60}
             ]
         },
         "laugh": {

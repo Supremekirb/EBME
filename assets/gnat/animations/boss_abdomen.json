@@ -16,6 +16,13 @@
                 {"name": "inward", "duration": 60}
             ]
         },
+        "hit": {
+            "loop": -1,
+            "frames": [
+                {"name": "normal", "duration": 6},
+                {"name": "inward", "duration": 9}
+            ]
+        },
         "fast": {
             "loop": 0,
             "frames": [

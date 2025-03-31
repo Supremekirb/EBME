@@ -78,6 +78,7 @@ MAXRECENTS = 32
 
 GNATZVALUES = IntEnum("GNATZVALUES", ["ATTACKS",
                                       "GAMEPLAY",
+                                      "BOSSATTACKS",
                                       "MASK",
                                       "HAND",
                                       "TEXT",
