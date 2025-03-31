@@ -60,6 +60,18 @@
             "frames": [
                 {"name": "angry", "duration": 60}
             ]
+        },
+        "hit2": {
+            "loop": 0,
+            "frames": [
+                {"name": "hit2", "duration": 60}
+            ]
+        },
+        "hit3": {
+            "loop": 0,
+            "frames": [
+                {"name": "hit3", "duration": 60}
+            ]
         }
     }
 }

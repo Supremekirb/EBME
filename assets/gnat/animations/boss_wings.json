@@ -8,6 +8,18 @@
         "downr":   [48, 16, 24, 16, 0,   3]
     },
     "animations": {
+        "normall": {
+            "loop": 0,
+            "frames": [
+                {"name": "normall", "duration": 60}
+            ]
+        },
+        "normalr": {
+            "loop": 0,
+            "frames": [
+                {"name": "normalr", "duration": 60}
+            ]
+        },
         "flyl": {
             "loop": 0,
             "frames": [

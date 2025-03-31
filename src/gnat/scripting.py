@@ -17,7 +17,7 @@ async def _frame():
 
 class Script():
     def __init__(self):
-        loop.create_task(self.script())
+        self._task = loop.create_task(self.script())
     
     async def script(self): # intended to be virtual
         while True:

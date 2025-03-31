@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QPoint
+from PySide6.QtGui import QPixmap
 
 import src.misc.common as common
 from src.gnat.cutscene import RoundStartCutsceneHandler
@@ -176,6 +177,11 @@ class GameState:
         
         inst.resetScore()
         RoundStartCutsceneHandler("LEVEL", str(inst.level), callback=GameState._nextLevel)
+    
+    @staticmethod
+    def setLevelBackground():
+        inst = GameState.INSTANCE
+        inst.getScene().setBackgroundBrush(QPixmap(f":/gnat/spritesheets/bg{inst.level}.png"))
         
     @staticmethod
     def _nextLevel():

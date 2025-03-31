@@ -42,6 +42,18 @@
             "frames": [
                 {"name": "up", "duration": 60}
             ]
+        },
+        "boom1": {
+            "loop": 0,
+            "frames": [
+                {"name": "boom1", "duration": 60}
+            ]
+        },
+        "boom2": {
+            "loop": 0,
+            "frames": [
+                {"name": "boom2", "duration": 60}
+            ]
         }
     }
 }

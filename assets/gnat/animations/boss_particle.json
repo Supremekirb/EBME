@@ -36,9 +36,9 @@
         "smoke": {
             "loop": 0,
             "frames": [
-                {"name": "smoke1", "duration": 6},
-                {"name": "smoke2", "duration": 6},
-                {"name": "smoke3", "duration": 6}
+                {"name": "smoke1", "duration": 4},
+                {"name": "smoke2", "duration": 4},
+                {"name": "smoke3", "duration": 4}
             ]
         },
         "flame": {

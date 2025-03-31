@@ -10,7 +10,8 @@ from PySide6.QtWidgets import QGraphicsRectItem
 
 import src.misc.common as common
 from src.gnat.animation import AnimatedGraphicsItem, loadAnimations
-from src.gnat.cutscene import RoundStartDisplay, ScreenFader
+from src.gnat.cutscene import (CongratulationsCutsceneHandler,
+                               RoundStartDisplay, ScreenFader)
 from src.gnat.game_state import GameState
 from src.gnat.misc import AttackProjectile, BossMini, BossProjectile, Mini
 from src.gnat.scripting import ScriptedAnimatedItem
@@ -26,6 +27,8 @@ class Boss(ScriptedAnimatedItem):
         super().__init__(GameState.getAnimationTimer(), QPixmap(":/gnat/spritesheets/boss_thorax.png"), Boss.ANIMATIONS)
         self.setZValue(common.GNATZVALUES.GAMEPLAY)
         
+        # for cutscene stuff
+        self.duplicateThorax = DuplicateBossThorax(self)
         self.head = BossHead(self)
         self.abdomen = BossAbdomen(self)
         self.wingL = BossWingLeft(self)
@@ -43,7 +46,7 @@ class Boss(ScriptedAnimatedItem):
         self.setX(98)
         self.setY(64)
         
-        self.hp = 20
+        self.hp = 1
         self.hitCooldown = 0
         self.waitingForMove = False
         
@@ -63,10 +66,13 @@ class Boss(ScriptedAnimatedItem):
             
             if self.hp == 0:
                 self.tint.setColor(QColor(0, 0, 0, 0))
-                self.state == Boss.STATES.DYING
-                GameState.removeEnemy(self)
+                self.state = Boss.STATES.DYING
                 GameState.playBGM("bossdeath")
-                GameState.beginNextLevel()
+                self.particle.damaging = False
+                for i in GameState.getScene().items():
+                    if isinstance(i, BossProjectile) or isinstance(i, BossMini):
+                        GameState.getScene().removeItem(i)
+                        i._task.cancel()
             else:
                 GameState.playSFX(random.choice(("bosshurt1", "bosshurt2", "bosshurt3")))
                 self.head.play(self.head.getAnimation("hit"))
@@ -299,6 +305,114 @@ class Boss(ScriptedAnimatedItem):
                         await self.pause(3)
                     
                     self.state = Boss.STATES.NORMAL
+                
+                case Boss.STATES.DYING:
+                    def animUp():
+                        self.head.play(self.head.getAnimation("hit3"))
+                        self.abdomen.play(self.abdomen.getAnimation("inward"))
+                        self.shoulderL.play(self.shoulderL.getAnimation("upperupl"))
+                        self.shoulderR.play(self.shoulderR.getAnimation("upperupr"))
+                        self.handL.play(self.handL.getAnimation("upopenl"))
+                        self.handR.play(self.handR.getAnimation("upopenr"))
+                    def animMid():
+                        self.head.play(self.head.getAnimation("hit2"))
+                        self.abdomen.play(self.abdomen.getAnimation("normal"))
+                        self.shoulderL.play(self.shoulderL.getAnimation("uppermidl"))
+                        self.shoulderR.play(self.shoulderR.getAnimation("uppermidr"))
+                        self.handL.play(self.handL.getAnimation("midopenl"))
+                        self.handR.play(self.handR.getAnimation("midopenr"))
+                    def animDown():
+                        self.head.play(self.head.getAnimation("normal"))
+                        self.abdomen.play(self.abdomen.getAnimation("normal"))
+                        self.shoulderL.play(self.shoulderL.getAnimation("upperdownl"))
+                        self.shoulderR.play(self.shoulderR.getAnimation("upperdownr"))
+                        self.handL.play(self.handL.getAnimation("downopenl"))
+                        self.handR.play(self.handR.getAnimation("downopenr"))
+                    
+                    self.vx = 0
+                    self.vy = 0
+                    currentMove.cancel()
+                    hurtLock.clear()
+                    
+                    self.particle.play(self.particle.getAnimation("smoke"))
+                    self.wingL.play(self.wingL.getAnimation("fastl"))
+                    self.wingR.play(self.wingR.getAnimation("fastr"))
+                    self.play(self.getAnimation("hidden"))
+                    self.duplicateThorax.show()
+                    
+                    for i in range(0, 6):
+                        animUp()
+                        await self.pause(4)
+                        animDown()
+                        await self.pause(4)
+                        animMid()
+                        await self.pause(4)
+                        animUp()
+                        await self.pause(4)
+                        animMid()
+                        await self.pause(4)
+                    
+                    explode1 = RandomisedExplosion(self)
+                    animDown()
+                    await self.pause(3)
+                    animMid()
+                    await self.pause(1)
+                    animUp()
+                    await self.pause(5)
+                    animDown()
+                    await self.pause(5)
+                    animMid()
+                    await self.pause(6)
+                    explode2 = RandomisedExplosion(self)
+                    animUp()
+                    await self.pause(6)
+                    animMid()
+                    await self.pause(6)
+                    animUp()
+                    await self.pause(7)
+                    animDown()
+                    await self.pause(7)
+                    animMid()
+                    await self.pause(7)
+                    animUp()
+                    await self.pause(8)
+                    animMid()
+                    await self.pause(8)
+                    animUp()
+                    await self.pause(8)
+                    animDown()
+                    await self.pause(9)
+                    animMid()
+                    await self.pause(9)
+                    animUp()
+                    explode3 = RandomisedExplosion(self)
+                    await self.pause(40)
+                    
+                    explode1.deleteLater()
+                    explode2.deleteLater()
+                    explode3.deleteLater()
+                    
+                    self.particle.play(self.particle.getAnimation("none"))
+                    self.wingL.play(self.wingL.getAnimation("normall"))
+                    self.wingR.play(self.wingR.getAnimation("normalr"))
+                    for i in range(0, 70):
+                        self.head.setY(self.head.y() - 4)
+                        self.handL.setPos(self.handL.x()-4, self.handL.y()-4)
+                        self.shoulderL.setPos(self.shoulderL.x()-4, self.shoulderL.y()-4)
+                        self.handR.setPos(self.handR.x()+4, self.handR.y()-4)
+                        self.shoulderR.setPos(self.shoulderR.x()+4, self.shoulderR.y()-4)
+                        self.abdomen.setY(self.abdomen.y() + 4)
+                        self.wingL.setPos(self.wingL.x()+4, self.wingL.y()+4)
+                        self.wingR.setPos(self.wingR.x()-4, self.wingR.y()+4)
+                        self.duplicateThorax.setPos(self.duplicateThorax.x()-2, self.duplicateThorax.y()-4)
+                        await self.pause(1)
+                    
+                    CongratulationsCutsceneHandler(
+                    GameState.INSTANCE.level,
+                    GameState.INSTANCE.level == 3 and GameState.INSTANCE.rank == 15,
+                    GameState.beginNextLevel)
+                    
+                    self.deleteLater()
             
                 case _:
                     await self.pause()
@@ -323,6 +437,14 @@ class BossHead(SaveStateAnimatedGraphicsItem):
         super().__init__(GameState.getAnimationTimer(), QPixmap(":/gnat/spritesheets/boss_head.png"), BossHead.ANIMATIONS)
         self.setParentItem(parent)
         self.play(self.getAnimation("blink"))
+
+class DuplicateBossThorax(SaveStateAnimatedGraphicsItem):
+    ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/boss_thorax.json"))
+    def __init__(self, parent: "Boss"):
+        super().__init__(GameState.getAnimationTimer(), QPixmap(":/gnat/spritesheets/boss_thorax.png"), DuplicateBossThorax.ANIMATIONS)
+        self.setParentItem(parent)
+        self.play(self.getAnimation("normal"))
+        self.hide()
         
 class BossAbdomen(SaveStateAnimatedGraphicsItem):
     ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/boss_abdomen.json"))
@@ -399,3 +521,20 @@ class BossParticle(ScriptedAnimatedItem):
                     GameState.getScene().handCursor.hurt()
                 
             await self.pause()
+            
+class RandomisedExplosion(ScriptedAnimatedItem):
+    ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/bomb.json"))
+    def __init__(self, parent: "Boss"):
+        super().__init__(GameState.getAnimationTimer(), QPixmap(":/gnat/spritesheets/bomb.png"), RandomisedExplosion.ANIMATIONS)
+        self.setParentItem(parent)
+        
+        self.play(self.getAnimation("boom1"))
+        
+    async def script(self):
+        while True:
+            self.setPos(
+                random.randint(0, 42),
+                random.randrange(-24, 48)
+            )
+            self.play(self.getAnimation(random.choice(("boom1", "boom2"))))
+            await self.pause(1)

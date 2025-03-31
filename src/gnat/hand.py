@@ -26,8 +26,10 @@ class GnatAttackHand(AnimatedGraphicsItem):
         self.swatting = False
         self.hurting = False
         
+        self.forceHidden = False
+        
     def swat(self):
-        if not self.swatting and not self.hurting:
+        if not self.swatting and not self.hurting and not self.forceHidden:
             self.swatting = True
             
             intersecting = self.scene().items(QRect(self.pos().x()-8, self.pos().y()-8, 16, 16))
@@ -69,9 +71,11 @@ class GnatAttackHand(AnimatedGraphicsItem):
         if self.respawnInvincible > 0:
             self.respawnInvincible -= 1
             self.flash = not self.flash
-            self.show() if self.flash else self.hide()
+            if not self.forceHidden:
+                self.show() if self.flash else self.hide()
         elif self.respawnInvincible == 0:
-            self.show()
+            if not self.forceHidden: 
+                self.show()
             self.flash = True
         
         return super().tickAnimation()

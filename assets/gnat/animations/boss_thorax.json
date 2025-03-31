@@ -1,12 +1,19 @@
 {
     "frames": {
-        "normal": [0,  0, 32, 24, 16, 0]
+        "normal": [0,  0, 32, 24, 16, 0],
+        "hidden": [0, 0, 1, 1, 0, 0]
     },
     "animations": {
         "normal": {
             "loop": 0,
             "frames": [
                 {"name": "normal", "duration": 60}
+            ]
+        },
+        "hidden": {
+            "loop": 0,
+            "frames": [
+                {"name": "hidden", "duration": 60}
             ]
         }
     }

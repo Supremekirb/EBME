@@ -10,6 +10,52 @@ import src.misc.common as common
 from src.gnat.scripting import Script
 
 
+class CongratulationsCutsceneHandler(Script):
+    def __init__(self, level: int, final: bool = False, callback: MethodType = lambda: ..., *callback_args):
+        super().__init__()
+        
+        self.level = level
+        self.final = final
+        self.callback = callback
+        self.callback_args = callback_args
+        
+    async def script(self):
+        scene = src.gnat.game_state.GameState.getScene()
+        fader = scene.screenFaderItem
+        display = scene.roundDisplayItem
+        
+        scene.handCursor.hide()
+        scene.handCursor.forceHidden = True
+        
+        if self.final:
+            src.gnat.game_state.GameState.playBGM("thankyou")
+        else:
+            src.gnat.game_state.GameState.playBGM("congratulations")
+        
+        display.levelNum.hide()
+        display.levelText.setPlainText("CONGRATULATIONS!")
+        display.show()
+        
+        await self.pause(540)
+        
+        fader.fadeToBlack(10, 1)
+        await fader.waitForFade()
+        
+        display.hide()
+        display.levelNum.show()
+        
+        scene.handCursor.show()
+        scene.handCursor.forceHidden = False
+        scene.handCursor.respawnInvincible = 0
+        
+        await self.pause(30) # breather
+        
+        if len(self.callback_args) > 0:
+            self.callback(*self.callback_args)
+        else:
+            self.callback()
+
+
 class RoundStartCutsceneHandler(Script):
     def __init__(self, levelText: str = "LEVEL", levelNum: str = "1", callback: MethodType = lambda: ..., *callback_args):
         super().__init__()
@@ -28,6 +74,7 @@ class RoundStartCutsceneHandler(Script):
         display.levelText.setPlainText(self.levelText)
         
         fader.fadeFromBlack(10, 1)
+        src.gnat.game_state.GameState.setLevelBackground()
         await fader.waitForFade()
         
         display.show()
@@ -138,9 +185,9 @@ class ScreenFader(QGraphicsRectItem, Script):
         while True:
             if self.alpha < self.targetAlpha:
                 self.alpha += self.delta
-            if self.alpha > self.targetAlpha:
+            elif self.alpha > self.targetAlpha:
                 self.alpha -= self.delta
-                
+
             if self.alpha > 255:
                 self.alpha = 255
             if self.targetAlpha > 255:
