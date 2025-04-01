@@ -143,10 +143,8 @@ class Attack(ScriptedAnimatedItem):
                     self.vy = math.cos(self.trigIncrement)*self.speedFactor*(GameState.getSpeedMultiplier()-0.3) 
                     
                     # failsafe
-                    if not 0 < self.x() < 255:
-                        self.setX(128)
-                    if not 0 < self.y() < 255:
-                        self.setY(128)
+                    self.setX(common.cap(self.x(), 0, 225))
+                    self.setY(common.cap(self.y(), 0, 193))
                         
                     # sometimes randomly invert our movement
                     if not random.randint(0, 200):

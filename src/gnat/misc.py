@@ -8,6 +8,7 @@ from src.gnat.animation import loadAnimations
 from src.gnat.game_state import GameState
 from src.gnat.scripting import ScriptedAnimatedItem
 
+
 class Mini(ScriptedAnimatedItem):
     ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/mini.json"))
     def __init__(self, pos: QPoint, spawnAngle: float=0):
@@ -173,8 +174,8 @@ class BossProjectile(ScriptedAnimatedItem):
                 return
             
             self.setPos(
-                self.origin.x()+(math.sin((self.trigIncrement/200)+math.radians(45*self.num))*self.trigIncrement),
-                self.origin.y()+(math.cos((self.trigIncrement/200)+math.radians(45*self.num))*self.trigIncrement)
+                self.origin.x()+(math.sin((self.trigIncrement/400)+math.radians(45*self.num))*self.trigIncrement),
+                self.origin.y()+(math.cos((self.trigIncrement/400)+math.radians(45*self.num))*self.trigIncrement)
             )
             
             if self.trigIncrement < 75:

@@ -2,6 +2,7 @@ import math
 import random
 from enum import IntEnum
 
+from PySide6.QtCore import QPoint
 from PySide6.QtGui import QPixmap
 
 import src.misc.common as common
@@ -119,6 +120,10 @@ class Bomb(ScriptedAnimatedItem):
                         self.vx = math.sin(self.trigIncrement)*self.speedFactor*GameState.getSpeedMultiplier() 
                         self.vy = math.cos(self.trigIncrement)*self.speedFactor*GameState.getSpeedMultiplier() 
                         
+                        # failsafe
+                        self.setX(common.cap(self.x(), 0, 225))
+                        self.setY(common.cap(self.y(), 0, 193))
+                        
                         # sometimes randomly invert our movement
                         if not random.randint(0, 200):
                             self.speedFactor *= -1
@@ -145,7 +150,7 @@ class Bomb(ScriptedAnimatedItem):
                         self.state = Bomb.STATES.EXPLODING
                         
                     # move towards hand
-                    angle = GameState.getScene().getAngleToHand(self.pos())
+                    angle = GameState.getScene().getAngleToHand(QPoint(self.x()+8, self.y()+8))
                     self.vx = math.sin(angle) * 4 * GameState.getSpeedMultiplier() 
                     self.vy = math.cos(angle) * 4 * GameState.getSpeedMultiplier() 
                     
@@ -154,8 +159,8 @@ class Bomb(ScriptedAnimatedItem):
                 case Bomb.STATES.EXPLODING:
                     # move towards hand also
                     angle = GameState.getScene().getAngleToHand(self.pos())
-                    self.vx = math.sin(angle) * 6 * GameState.getSpeedMultiplier() 
-                    self.vy = math.cos(angle) * 6 * GameState.getSpeedMultiplier() 
+                    self.vx = math.sin(angle) * 4 * GameState.getSpeedMultiplier() 
+                    self.vy = math.cos(angle) * 4 * GameState.getSpeedMultiplier() 
                     
                     if GameState.getScene().isIntersectingWithHand(self):
                         GameState.getScene().handCursor.hurt()
