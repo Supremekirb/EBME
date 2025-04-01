@@ -1,0 +1,21 @@
+{
+    "frames": {
+        "up":   [0,  0, 16, 16, 0, 0],
+        "down": [16, 0, 16, 16, 0, 0]
+    },
+    "animations": {
+        "fly": {
+            "loop": 0,
+            "frames": [
+                {"name": "up", "duration": 2},
+                {"name": "down", "duration": 2}
+            ]
+        },
+        "death": {
+            "loop": 0,
+            "frames": [
+                {"name": "up", "duration": 60}
+            ]
+        }
+    }
+}

@@ -1,0 +1,30 @@
+{
+    "frames": {
+        "idle":   [0,  0, 16, 24, 0, 0],
+        "pull1":  [16, 0, 16, 24, 0, 0],
+        "pull2":  [32, 0, 16, 24, 0, 0],
+        "pull3":  [48, 0, 16, 24, 0, 0],
+        "pull4":  [64, 0, 16, 24, 0, 0]
+    },
+    "animations": {
+        "idle": {
+            "loop": 0,
+            "frames": [
+                {"name": "idle", "duration": 60}
+            ]
+        },
+        "pull": {
+            "loop": -1,
+            "frames": [
+                {"name": "pull1", "duration": 8},
+                {"name": "pull2", "duration": 8},
+                {"name": "pull3", "duration": 8},
+                {"name": "pull4", "duration": 8},
+                {"name": "pull2", "duration": 8},
+                {"name": "pull3", "duration": 8},
+                {"name": "pull4", "duration": 8},
+                {"name": "pull2", "duration": 8}
+            ]
+        }
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "frames": {
+        "clap1": [0,  0, 32, 32, 0, 0],
+        "clap2": [32, 0, 32, 32, 0, 0],
+        "clap3": [64, 0, 32, 32, 0, 0]
+    },
+    "animations": {
+        "clap": {
+            "loop": 0,
+            "frames": [
+                {"name": "clap1", "duration": 4},
+                {"name": "clap2", "duration": 3},
+                {"name": "clap3", "duration": 3}
+            ]
+        }
+    }
+}

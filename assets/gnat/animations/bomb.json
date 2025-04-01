@@ -1,0 +1,59 @@
+{
+    "frames": {
+        "up":   [0,  0, 16, 16, 0, 0],
+        "down": [16, 0, 16, 16, 0, 0],
+        "fuse1": [0, 16, 16, 16, 0, 0],
+        "fuse2": [16, 16, 16, 16, 0, 0],
+        "boom1": [32, 0, 16, 16, 0, 0],
+        "boom2": [48, 0, 24, 24, -8, -8],
+        "boom3": [72, 0, 32, 32, -16, -16],
+        "boom4": [104, 0, 32, 32, -16, -16]
+    },
+    "animations": {
+        "fly": {
+            "loop": 0,
+            "frames": [
+                {"name": "up", "duration": 2},
+                {"name": "down", "duration": 2}
+            ]
+        },
+        "fuse": {
+            "loop": 0,
+            "frames": [
+                {"name": "fuse1", "duration": 5},
+                {"name": "fuse2", "duration": 5}
+            ]
+        },
+        "boom": {
+            "loop": -1,
+            "frames": [
+                {"name": "boom1", "duration": 1},
+                {"name": "boom2", "duration": 5},
+                {"name": "boom3", "duration": 1},
+                {"name": "boom4", "duration": 3},
+                {"name": "boom3", "duration": 1},
+                {"name": "boom4", "duration": 3},
+                {"name": "boom3", "duration": 1},
+                {"name": "boom4", "duration": 1}
+            ]
+        },
+        "death": {
+            "loop": 0,
+            "frames": [
+                {"name": "up", "duration": 60}
+            ]
+        },
+        "boom1": {
+            "loop": 0,
+            "frames": [
+                {"name": "boom1", "duration": 60}
+            ]
+        },
+        "boom2": {
+            "loop": 0,
+            "frames": [
+                {"name": "boom2", "duration": 60}
+            ]
+        }
+    }
+}

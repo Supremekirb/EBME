@@ -1,0 +1,77 @@
+{
+    "frames": {
+        "normal": [0,  0,  32, 32, 16, -25],
+        "blink1": [32, 0,  32, 32, 16, -25],
+        "blink2": [64, 0,  32, 32, 16, -25],
+        "blink3": [0,  32, 32, 32, 16, -25],
+        "angry":  [32, 32, 32, 32, 16, -25],
+        "laugh":  [64, 32, 32, 32, 16, -25],
+        "hit1":   [0,  64, 32, 32, 16, -25],
+        "hit2":   [32, 64, 32, 32, 16, -25],
+        "hit3":   [64, 64, 32, 32, 16, -25],
+        "flash":  [96, 64, 32, 32, 16, -25]
+    },
+    "animations": {
+        "normal": {
+            "loop": 0,
+            "frames": [
+                {"name": "normal", "duration": 60}
+            ]
+        },
+        "blink": {
+            "loop": 0,
+            "frames": [
+                {"name": "blink1", "duration": 8},
+                {"name": "blink2", "duration": 8},
+                {"name": "blink3", "duration": 8},
+                {"name": "blink2", "duration": 8},
+                {"name": "blink1", "duration": 8},
+                {"name": "normal", "duration": 16}
+            ]
+        },
+        "hit": {
+            "loop": -1,
+            "frames": [
+                {"name": "hit1", "duration": 6},
+                {"name": "hit2", "duration": 9}
+            ]
+        },
+        "flash": {
+            "loop": 0,
+            "frames": [
+                {"name": "hit1", "duration": 5},
+                {"name": "flash", "duration": 5}
+            ]
+        },
+        "postfire": {
+            "loop": 0,
+            "frames": [
+                {"name": "hit1", "duration": 60}
+            ]
+        },
+        "laugh": {
+            "loop": 0,
+            "frames": [
+                {"name": "laugh", "duration": 60}
+            ]
+        },
+        "angry": {
+            "loop": 0,
+            "frames": [
+                {"name": "angry", "duration": 60}
+            ]
+        },
+        "hit2": {
+            "loop": 0,
+            "frames": [
+                {"name": "hit2", "duration": 60}
+            ]
+        },
+        "hit3": {
+            "loop": 0,
+            "frames": [
+                {"name": "hit3", "duration": 60}
+            ]
+        }
+    }
+}

@@ -1,0 +1,37 @@
+{
+    "frames": {
+        "normal": [0,  0, 32, 24, 16, 20],
+        "inward": [32, 0, 32, 24, 16, 20]
+    },
+    "animations": {     
+        "normal": {
+            "loop": 0,
+            "frames": [
+                {"name": "normal", "duration": 60}
+            ]
+        },
+        "inward": {
+            "loop": 0,
+            "frames": [
+                {"name": "inward", "duration": 60}
+            ]
+        },
+        "hit": {
+            "loop": -1,
+            "frames": [
+                {"name": "normal", "duration": 6},
+                {"name": "inward", "duration": 9}
+            ]
+        },
+        "fast": {
+            "loop": 0,
+            "frames": [
+                {"name": "normal", "duration": 4},
+                {"name": "inward", "duration": 4},
+                {"name": "normal", "duration": 4},
+                {"name": "inward", "duration": 4},
+                {"name": "normal", "duration": 4} 
+            ]
+        }
+    }
+}

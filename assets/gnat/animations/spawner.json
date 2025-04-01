@@ -1,0 +1,58 @@
+{
+    "frames": {
+        "up":     [0,   0,  24, 16,  0, 0],
+        "down":   [0,   16, 24, 16,  0, 0],
+        "flash1": [24,  0,  24, 16,  0, 0],
+        "flash2": [24,  16, 24, 16,  0, 0],
+        "spawn1": [48,  0,  24, 16,  0, 0],
+        "spawn2": [72,  0,  24, 24,  0, 0],
+        "spawn3": [96,  0,  32, 24, -8, 0],
+        "spawn4": [136, 0,  32, 24, -8, 0]
+    },
+    "animations": {
+        "fly": {
+            "loop": 0,
+            "frames": [
+                {"name": "up", "duration": 2},
+                {"name": "down", "duration": 2}
+            ]
+        },
+        "prepareSpawn": {
+            "loop": -1,
+            "frames": [
+                {"name": "flash1", "duration": 1},
+                {"name": "flash2", "duration": 2},
+                {"name": "flash1", "duration": 2},
+                {"name": "flash2", "duration": 2},
+                {"name": "flash1", "duration": 2},
+                {"name": "flash2", "duration": 2},
+                {"name": "flash1", "duration": 2},
+                {"name": "flash2", "duration": 5},
+                {"name": "flash1", "duration": 5},
+                {"name": "flash2", "duration": 5},
+                {"name": "flash1", "duration": 5},
+                {"name": "flash2", "duration": 5},
+                {"name": "flash1", "duration": 5},
+                {"name": "flash2", "duration": 5},
+                {"name": "flash1", "duration": 5},
+                {"name": "flash2", "duration": 5},
+                {"name": "spawn1", "duration": 12}
+            ]
+        },
+        "spawn": {
+            "loop": -1,
+            "frames": [
+                {"name": "spawn2", "duration": 8},
+                {"name": "spawn3", "duration": 10},
+                {"name": "spawn4", "duration": 10},
+                {"name": "up", "duration": 35}
+            ]
+        },
+        "death": {
+            "loop": 0,
+            "frames": [
+                {"name": "up", "duration": 60}
+            ]
+        }
+    }
+}

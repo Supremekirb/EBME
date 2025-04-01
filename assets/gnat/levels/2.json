@@ -1,0 +1,31 @@
+{
+    "music": "regular2",
+    "waves": [
+        {
+            "enemies": [
+                {"name": "gnat", "max": 4, "count": 20}
+            ]
+        },
+        {
+            "enemies": [
+                {"name": "spawner", "max": 4, "count": 20}
+            ]
+        },
+        {
+            "enemies": [
+                {"name": "bomb", "max": 4, "count": 20}
+            ]
+        },
+        {
+            "enemies": [
+                {"name": "attack", "max": 4, "count": 20}
+            ]
+        },
+        {
+            "enemies": [
+                {"name": "attack", "max": 2, "count": 10},
+                {"name": "spawner", "max": 2, "count": 10}
+            ]
+        }
+    ]
+}

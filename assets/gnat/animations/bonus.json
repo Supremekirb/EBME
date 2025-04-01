@@ -1,0 +1,22 @@
+{
+    "frames": {
+        "display": [0,  0, 16, 16, 0, 0],
+        "flash1":  [16, 0, 16, 16, 0, 0],
+        "flash2":  [32, 0, 16, 16, 0, 0]
+    },
+    "animations": {
+        "display": {
+            "loop": 0,
+            "frames": [
+                {"name": "display", "duration": 60}
+            ]
+        },
+        "flash": {
+            "loop": 0,
+            "frames": [
+                {"name": "flash1", "duration": 2},
+                {"name": "flash2", "duration": 2}
+            ]
+        }
+    }
+}

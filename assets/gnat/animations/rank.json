@@ -1,0 +1,111 @@
+{
+    "frames": {
+        "star":    [0,   0, 16, 16, 0, 0],
+        "mario":   [16,  0, 16, 16, 0, 0],
+        "queen":   [32,  0, 16, 16, 0, 0],
+        "dog":     [48,  0, 16, 16, 0, 0],
+        "smile":   [64,  0, 16, 16, 0, 0],
+        "robot":   [80,  0, 16, 16, 0, 0],
+        "bird":    [96,  0, 16, 16, 0, 0],
+        "dress":   [112, 0, 16, 16, 0, 0],
+        "gameboy": [128, 0, 16, 16, 0, 0],
+        "mermaid": [144, 0, 16, 16, 0, 0],
+        "rocket":  [160, 0, 16, 16, 0, 0],
+        "runner":  [176, 0, 16, 16, 0, 0],
+        "bear":    [192, 0, 16, 16, 0, 0],
+        "very":    [208, 0, 16, 16, 0, 0],
+        "good":    [224, 0, 16, 16, 0, 0]
+    },  
+    "animations": {
+        "star": {
+            "loop": 0,
+            "frames": [
+                {"name": "star", "duration": 60}
+            ]
+        },
+        "mario": {
+            "loop": 0,
+            "frames": [
+                {"name": "mario", "duration": 60}
+            ]
+        },
+        "queen": {
+            "loop": 0,
+            "frames": [
+                {"name": "queen", "duration": 60}
+            ]
+        },
+        "dog": {
+            "loop": 0,
+            "frames": [
+                {"name": "dog", "duration": 60}
+            ]
+        },
+        "smile": {
+            "loop": 0,
+            "frames": [
+                {"name": "smile", "duration": 60}
+            ]
+        },
+        "robot": {
+            "loop": 0,
+            "frames": [
+                {"name": "robot", "duration": 60}
+            ]
+        },
+        "bird": {
+            "loop": 0,
+            "frames": [
+                {"name": "bird", "duration": 60}
+            ]
+        },
+        "dress": {
+            "loop": 0,
+            "frames": [
+                {"name": "dress", "duration": 60}
+            ]
+        },
+        "gameboy": {
+            "loop": 0,
+            "frames": [
+                {"name": "gameboy", "duration": 60}
+            ]
+        },
+        "mermaid": {
+            "loop": 0,
+            "frames": [
+                {"name": "mermaid", "duration": 60}
+            ]
+        },
+        "rocket": {
+            "loop": 0,
+            "frames": [
+                {"name": "rocket", "duration": 60}
+            ]
+        },
+        "runner": {
+            "loop": 0,
+            "frames": [
+                {"name": "runner", "duration": 60}
+            ]
+        },
+        "bear": {
+            "loop": 0,
+            "frames": [
+                {"name": "bear", "duration": 60}
+            ]
+        },
+        "very": {
+            "loop": 0,
+            "frames": [
+                {"name": "very", "duration": 60}
+            ]
+        },
+        "good": {
+            "loop": 0,
+            "frames": [
+                {"name": "good", "duration": 60}
+            ]
+        }
+    }
+}

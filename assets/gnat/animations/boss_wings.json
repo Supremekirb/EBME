@@ -1,0 +1,60 @@
+{
+    "frames": {
+        "upl":     [0,  0,  24, 16, 40, -5],
+        "normall": [24, 0,  24, 16, 40, -2],
+        "downl":   [48, 0,  24, 16, 40,  3],
+        "upr":     [0,  16, 24, 16, 0,  -5],
+        "normalr": [24, 16, 24, 16, 0,  -2],
+        "downr":   [48, 16, 24, 16, 0,   3]
+    },
+    "animations": {
+        "normall": {
+            "loop": 0,
+            "frames": [
+                {"name": "normall", "duration": 60}
+            ]
+        },
+        "normalr": {
+            "loop": 0,
+            "frames": [
+                {"name": "normalr", "duration": 60}
+            ]
+        },
+        "flyl": {
+            "loop": 0,
+            "frames": [
+                {"name": "downl", "duration": 5},
+                {"name": "normall", "duration": 3},
+                {"name": "upl", "duration": 5},
+                {"name": "normall", "duration": 3}
+            ]
+        },
+        "flyr": {
+            "loop": 0,
+            "frames": [
+                {"name": "downr", "duration": 5},
+                {"name": "normalr", "duration": 3},
+                {"name": "upr", "duration": 5},
+                {"name": "normalr", "duration": 3}
+            ]
+        },
+        "fastl": {
+            "loop": 0,
+            "frames": [
+                {"name": "downl", "duration": 3},
+                {"name": "normall", "duration": 2},
+                {"name": "upl", "duration": 3},
+                {"name": "normall", "duration": 2}
+            ]
+        },
+        "fastr": {
+            "loop": 0,
+            "frames": [
+                {"name": "downr", "duration": 3},
+                {"name": "normalr", "duration": 2},
+                {"name": "upr", "duration": 3},
+                {"name": "normalr", "duration": 2}
+            ]
+        }
+    }
+} 

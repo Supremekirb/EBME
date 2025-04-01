@@ -1,0 +1,199 @@
+{
+    "frames": {
+        "upopenl":    [0,  0,  16, 16, 0, -12],
+        "midupopenl": [0,  0,  16, 16, -2,-7],
+        "midopenl":   [32, 16, 16, 16, -4,  0],
+        "updownopenl":  [0,  16, 16, 16, 0, 1],
+        "middownopenl":  [0,  16, 16, 16, -2, 5],
+        "downopenl":  [0,  16, 16, 16, -1,  9],
+        "downclosel": [16, 16, 16, 16, -1,  9],
+
+        "upperupl":   [48, 16, 8,  8,  12,  1],
+        "uppermidl":  [48, 0,  8,  8,  12,  4],
+        "upperdownl": [48, 8,  8,  8,  12,  5],
+
+        "upopenr":    [40, 32, 16, 16, 48, -12],
+        "midupopenr": [40, 32, 16, 16, 50, -7],
+        "midopenr":   [8,  48, 16, 16, 52,   0],
+        "updownopenr":  [40, 48, 16, 16, 48, 1],
+        "middownopenr":  [40, 48, 16, 16, 50, 5],
+        "downopenr":  [40, 48, 16, 16, 49,   9],
+        "downcloser": [24, 48, 16, 16, 49,   9],
+        
+        "upperupr":   [0,  48, 8,  8,  44,   1],
+        "uppermidr":  [0,  32, 8,  8,  44,   4],
+        "upperdownr": [0,  40, 8,  8,  44,   5]
+    },
+    "animations": {
+        "idlel": {
+            "loop": 0,
+            "frames": [
+                {"name": "downclosel", "duration": 8},
+                {"name": "downopenl", "duration": 8},
+                {"name": "downclosel", "duration": 8},
+                {"name": "downopenl", "duration": 8},
+                {"name": "downclosel", "duration": 8},
+                {"name": "downopenl", "duration": 25}
+            ]
+        },
+        "idler": {
+            "loop": 0,
+            "frames": [
+                {"name": "downcloser", "duration": 8},
+                {"name": "downopenr", "duration": 8},
+                {"name": "downcloser", "duration": 8},
+                {"name": "downopenr", "duration": 8},
+                {"name": "downcloser", "duration": 8},
+                {"name": "downopenr", "duration": 25}
+            ]
+        },
+        "hitl": {
+            "loop": -1,
+            "frames": [
+                {"name": "midopenl", "duration": 6},
+                {"name": "upopenl", "duration": 9}
+            ]
+        },
+        "hitr": {
+            "loop": -1,
+            "frames": [
+                {"name": "midopenr", "duration": 6},
+                {"name": "upopenr", "duration": 9}
+            ]
+        },
+        "upperhitl": {
+            "loop": -1,
+            "frames": [
+                {"name": "uppermidl", "duration": 6},
+                {"name": "upperupl", "duration": 9}
+            ]
+        },
+        "upperhitr": {
+            "loop": -1,
+            "frames": [
+                {"name": "uppermidr", "duration": 6},
+                {"name": "upperupr", "duration": 9}
+            ]
+        },
+        "upopenl": {
+            "loop": 0,
+            "frames": [
+                {"name": "upopenl", "duration": 60}
+            ]
+        },
+        "midupopenl": {
+            "loop": 0,
+            "frames": [
+                {"name": "midupopenl", "duration": 60}
+            ]
+        },
+        "midopenl": {
+            "loop": 0,
+            "frames": [
+                {"name": "midopenl", "duration": 60}
+            ]
+        },
+        "updownopenl": {
+            "loop": 0,
+            "frames": [
+                {"name": "updownopenl", "duration": 60}
+            ]
+        },
+        "middownopenl": {
+            "loop": 0,
+            "frames": [
+                {"name": "middownopenl", "duration": 60}
+            ]
+        },
+        "downopenl": {
+            "loop": 0,
+            "frames": [
+                {"name": "downopenl", "duration": 60}
+            ]
+        },
+        "downclosel": {
+            "loop": 0,
+            "frames": [
+                {"name": "downclosel", "duration": 60}
+            ]
+        },
+        "upperupl": {
+            "loop": 0,
+            "frames": [
+                {"name": "upperupl", "duration": 60}
+            ]
+        },
+        "uppermidl": {
+            "loop": 0,
+            "frames": [
+                {"name": "uppermidl", "duration": 60}
+            ]
+        },
+        "upperdownl": {
+            "loop": 0,
+            "frames": [
+                {"name": "upperdownl", "duration": 60}
+            ]
+        },
+        "upopenr": {
+            "loop": 0,
+            "frames": [
+                {"name": "upopenr", "duration": 60}
+            ]
+        },
+        "midupopenr": {
+            "loop": 0,
+            "frames": [
+                {"name": "midupopenr", "duration": 60}
+            ]
+        },
+        "midopenr": {
+            "loop": 0,
+            "frames": [
+                {"name": "midopenr", "duration": 60}
+            ]
+        },
+        "updownopenr": {
+            "loop": 0,
+            "frames": [
+                {"name": "updownopenr", "duration": 60}
+            ]
+        },
+        "middownopenr": {
+            "loop": 0,
+            "frames": [
+                {"name": "middownopenr", "duration": 60}
+            ]
+        },
+        "downopenr": {
+            "loop": 0,
+            "frames": [
+                {"name": "downopenr", "duration": 60}
+            ]
+        },
+        "downcloser": {
+            "loop": 0,
+            "frames": [
+                {"name": "downcloser", "duration": 60}
+            ]
+        },
+        "upperupr": {
+            "loop": 0,
+            "frames": [
+                {"name": "upperupr", "duration": 60}
+            ]
+        },
+        "uppermidr": {
+            "loop": 0,
+            "frames": [
+                {"name": "uppermidr", "duration": 60}
+            ]
+        },
+        "upperdownr": {
+            "loop": 0,
+            "frames": [
+                {"name": "upperdownr", "duration": 60}
+            ]
+        }
+    }
+}

@@ -1,6 +1,7 @@
 import logging
+import traceback
 
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QSettings, Qt, QPoint
 from PySide6.QtGui import (QAction, QDesktopServices, QFontDatabase, QIcon,
                            QKeySequence)
 from PySide6.QtWidgets import (QLabel, QMainWindow, QMenuBar, QMessageBox,
@@ -8,6 +9,7 @@ from PySide6.QtWidgets import (QLabel, QMainWindow, QMenuBar, QMessageBox,
 
 import src.misc.common as common
 import src.project.project as project
+from src.gnat.gnat_attack import GnatAttack
 from src.mapeditor.map_editor import MapEditor
 from src.misc import debug as debug
 from src.misc import icons as icons
@@ -114,6 +116,16 @@ class MainApplication(QMainWindow):
             QFontDatabase.addApplicationFont(common.absolutePath("assets/fonts/saturn_boing.ttf"))
         except Exception as _:
             logging.warning("Couldn't initialise Mr. Saturn font!")
+            
+        try:
+            QFontDatabase.addApplicationFont(common.absolutePath("assets/gnat/fonts/mp_letters.ttf"))
+        except Exception as _:
+            logging.warning("Couldn't initialise Mario Paint letters font!")
+            
+        try:
+            QFontDatabase.addApplicationFont(common.absolutePath("assets/gnat/fonts/mp_numbers.ttf"))
+        except Exception as _:
+            logging.warning("Couldn't initialise Mario Paint numbers font!")
 
     def onTabSwitch(self):
         # So there are some weird garbage collection things
@@ -125,6 +137,12 @@ class MainApplication(QMainWindow):
         if hasattr(new, "menuItems"):
             for i in new.menuItems:
                 self.menu.addMenu(i)
+                
+        # Pause Gnat Attack
+        if isinstance(new, GnatAttack):
+            self.gnatWin.gameScene.gameState.switchedToTab()
+        else:
+            self.gnatWin.gameScene.gameState.pauseGame()
                 
     def updateTitle(self):
         title = self.window().windowTitle()
@@ -177,15 +195,25 @@ class MainApplication(QMainWindow):
         self.mapWin: MapEditor = QWidget() # replaced by MapEditor
         self.tileWin: TileEditor = QWidget() # replaced by TileEditor
         self.paletteWin: PaletteEditor = QWidget() # replaced by PaletteEditor
+        try:
+            self.gnatWin = GnatAttack(self)
+        except Exception as e:
+            common.showErrorMsg("Bug-Squashing Mode error",
+                                "Error while preparing Bug-Squashing Mode",
+                                ":(")
+            self.gnatWin = QLabel("Bug-Squashing Mode failed to load")
+            logging.warning(traceback.format_exc())
 
         self.mainTabWin.addTab(self.projectWin, "Project")
         self.mainTabWin.addTab(self.mapWin, "Map Editor")
         self.mainTabWin.addTab(self.tileWin, "Tile Editor")
         self.mainTabWin.addTab(self.paletteWin, "Palette Editor")
+        self.mainTabWin.addTab(self.gnatWin, "☕")
 
         self.mainTabWin.setTabEnabled(1, False)
         self.mainTabWin.setTabEnabled(2, False)
         self.mainTabWin.setTabEnabled(3, False)
+        self.mainTabWin.setTabEnabled(4, True)
 
         self.mainTabWin.currentChanged.connect(self.onTabSwitch)
 

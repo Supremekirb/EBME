@@ -1,0 +1,17 @@
+{
+    "frames": {
+        "fly1": [0, 0, 8, 8, 0, 0],
+        "fly2": [0, 8, 8, 8, 0, 0],
+        "fly3": [8, 8, 8, 8, 0, 0]
+    },
+    "animations": {
+        "fly": {
+            "loop": 0,
+            "frames": [
+                {"name": "fly1", "duration": 6},
+                {"name": "fly2", "duration": 6},
+                {"name": "fly3", "duration": 6}
+            ]
+        }
+    }
+}
