@@ -14,21 +14,29 @@ from PySide6.QtWidgets import QMessageBox
 from ebme import ROOT_DIR
 
 # Current version number/ID
-VERSION = "1.0.0"
+VERSION = "1.3.37"
 
 # Pretty much just for posterity's sake
 VERSIONHISTORY = IntEnum("VERSIONHISTORY", ["pre-alpha",
                                             "0.1.0",
                                             "0.2.0",
                                             "0.2.1",
-                                            "1.0.0"],
+                                            "1.0.0",
+                                            "1.3.37"],
                                             start = 0)
 
 # Add new versions here. Add the new one at the top.
 # Don't forget a linebreak between versions!
 CHANGELOG = """\
+=== 1.3.37 ===
+(01/04/2025)
+This release adds a lot of cool stuff! \
+But unfortunately it also adds a lot of bugs. \
+To help deal with the bugs, open the ☕ tab.
+Full changelog: Help -> About EBME -> Visit the repository in GitHub.
+
 === 1.0.0 ===
-(30/11/24)
+(30/11/2024)
 This release adds the Tile Editor and Palette Editor, \
 collision mode, foreground graphics, major optimisations, \
 fixes a number of bugs, and a whole lot more.

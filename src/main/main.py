@@ -213,7 +213,7 @@ class MainApplication(QMainWindow):
         self.mainTabWin.setTabEnabled(1, False)
         self.mainTabWin.setTabEnabled(2, False)
         self.mainTabWin.setTabEnabled(3, False)
-        self.mainTabWin.setTabEnabled(4, False)
+        self.mainTabWin.setTabEnabled(4, True)
 
         self.mainTabWin.currentChanged.connect(self.onTabSwitch)
 
