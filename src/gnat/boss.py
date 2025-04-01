@@ -1,19 +1,15 @@
 import asyncio
-import math
 import random
-import time
 from enum import IntEnum
 
-from PySide6.QtCore import QPoint, Qt
-from PySide6.QtGui import QBrush, QColor, QPainter, QPixmap
-from PySide6.QtWidgets import QGraphicsRectItem
+from PySide6.QtCore import QPoint
+from PySide6.QtGui import QBrush, QColor, QPixmap
 
 import src.misc.common as common
 from src.gnat.animation import AnimatedGraphicsItem, loadAnimations
-from src.gnat.cutscene import (CongratulationsCutsceneHandler,
-                               RoundStartDisplay, ScreenFader)
+from src.gnat.cutscene import CongratulationsCutsceneHandler, ScreenFader
 from src.gnat.game_state import GameState
-from src.gnat.misc import AttackProjectile, BossMini, BossProjectile, Mini
+from src.gnat.misc import BossMini, BossProjectile
 from src.gnat.scripting import ScriptedAnimatedItem
 
 

@@ -1,15 +1,13 @@
 import math
 import random
-import time
 from enum import IntEnum
 
-from PySide6.QtCore import QPoint
 from PySide6.QtGui import QPixmap
 
 import src.misc.common as common
 from src.gnat.animation import loadAnimations
 from src.gnat.game_state import GameState
-from src.gnat.misc import AttackProjectile, Mini
+from src.gnat.misc import AttackProjectile
 from src.gnat.scripting import ScriptedAnimatedItem
 
 

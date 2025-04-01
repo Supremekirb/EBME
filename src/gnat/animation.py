@@ -1,13 +1,9 @@
 import json
 
 from PySide6.QtCore import QObject, QPoint, QRect, QRectF, QTimer, Signal
-from PySide6.QtGui import QBrush, QColor, QPainter, QPixmap, Qt
-from PySide6.QtWidgets import (QGraphicsObject, QGraphicsPixmapItem,
-                               QGraphicsScene, QGraphicsTextItem,
-                               QStyleOptionGraphicsItem, QWidget)
-
-import src.misc.common as common
-from src.coilsnake.project_data import ProjectData
+from PySide6.QtGui import QBrush, QColor, QPainter, QPixmap
+from PySide6.QtWidgets import (QGraphicsObject, QStyleOptionGraphicsItem,
+                               QWidget)
 
 
 def loadAnimations(path: str):

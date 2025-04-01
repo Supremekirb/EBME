@@ -1,13 +1,11 @@
 import math
 
 from PySide6.QtCore import QPoint, QPointF, QRect
-from PySide6.QtGui import QBrush, QColor, QPixmap, QPolygon, Qt
-from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
-                               QGraphicsPolygonItem, QGraphicsScene,
-                               QGraphicsSceneMouseEvent, QGraphicsTextItem)
+from PySide6.QtGui import QPixmap, QPolygon, Qt
+from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPolygonItem,
+                               QGraphicsScene, QGraphicsSceneMouseEvent)
 
 import src.misc.common as common
-from src.coilsnake.project_data import ProjectData
 from src.gnat import scripting
 from src.gnat.animation import AnimationTimer
 from src.gnat.attack import Attack
@@ -18,9 +16,7 @@ from src.gnat.cutscene import RoundStartDisplay, ScreenFader
 from src.gnat.game_state import GameState
 from src.gnat.gnat import Gnat
 from src.gnat.hand import GnatAttackHand
-from src.gnat.levels import LevelManager
 from src.gnat.misc import AttackProjectile, BossMini, BossProjectile, Mini
-from src.gnat.sound import SoundManager
 from src.gnat.spawner import Spawner
 from src.gnat.ui import UILife, UIPauseScreen, UIRank, UIScore
 

@@ -1,17 +1,11 @@
-import asyncio
 import math
 import random
 from enum import IntEnum
 
-from PySide6.QtCore import QPoint, QPointF
-from PySide6.QtGui import QBrush, QColor, QPixmap, Qt
-from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
-                               QGraphicsTextItem)
+from PySide6.QtGui import QPixmap
 
 import src.misc.common as common
-from src.coilsnake.project_data import ProjectData
-from src.gnat.animation import (AnimatedGraphicsItem, Animation,
-                                AnimationTimer, loadAnimations)
+from src.gnat.animation import loadAnimations
 from src.gnat.game_state import GameState
 from src.gnat.scripting import ScriptedAnimatedItem
 

@@ -1,27 +1,12 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtGui import QAction, QColor, QKeySequence, Qt, QUndoCommand
-from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGraphicsScene,
-                               QGraphicsView, QGridLayout, QGroupBox,
-                               QHBoxLayout, QListWidget, QListWidgetItem,
-                               QMenu, QMessageBox, QPushButton, QSizePolicy,
-                               QSpinBox, QToolButton, QTreeWidgetItem,
-                               QVBoxLayout, QWidget)
+from PySide6.QtGui import QAction, QKeySequence, Qt
+from PySide6.QtWidgets import (QGraphicsView, QHBoxLayout, QMenu, QSizePolicy,
+                               QWidget)
 
-import src.misc.common as common
 import src.misc.debug as debug
 import src.misc.icons as icons
-from src.coilsnake.fts_interpreter import Palette
-from src.coilsnake.project_data import ProjectData
 from src.gnat.game_scene import GameScene
-from src.misc.dialogues import (AboutDialog, AdvancedPalettePreviewDialog,
-                                CopyEventPaletteDialog, EditEventPaletteDialog,
-                                RenderPaletteDialog, SettingsDialog)
-from src.objects.palette_settings import PaletteSettings
-from src.widgets.input import ColourButton, FlagInput
-from src.widgets.misc import IconLabel
-from src.widgets.palette import (PaletteListItem, PaletteTreeWidget,
-                                 SubpaletteListItem)
 
 if TYPE_CHECKING:
     from src.main.main import MainApplication

@@ -1,11 +1,10 @@
-from PySide6.QtCore import QPoint, QRect, QRectF, Signal
-from PySide6.QtGui import QBrush, QColor, QPixmap, Qt
+from PySide6.QtCore import QPoint, QRectF, Signal
+from PySide6.QtGui import QPixmap, Qt
 from PySide6.QtWidgets import (QApplication, QGraphicsItem,
                                QGraphicsPixmapItem, QGraphicsRectItem,
-                               QGraphicsScene, QGraphicsTextItem)
+                               QGraphicsTextItem)
 
 import src.misc.common as common
-from src.coilsnake.project_data import ProjectData
 from src.gnat.animation import (AnimatedGraphicsItem, AnimationTimer,
                                 loadAnimations)
 from src.gnat.game_state import GameState
