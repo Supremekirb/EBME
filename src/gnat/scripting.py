@@ -21,7 +21,7 @@ class Script():
     
     async def script(self): # intended to be virtual
         while True:
-            await self.pause
+            await self.pause()
         
     async def pause(self, length: int=1):
         for i in range(0, length):
@@ -52,3 +52,7 @@ class ScriptedAnimatedItem(AnimatedGraphicsItem, Script):
             
     def calculateTargetPos(self):
         return QPointF(self.pos().x()+self.vx, self.pos().y()+self.vy)
+    
+    def deleteLater(self):
+        self._task.cancel()
+        return super().deleteLater()

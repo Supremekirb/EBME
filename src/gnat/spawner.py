@@ -61,8 +61,8 @@ class Spawner(ScriptedAnimatedItem):
         if last == self.getAnimation("spawn"):
             self.state = Spawner.STATES.FLYING
             dirFactor = random.choice((1, -1))
-            self.targetSpeed = 3 * dirFactor
-            self.vx = 3 * dirFactor
+            self.targetSpeed = 3 * dirFactor * GameState.getSpeedMultiplier()
+            self.vx = 3 * dirFactor * GameState.getSpeedMultiplier()
             self.spawnTimer = 0
             self.spawnCount = 0
             self.firstSpawned = None
@@ -99,13 +99,13 @@ class Spawner(ScriptedAnimatedItem):
                     targetPos = self.calculateTargetPos()
                     
                     if self.vx > self.targetSpeed:
-                        self.vx -= 0.2
+                        self.vx -= 0.2 * GameState.getSpeedMultiplier()
                         
                     if self.vx < self.targetSpeed:
-                        self.vx += 0.2
+                        self.vx += 0.2 * GameState.getSpeedMultiplier()
                         
                     # round to target speed if we're really close anyway
-                    if abs(self.vx - self.targetSpeed) < 0.3:
+                    if abs(self.vx - self.targetSpeed) < 0.5:
                         self.vx = self.targetSpeed
                         
                     if not random.randint(0, 500): # sometimes start slowing to spawn

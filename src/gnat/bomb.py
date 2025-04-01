@@ -116,8 +116,8 @@ class Bomb(ScriptedAnimatedItem):
                         # it's not 100% accurate to the original,
                         # but it feels similar
                         # they move across the screen in a line less though.
-                        self.vx = math.sin(self.trigIncrement)*self.speedFactor
-                        self.vy = math.cos(self.trigIncrement)*self.speedFactor
+                        self.vx = math.sin(self.trigIncrement)*self.speedFactor*GameState.getSpeedMultiplier() 
+                        self.vy = math.cos(self.trigIncrement)*self.speedFactor*GameState.getSpeedMultiplier() 
                         
                         # sometimes randomly invert our movement
                         if not random.randint(0, 200):
@@ -146,16 +146,16 @@ class Bomb(ScriptedAnimatedItem):
                         
                     # move towards hand
                     angle = GameState.getScene().getAngleToHand(self.pos())
-                    self.vx = math.sin(angle) * 6
-                    self.vy = math.cos(angle) * 6 
+                    self.vx = math.sin(angle) * 4 * GameState.getSpeedMultiplier() 
+                    self.vy = math.cos(angle) * 4 * GameState.getSpeedMultiplier() 
                     
                     await self.pause(2, False)
                 
                 case Bomb.STATES.EXPLODING:
                     # move towards hand also
                     angle = GameState.getScene().getAngleToHand(self.pos())
-                    self.vx = math.sin(angle) * 6
-                    self.vy = math.cos(angle) * 6
+                    self.vx = math.sin(angle) * 6 * GameState.getSpeedMultiplier() 
+                    self.vy = math.cos(angle) * 6 * GameState.getSpeedMultiplier() 
                     
                     if GameState.getScene().isIntersectingWithHand(self):
                         GameState.getScene().handCursor.hurt()

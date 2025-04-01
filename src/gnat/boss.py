@@ -21,6 +21,7 @@ class Boss(ScriptedAnimatedItem):
     ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/boss_thorax.json"))
     STATES = IntEnum("STATES", ["SPAWNING",
                                 "NORMAL",
+                                "LAUGHING",
                                 "DYING"])
     
     def __init__(self):
@@ -46,7 +47,7 @@ class Boss(ScriptedAnimatedItem):
         self.setX(98)
         self.setY(64)
         
-        self.hp = 1
+        self.hp = 20
         self.hitCooldown = 0
         self.waitingForMove = False
         
@@ -64,17 +65,27 @@ class Boss(ScriptedAnimatedItem):
             # - does not reach fully red
             self.tint.setColor(QColor(255, 0, 0, max(0, (255/20)*(20-((self.hp-1)//2*2)-10))))
             
+            # my best approximation of the life-spawning behaviour
+            # i don't know if it's this for sure...
+            if self.hp == 5 and GameState.INSTANCE.rank == 0:
+                GameState.getScene().spawnLife()
+                
             if self.hp == 0:
                 self.tint.setColor(QColor(0, 0, 0, 0))
                 self.state = Boss.STATES.DYING
-                GameState.playBGM("bossdeath")
+                if GameState.INSTANCE.level == 3:
+                    GameState.playBGM("bossdeathlow")
+                else:
+                    GameState.playBGM("bossdeath")
                 self.particle.damaging = False
                 for i in GameState.getScene().items():
                     if isinstance(i, BossProjectile) or isinstance(i, BossMini):
-                        GameState.getScene().removeItem(i)
-                        i._task.cancel()
+                        i.deleteLater()
             else:
-                GameState.playSFX(random.choice(("bosshurt1", "bosshurt2", "bosshurt3")))
+                if GameState.INSTANCE.level == 3:
+                    GameState.playSFX(random.choice(("bosshurtlow1", "bosshurtlow2", "bosshurtlow3")))
+                else:
+                    GameState.playSFX(random.choice(("bosshurt1", "bosshurt2", "bosshurt3")))
                 self.head.play(self.head.getAnimation("hit"))
                 self.shoulderL.play(self.shoulderL.getAnimation("upperhitl"))
                 self.shoulderR.play(self.shoulderR.getAnimation("upperhitr"))
@@ -98,14 +109,14 @@ class Boss(ScriptedAnimatedItem):
         targetX = int(GameState.getScene().handCursor.x())-30
         targetX = common.cap(targetX, 16, 176)
         while True:
-            if abs(self.x() - targetX) < 2:
+            if abs(self.x() - targetX) < 3:
                 self.waitingForMove = False
                 break
             
             if self.x() < targetX:
-                self.setX(self.x() + 1)
+                self.setX(self.x() + 1*GameState.getSpeedMultiplier())
             elif self.x() > targetX:
-                self.setX(self.x() - 1)
+                self.setX(self.x() - 1*GameState.getSpeedMultiplier())
             else:
                 self.waitingForMove = False
                 break # task complete
@@ -305,6 +316,45 @@ class Boss(ScriptedAnimatedItem):
                         await self.pause(3)
                     
                     self.state = Boss.STATES.NORMAL
+                    
+                case Boss.STATES.LAUGHING:
+                    for i in GameState.getScene().items():
+                        if isinstance(i, BossProjectile) or isinstance(i, BossMini):
+                            i.deleteLater()
+                    self.particle.damaging = False
+                    
+                    self.vx = 0
+                    self.vy = 0
+                    currentMove.cancel()
+                    bobTask.cancel()
+                    hurtLock.clear()
+                    bobTaskLock.clear()
+                        
+                    self.head.play(self.head.getAnimation("normal"))
+                    self.particle.play(self.particle.getAnimation("none"))
+                    self.abdomen.play(self.abdomen.getAnimation("normal"))
+                    self.shoulderL.play(self.shoulderL.getAnimation("upperdownl"))
+                    self.shoulderR.play(self.shoulderR.getAnimation("upperdownr"))
+                    self.handL.play(self.handL.getAnimation("downopenl"))
+                    self.handR.play(self.handR.getAnimation("downopenr"))
+                    await self.pause(45)
+                    
+                    self.head.play(self.head.getAnimation("angry"))
+                    self.handL.play(self.handL.getAnimation("downclosel"))
+                    self.handR.play(self.handR.getAnimation("downcloser"))
+                    await self.pause(16)
+                    
+                    self.head.play(self.head.getAnimation("laugh"))
+                    while True:
+                        self.head.setY(0)
+                        self.handL.play(self.handL.getAnimation("downopenl"))
+                        self.handR.play(self.handR.getAnimation("downopenr"))
+                        await self.pause(4)
+                        
+                        self.head.setY(2)
+                        self.handL.play(self.handL.getAnimation("downclosel"))
+                        self.handR.play(self.handR.getAnimation("downcloser"))
+                        await self.pause(4)
                 
                 case Boss.STATES.DYING:
                     def animUp():
@@ -396,7 +446,7 @@ class Boss(ScriptedAnimatedItem):
                     self.wingL.play(self.wingL.getAnimation("normall"))
                     self.wingR.play(self.wingR.getAnimation("normalr"))
                     for i in range(0, 70):
-                        self.head.setY(self.head.y() - 4)
+                        self.head.setPos(self.head.x()+2, self.head.y()-4)
                         self.handL.setPos(self.handL.x()-4, self.handL.y()-4)
                         self.shoulderL.setPos(self.shoulderL.x()-4, self.shoulderL.y()-4)
                         self.handR.setPos(self.handR.x()+4, self.handR.y()-4)
@@ -533,8 +583,8 @@ class RandomisedExplosion(ScriptedAnimatedItem):
     async def script(self):
         while True:
             self.setPos(
-                random.randint(0, 42),
-                random.randrange(-24, 48)
+                random.randint(0, 48),
+                random.randint(-24, 42)
             )
             self.play(self.getAnimation(random.choice(("boom1", "boom2"))))
             await self.pause(1)

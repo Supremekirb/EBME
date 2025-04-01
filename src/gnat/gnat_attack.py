@@ -27,17 +27,15 @@ if TYPE_CHECKING:
     from src.main.main import MainApplication
 
 class GnatAttack(QWidget):
-    def __init__(self, projectData: ProjectData, parent: QWidget|None = None):
-        super().__init__(parent)
-        self.projectData = projectData
-        
+    def __init__(self, parent: QWidget|None = None):
+        super().__init__(parent)        
         self.setupUI()
         
     def setupUI(self):
         layout = QHBoxLayout()
         self.setLayout(layout)
         
-        self.gameScene = GameScene(self.projectData)
+        self.gameScene = GameScene()
         
         self.gameView = QGraphicsView(self.gameScene)
         self.gameView.scale(2, 2)

@@ -139,9 +139,15 @@ class Attack(ScriptedAnimatedItem):
                     # it's not 100% accurate to the original,
                     # but it feels similar
                     # they move across the screen in a line less though.
-                    self.vx = math.sin(self.trigIncrement)*self.speedFactor
-                    self.vy = math.cos(self.trigIncrement)*self.speedFactor
+                    self.vx = math.sin(self.trigIncrement)*self.speedFactor*(GameState.getSpeedMultiplier()-0.3) 
+                    self.vy = math.cos(self.trigIncrement)*self.speedFactor*(GameState.getSpeedMultiplier()-0.3) 
                     
+                    # failsafe
+                    if not 0 < self.x() < 255:
+                        self.setX(128)
+                    if not 0 < self.y() < 255:
+                        self.setY(128)
+                        
                     # sometimes randomly invert our movement
                     if not random.randint(0, 200):
                         self.speedFactor *= -1

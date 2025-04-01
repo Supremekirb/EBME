@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from PySide6.QtCore import QSettings, Qt, QPoint
 from PySide6.QtGui import (QAction, QDesktopServices, QFontDatabase, QIcon,
@@ -194,7 +195,14 @@ class MainApplication(QMainWindow):
         self.mapWin: MapEditor = QWidget() # replaced by MapEditor
         self.tileWin: TileEditor = QWidget() # replaced by TileEditor
         self.paletteWin: PaletteEditor = QWidget() # replaced by PaletteEditor
-        self.gnatWin: GnatAttack = QWidget() # replaced by GnatAttack
+        try:
+            self.gnatWin = GnatAttack(self)
+        except Exception as e:
+            common.showErrorMsg("Bug-Squashing Mode error",
+                                "Error while preparing Bug-Squashing Mode",
+                                ":(")
+            self.gnatWin = QLabel("Bug-Squashing Mode failed to load")
+            logging.warning(traceback.format_exc())
 
         self.mainTabWin.addTab(self.projectWin, "Project")
         self.mainTabWin.addTab(self.mapWin, "Map Editor")

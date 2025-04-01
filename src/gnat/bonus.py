@@ -29,7 +29,7 @@ class BonusHand(ScriptedAnimatedItem):
         self.endingScript = False
         
         self.setPos(QPoint(random.randint(64, 192), 0))
-        self.vy = 0.6
+        self.vy = 0.6*GameState.getSpeedMultiplier()
 
         GameState.addEnemy(self)
     

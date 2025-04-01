@@ -8,7 +8,6 @@ from src.gnat.animation import loadAnimations
 from src.gnat.game_state import GameState
 from src.gnat.scripting import ScriptedAnimatedItem
 
-
 class Mini(ScriptedAnimatedItem):
     ANIMATIONS = loadAnimations(common.absolutePath("assets/gnat/animations/mini.json"))
     def __init__(self, pos: QPoint, spawnAngle: float=0):
@@ -32,27 +31,27 @@ class Mini(ScriptedAnimatedItem):
             # 
             if self.initialMovementTimer > 0:
                 self.angle += (GameState.getScene().getAngleToHand(self.pos()) - self.angle) / 10
-                self.vx = math.sin(self.angle) * 2
-                self.vy = math.cos(self.angle) * 2
+                self.vx = math.sin(self.angle) * 2 * GameState.getSpeedMultiplier() 
+                self.vy = math.cos(self.angle) * 2 * GameState.getSpeedMultiplier() 
                 self.initialMovementTimer -= 1
                 
             # afterwards we just chase the hand perfectly
             elif self.chaseTimer > 0:
                 angle = GameState.getScene().getAngleToHand(self.pos())
-                self.vx = math.sin(angle) * 2
-                self.vy = math.cos(angle) * 2
+                self.vx = math.sin(angle) * 2 * GameState.getSpeedMultiplier() 
+                self.vy = math.cos(angle) * 2 * GameState.getSpeedMultiplier() 
                 self.chaseTimer -= 1
                 
             
             if not (0 < self.x() < 256 and 0 < self.y() < 224):
-                GameState.getScene().removeItem(self)
+                self.deleteLater()
                 return
             
             if GameState.getScene().isIntersectingWithHand(self):
                 # unique behaviour where we disappear if we hurt the hand
                 # (not if we don't hurt it though...)
                 if not GameState.getScene().handCursor.hurting and not GameState.getScene().handCursor.respawnInvincible:
-                    GameState.getScene().removeItem(self)
+                    self.deleteLater()
                     GameState.getScene().handCursor.hurt()
                     return
             
@@ -97,26 +96,26 @@ class BossMini(ScriptedAnimatedItem):
                 self.initialMovementTimer -= 1
                 
                 if self.initialMovementTimer == 0:
-                    self.vx = math.sin(self.initAngle)
-                    self.vy = math.cos(self.initAngle)
+                    self.vx = math.sin(self.initAngle) * GameState.getSpeedMultiplier() 
+                    self.vy = math.cos(self.initAngle) * GameState.getSpeedMultiplier() 
                 
             # afterwards we just chase the hand perfectly
             elif self.chaseTimer > 0:
                 if self.timeTillNextTurn == 0:
                     angle = GameState.getScene().getAngleToHand(self.pos())
-                    self.vx = math.sin(angle) * 2
-                    self.vy = math.cos(angle) * 2
+                    self.vx = math.sin(angle) * 2 * GameState.getSpeedMultiplier() 
+                    self.vy = math.cos(angle) * 2 * GameState.getSpeedMultiplier() 
                     self.timeTillNextTurn = 10
                 self.timeTillNextTurn -= 1
                 self.chaseTimer -= 1
                 
             if not (0 < self.x() < 256 and 0 < self.y() < 224):
-                GameState.getScene().removeItem(self)
+                self.deleteLater()
                 return
             
-            if self.isVisible() and GameState.getScene().isIntersectingWithHand(self):
+            if not self.initialMovementTimer and self.isVisible() and GameState.getScene().isIntersectingWithHand(self):
                 if not GameState.getScene().handCursor.hurting and not GameState.getScene().handCursor.respawnInvincible:
-                    GameState.getScene().removeItem(self)
+                    self.deleteLater()
                     GameState.getScene().handCursor.hurt()
                     return
             
@@ -132,20 +131,20 @@ class AttackProjectile(ScriptedAnimatedItem):
         
         self.setPos(pos)
         
-        self.vx = vx
-        self.vy = vy
+        self.vx = vx * GameState.getSpeedMultiplier() 
+        self.vy = vy * GameState.getSpeedMultiplier() 
         
         GameState.getScene().addItem(self)
     
     async def script(self):
         while True:
             if not (0 < self.x() < 256 and 0 < self.y() < 224):
-                GameState.getScene().removeItem(self)
+                self.deleteLater()
                 return
 
             if GameState.getScene().isIntersectingWithHand(self):
                 if not GameState.getScene().handCursor.hurting and not GameState.getScene().handCursor.respawnInvincible:
-                    GameState.getScene().removeItem(self)
+                    self.deleteLater()
                     GameState.getScene().handCursor.hurt()
 
             await self.pause()
@@ -170,7 +169,7 @@ class BossProjectile(ScriptedAnimatedItem):
     async def script(self):
         while True:
             if not (0 < self.x() < 256 and 0 < self.y() < 224):
-                GameState.getScene().removeItem(self)
+                self.deleteLater()
                 return
             
             self.setPos(
@@ -179,13 +178,13 @@ class BossProjectile(ScriptedAnimatedItem):
             )
             
             if self.trigIncrement < 75:
-                self.trigIncrement += 2
+                self.trigIncrement += 2 * GameState.getSpeedMultiplier()
             else:
-                self.trigIncrement += 2.5
+                self.trigIncrement += 2.5 * GameState.getSpeedMultiplier()
 
             if GameState.getScene().isIntersectingWithHand(self):
                 if not GameState.getScene().handCursor.hurting and not GameState.getScene().handCursor.respawnInvincible:
-                    GameState.getScene().removeItem(self)
+                    self.deleteLater()
                     GameState.getScene().handCursor.hurt()
 
             await self.pause()

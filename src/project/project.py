@@ -73,11 +73,13 @@ class Project(QWidget):
         self.mainWin.mainTabWin.setTabEnabled(1, True)
         self.mainWin.mainTabWin.setTabEnabled(2, True)
         self.mainWin.mainTabWin.setTabEnabled(3, True)
+        self.mainWin.mainTabWin.setTabEnabled(4, True)
 
     def disableEditors(self):
         self.mainWin.mainTabWin.setTabEnabled(1, False)
         self.mainWin.mainTabWin.setTabEnabled(2, False)
         self.mainWin.mainTabWin.setTabEnabled(3, False)
+        self.mainWin.mainTabWin.setTabEnabled(4, False)
 
     def openDirectory(self, dir: str=None):
         """Open a project at `dir` and initialise data. (If the user cancels, don't do anything)
@@ -199,20 +201,20 @@ class Project(QWidget):
                         logging.warning(f"Error loading palette editor: {traceback.format_exc()}")
                         raise
                     
-                    self.updateStatusLabel("Loading Gnat Attack...")
-                    self.statusLabel.repaint()
-                    try:
-                        if isinstance(self.mainWin.gnatWin, GnatAttack):
-                            self.mainWin.gnatWin.gameScene.gameState.stopBGM()
-                            for i in self.mainWin.gnatWin.gameScene.gameState.enemiesOnScreen:
-                                self.mainWin.gnatWin.gameScene.removeItem(i)
-                                i.deleteLater()
-                        self.mainWin.gnatWin = GnatAttack(self.projectData, self.mainWin)
-                    except Exception as e:
-                        common.showErrorMsg(title="Error loading Gnat Attack", text="An error occured while loading Gnat Attack.", info=str(e))
-                        self.updateStatusLabel("Error loading Gnat Attack.")
-                        logging.warning(f"Error loading Gnat Attack: {traceback.format_exc()}")
-                        raise
+                    # self.updateStatusLabel("Loading Gnat Attack...")
+                    # self.statusLabel.repaint()
+                    # try:
+                    #     if isinstance(self.mainWin.gnatWin, GnatAttack):
+                    #         self.mainWin.gnatWin.gameScene.gameState.stopBGM()
+                    #         for i in self.mainWin.gnatWin.gameScene.gameState.enemiesOnScreen:
+                    #             self.mainWin.gnatWin.gameScene.removeItem(i)
+                    #             i.deleteLater()
+                    #     self.mainWin.gnatWin = GnatAttack(self.projectData, self.mainWin)
+                    # except Exception as e:
+                    #     common.showErrorMsg(title="Error loading Gnat Attack", text="An error occured while loading Gnat Attack.", info=str(e))
+                    #     self.updateStatusLabel("Error loading Gnat Attack.")
+                    #     logging.warning(f"Error loading Gnat Attack: {traceback.format_exc()}")
+                    #     raise
                                             
                 except: pass # we've already shown an error message and logged it, so just continue
                 

@@ -4,7 +4,8 @@ from PySide6.QtCore import QPoint
 from PySide6.QtGui import QPixmap
 
 import src.misc.common as common
-from src.gnat.cutscene import RoundStartCutsceneHandler
+from src.gnat.cutscene import (GameOverCutsceneHandler,
+                               RoundStartCutsceneHandler)
 from src.gnat.levels import LevelManager
 from src.gnat.scripting import ScriptedAnimatedItem
 from src.gnat.sound import SoundManager
@@ -31,8 +32,6 @@ class GameState:
         self.lives = 3
         self.level = 0 # increments to 1
         self.rank = 0
-        
-        self.enemiesOnScreen: set[ScriptedAnimatedItem] = set()
         
         # After init, we need to wait until
         # the user opens this tab for the first time,
@@ -99,6 +98,16 @@ class GameState:
         inst = GameState.INSTANCE
         return inst.scene
     
+    @staticmethod
+    def resetGame():
+        inst = GameState.INSTANCE
+        inst.getScene().clearEnemies()
+        inst.resetRank()
+        inst.resetScore()
+        inst.level = 0
+        inst.lives = 3
+        inst.getScene().livesItem.setLifeCount(inst.lives)
+        inst.beginNextLevel()
     
     @staticmethod
     def pauseGame(pos: QPoint = QPoint(128, 122)):
@@ -118,12 +127,10 @@ class GameState:
     @staticmethod
     def addEnemy(enemy: ScriptedAnimatedItem):
         inst = GameState.INSTANCE
-        inst.enemiesOnScreen.add(enemy)
         inst.scene.addItem(enemy)   
     @staticmethod
     def removeEnemy(enemy: ScriptedAnimatedItem):
         inst = GameState.INSTANCE
-        inst.enemiesOnScreen.discard(enemy)
         # inst.gameScene.removeItem(enemy)
         inst.levelManager.onEnemyDeath(enemy)
         enemy.deleteLater()
@@ -138,12 +145,20 @@ class GameState:
     @staticmethod
     def takeLife():
         inst = GameState.INSTANCE
-        if inst.lives > 0:
+        if inst.lives >= 0:
             inst.lives -= 1
             inst.scene.livesItem.setLifeCount(inst.lives)
             
-        if inst.lives == 0:
-            pass # game over logic 
+        if inst.lives < 0:
+            for i in inst.getScene().items():
+                # if you're writing code like this,
+                # then it's time to throw in the towel    
+                if hasattr(i, "STATES") and hasattr(i, "state"):
+                    try:
+                        i.state = i.STATES.LAUGHING
+                    except AttributeError:
+                        pass
+            GameOverCutsceneHandler(inst.resetGame)
     
     
     @staticmethod
@@ -158,8 +173,12 @@ class GameState:
         if inst.score > 1:
             inst.score -= 1
             inst.scene.scoreItem.setScore(inst.score)
-            if inst.score in (25, 50, 75):
-                inst.scene.spawnLife()
+            if inst.rank == 0:
+                if inst.score in (25, 50, 75):
+                    inst.scene.spawnLife()
+            else:
+                if inst.score == 90:
+                    inst.scene.spawnLife()
         else:
             inst.scene.scoreItem.hide()
             inst.getScene().spawnBoss()
@@ -176,6 +195,7 @@ class GameState:
             pass # other next level logic
         
         inst.resetScore()
+        inst.getScene().clearEnemies()
         RoundStartCutsceneHandler("LEVEL", str(inst.level), callback=GameState._nextLevel)
     
     @staticmethod
@@ -186,10 +206,21 @@ class GameState:
     @staticmethod
     def _nextLevel():
         inst = GameState.INSTANCE
-        # inst.levelManager = LevelManager(common.absolutePath(f"assets/gnat/levels/{str(inst.level)}.json"))
-        # inst.levelManager.startSpawning()
-        inst.score = 1
-        inst.takeScore()
+        inst.levelManager = LevelManager(common.absolutePath(f"assets/gnat/levels/{str(inst.level)}.json"))
+        inst.levelManager.startSpawning()
+        
+        # Boss debug
+        # (comment out above stuff and uncomment this)
+        # inst.score = 1
+        # inst.takeScore()
+        
+    @staticmethod
+    def getSpeedMultiplier():
+        inst = GameState.INSTANCE
+        return (inst.level * 0.5) + 0.5
+        # lv1 --> x1
+        # lv2 --> x1.5
+        # lv3 --> x2
         
     @staticmethod
     def addRank():

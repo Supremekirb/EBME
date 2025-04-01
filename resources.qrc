@@ -98,5 +98,6 @@
         <file alias="spritesheets/koopa.png">assets/gnat/spritesheets/koopa.png</file>
         <file alias="spritesheets/luigi.png">assets/gnat/spritesheets/luigi.png</file>
         <file alias="spritesheets/spiny.png">assets/gnat/spritesheets/spiny.png</file>
+        <file alias="spritesheets/applause.png">assets/gnat/spritesheets/applause.png</file>
     </qresource>
 </RCC>

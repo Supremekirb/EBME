@@ -1,19 +1,38 @@
 {
     "frames": {
-        "jump":  [0,  0, 16, 24, 0, 24],
-        "spinf": [16, 0, 16, 24, 0, 24],
-        "spinb": [32, 0, 16, 24, 0, 24],
-        "peace": [48, 0, 16, 24, 0, 24],
-        "walk1": [64, 0, 16, 24, 0, 24],
-        "walk2": [80, 0, 16, 24, 0, 24],
-        "turn":  [96, 0, 16, 24, 0, 24]
+        "jump":   [0,  0, 16, 24, 0, 0],
+        "walkr1": [16, 0, 16, 24, 0, 0],
+        "walkr2": [32, 0, 16, 24, 0, 0],
+        "peace":  [48, 0, 16, 24, 0, 0],
+        "walk1":  [64, 0, 16, 24, 0, 0],
+        "walk2":  [80, 0, 16, 24, 0, 0],
+        "turn":   [96, 0, 16, 24, 0, 0]
     },
     "animations": {
         "walk": {
             "loop": 0,
             "frames": [
-                {"name": "walk1", "duration": 6},
-                {"name": "walk2", "duration": 6}
+                {"name": "walk1", "duration": 3},
+                {"name": "walk2", "duration": 4}
+            ]
+        },
+        "turn": {
+            "loop": 0,
+            "frames": [
+                {"name": "turn", "duration": 60}
+            ]
+        },
+        "walkr": {
+            "loop": 0,
+            "frames": [
+                {"name": "walkr1", "duration": 3},
+                {"name": "walkr2", "duration": 4}
+            ]
+        },
+        "facer": {
+            "loop": 0,
+            "frames": [
+                {"name": "walkr1", "duration": 60}
             ]
         },
         "jump": {
