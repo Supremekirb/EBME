@@ -186,3 +186,9 @@ def init_icons():
     
     global ICON_SUBPALETTE
     ICON_SUBPALETTE = icon("ph.paint-brush")
+    
+    global ICON_FLAG
+    ICON_FLAG = icon("ph.flag")
+    
+    global ICON_TILE_CHANGE
+    ICON_TILE_CHANGE = icon("ph.swap")

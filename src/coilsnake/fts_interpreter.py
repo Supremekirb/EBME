@@ -41,21 +41,21 @@ class FullTileset:
                 # happily we do not need to invalidate the image cache when doing this
             
     def getPaletteGroup(self, groupID):
-        """From a palette group ID, get a PaletteGroup object\n\nReturns -1 if no match was found"""
+        """From a palette group ID, get a PaletteGroup object"""
         for i in self.paletteGroups:
             if i.groupID == groupID:
                 return i
         raise ValueError(f"No palette group found with ID {groupID}")
 
     def getPalette(self, groupID, paletteID):
-        """From a palette group ID and palette ID, get a Palette object\n\nReturns -1 if no match was found"""
+        """From a palette group ID and palette ID, get a Palette object"""
         for i in self.palettes:
             if (i.groupID == groupID) and (i.paletteID == paletteID):
                 return i
         raise ValueError(f"No palette found with group ID {groupID} and palette ID {paletteID}")
             
     def getTilesetFromPaletteGroup(self, groupID):
-        """From a palette group ID, get a Tileset ID\n\nReturns -1 if no match was found"""
+        """From a palette group ID, get a Tileset ID"""
         for i in self.paletteGroups:
             if i.groupID == groupID:
                 return self.id
