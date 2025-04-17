@@ -128,8 +128,34 @@ class MapEditorScene(QGraphicsScene):
         self.populateHotspots()
         self.populateWarps()
         
+        # door destination preview
+        self.doorDestShowIcon = QGraphicsPixmapItem(self.imgTriggerDest)
+        self.addItem(self.doorDestShowIcon)
+        self.doorDestShowIcon.setZValue(common.MAPZVALUES.DOORDESTICON)
+        self.doorDestShowIcon.hide()
+        
+        self.doorDestShowLine = QGraphicsLineItem()
+        self.addItem(self.doorDestShowLine)
+        self.doorDestShowLine.setZValue(common.MAPZVALUES.DOORDESTLINE)
+        self.doorDestShowLine.setPen(QPen(Qt.red, 2))
+        self.doorDestShowLine.hide()
+        
+        # door destination set
+        self.doorDestPlacer = QGraphicsPixmapItem(self.imgTriggerDest)
+        self.addItem(self.doorDestPlacer)
+        self.doorDestPlacer.setZValue(common.MAPZVALUES.DOORDESTICON)
+        self.doorDestPlacer.hide()
+        
+        self.doorDestLine = QGraphicsLineItem()
+        self.addItem(self.doorDestLine)
+        self.doorDestLine.setPen(QPen(Qt.red, 2))
+        self.doorDestLine.setZValue(common.MAPZVALUES.DOORDESTLINE)
+        self.doorDestLine.hide()
+        
         self.dontUpdateModeNextAction = False
         """Avoid updating the current mode when pushing an action to the stack. Unset after the action is received. Won't affect undo/redo later on."""
+        
+        self._lastSector = self.projectData.getSector(EBCoords(0, 0))
         self._lastCoords = EBCoords(0, 0)
     
     def updateSelected(self):
@@ -1628,9 +1654,6 @@ class MapEditorScene(QGraphicsScene):
             self.previewNPC.setPos(old)
             
         sector = self.projectData.getSector(coords)
-        
-        if not hasattr(self, "_lastSector"):
-            self._lastSector = self.projectData.getSector(coords)
             
         if (self._lastSector.tileset != sector.tileset or
             self._lastSector.palettegroup != sector.palettegroup or
@@ -1664,9 +1687,6 @@ class MapEditorScene(QGraphicsScene):
             png (QGraphicsPixmapItem): the pixmap of the map
             tiles (numpy.array): the array of tiles
         """
-
-        if hasattr(self, "importedMap"):
-            self.removeItem(self.importedMap)
 
         self.importedMap = png
         self.importedTiles = tiles
@@ -1769,18 +1789,7 @@ class MapEditorScene(QGraphicsScene):
 
     def startSetDoorDest(self, coords: EBCoords):
         self.setTemporaryMode(common.TEMPMODEINDEX.SETDOORDEST)
-
-        if not hasattr(self, "doorDestPlacer"):
-            self.doorDestPlacer = QGraphicsPixmapItem(self.imgTriggerDest)
-            self.doorDestPlacer.setZValue(common.MAPZVALUES.DOORDESTICON)
-            self.addItem(self.doorDestPlacer)
         self.doorDestPlacer.setPos(coords.x, coords.y)
-
-        if not hasattr(self, "doorDestLine"):
-            self.doorDestLine = QGraphicsLineItem()
-            self.doorDestLine.setPen(QPen(Qt.red, 2))
-            self.doorDestLine.setZValue(common.MAPZVALUES.DOORDESTLINE)
-            self.addItem(self.doorDestLine)
         self.doorDestLineStart = coords
         self.doorDestLine.setLine(coords.x+4, coords.y+4, coords.x+4, coords.y+4)
 

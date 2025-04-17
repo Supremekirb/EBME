@@ -116,25 +116,10 @@ class MapEditorView(QGraphicsView):
         
         self.autoCenterOn(EBCoords(end.x+4, end.y+4))
 
-        if not hasattr(self.scene(), "triggerDestShowLine"): # a lot of this would be simpler if i added them at init...
-            self.scene().doorDestShowLine = QGraphicsLineItem()
-            self.scene().addItem(self.scene().doorDestShowLine)
-
-        self.scene().doorDestShowLine.setPen(QPen(Qt.red, 2))
         self.scene().doorDestShowLine.setLine(start.x+4, start.y+4, end.x+4, end.y+4)
-        self.scene().doorDestShowLine.setZValue(common.MAPZVALUES.DOORDESTLINE)
-
-        if not hasattr(self.scene(), "triggerDestShowIcon"):
-            self.scene().doorDestShowIcon = QGraphicsPixmapItem(self.scene().imgTriggerDest)
-            self.scene().addItem(self.scene().doorDestShowIcon)
-
-        self.scene().doorDestShowIcon.setPos(end.x, end.y)
-        self.scene().doorDestShowIcon.setZValue(common.MAPZVALUES.DOORDESTICON)
-
-        self.scene().doorDestShowIcon.show()
         self.scene().doorDestShowLine.show()
 
-        QTimer.singleShot(2000, self.scene().doorDestShowIcon.hide) # hide after 2 seconds
+        # hide after 2 seconds
         QTimer.singleShot(2000, self.scene().doorDestShowLine.hide)
 
     def zoomIn(self, onMouse = False):

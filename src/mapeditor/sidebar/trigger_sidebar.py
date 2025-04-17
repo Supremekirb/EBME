@@ -1,10 +1,11 @@
 import os
 from typing import TYPE_CHECKING
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QLabel,
-                               QLineEdit, QPushButton, QSizePolicy,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QComboBox, QFormLayout, QGraphicsView,
+                               QGroupBox, QLabel, QLineEdit, QPushButton,
+                               QSizePolicy, QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.objects.trigger as trigger
@@ -86,6 +87,9 @@ class SidebarTrigger(QWidget):
         self.switchData.setEnabled(False)
         self.dummyData.setEnabled(False)
         self.triggerLabel.setText("Select a trigger to edit.")
+        self.mapeditor.scene.doorDestShowIcon.hide()
+        self.doorDestPreview.hide()
+        self.doorDestPreviewText.hide()
 
     def fromTriggers(self):
         """Load the data from a trigger into the sidebar for editing"""
@@ -153,15 +157,39 @@ class SidebarTrigger(QWidget):
             match type(triggers[0].typeData):
                 case trigger.TriggerDoor:
                     self.generalType.setCurrentIndex(0)
+                    
+                    differentDests = False
                     if len(set(i.typeData.destCoords.coordsWarp()[0] for i in triggers)) == 1:    
                         self.doorDest.x.setValue(triggers[0].typeData.destCoords.coordsWarp()[0])
                     else:
                         self.doorDest.x.clear()
+                        differentDests = True
                     
                     if len(set(i.typeData.destCoords.coordsWarp()[1] for i in triggers)) == 1:
                         self.doorDest.y.setValue(triggers[0].typeData.destCoords.coordsWarp()[1])
                     else:
                         self.doorDest.y.clear()
+                        differentDests = True
+                        
+                    if not differentDests:
+                        x, y = triggers[0].typeData.destCoords.coords()
+                        self.mapeditor.scene.doorDestShowIcon.setPos(x, y)
+                        self.mapeditor.scene.doorDestShowIcon.show()
+                        self.doorJump.setDisabled(False)
+                        self.doorDestPreviewText.show()
+                        self.doorDestPreview.show()
+                        
+                        # that's silly
+                        self.doorDestPreview.horizontalScrollBar().blockSignals(False)
+                        self.doorDestPreview.verticalScrollBar().blockSignals(False)
+                        self.doorDestPreview.centerOn(x, y)
+                        self.doorDestPreview.horizontalScrollBar().blockSignals(True)
+                        self.doorDestPreview.verticalScrollBar().blockSignals(True)
+                    else:
+                        self.mapeditor.scene.doorDestShowIcon.hide()
+                        self.doorJump.setDisabled(True)
+                        self.doorDestPreviewText.hide()
+                        self.doorDestPreview.hide()
                     
                     if len(set(i.typeData.dir for i in triggers)) == 1:
                         self.doorDirection.setCurrentText(triggers[0].typeData.dir.capitalize())
@@ -437,7 +465,18 @@ Do this and set the position to one warp tile below the door to only display tex
         self.openDoorText.clicked.connect(lambda: common.openCCSFromLabel(self.doorText.text(),
                                                                          os.path.join(self.projectData.dir,
                                                                                       "ccscript")))
-
+        
+        self.doorDestPreviewText = QLabel("Destination Preview")
+        self.doorDestPreviewText.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        
+        self.doorDestPreview = QGraphicsView(self.mapeditor.scene)
+        self.doorDestPreview.setInteractive(False)
+        self.doorDestPreview.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.doorDestPreview.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.doorDestPreview.horizontalScrollBar().blockSignals(True)
+        self.doorDestPreview.verticalScrollBar().blockSignals(True)
+        self.doorDestPreview.setFixedWidth(256)
+        
         self.doorDataLayout.addRow("Destination", self.doorDest)
         self.doorDataLayout.addRow(self.doorJump, self.doorSet)
         self.doorDataLayout.addRow("Direction", self.doorDirection)
@@ -445,6 +484,8 @@ Do this and set the position to one warp tile below the door to only display tex
         self.doorDataLayout.addRow("Style", self.doorStyle)
         self.doorDataLayout.addRow("Pointer", self.doorText)
         self.doorDataLayout.addWidget(self.openDoorText)
+        self.doorDataLayout.addRow(self.doorDestPreviewText)
+        self.doorDataLayout.addRow(self.doorDestPreview)
 
         self.doorData.setLayout(self.doorDataLayout)
 
