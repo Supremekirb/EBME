@@ -4,17 +4,18 @@ import re
 
 from PIL import Image
 
-from src.coilsnake.loadmodules.load_module import YMLCoilsnakeResourceLoadModule
+from src.coilsnake.datamodules.data_module import YMLResourceDataModule
+from src.coilsnake.project_data import ProjectData
 from src.misc.exceptions import CoilsnakeResourceNotFoundError
 from src.objects.sprite import Sprite
 
 
-class SpriteModule(YMLCoilsnakeResourceLoadModule):
+class SpriteModule(YMLResourceDataModule):
     NAME = "sprites"
     MODULE = "eb.SpriteGroupModule"
     RESOURCE = "sprite_groups"
     
-    def _resourceLoad(data, sprite_groups):        
+    def _resourceLoad(data: ProjectData, sprite_groups):        
         spritesList = []
         for id, spr in sprite_groups.items():
             try:
@@ -39,3 +40,7 @@ class SpriteModule(YMLCoilsnakeResourceLoadModule):
                                       sprImg))
             
         data.sprites = spritesList
+    
+    
+    def save(data: ProjectData):
+        return # this data is not saved

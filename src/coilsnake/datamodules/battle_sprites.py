@@ -1,11 +1,11 @@
 from PIL import Image, ImageQt
 
-from src.coilsnake.loadmodules.load_module import LoadModule
+from src.coilsnake.datamodules.data_module import DataModule
 from src.coilsnake.project_data import ProjectData
 from src.objects.sprite import BattleSprite
 
 
-class BattleSpriteModule(LoadModule):
+class BattleSpriteModule(DataModule):
     NAME = "battle sprites"
     
     def load(data: ProjectData):
@@ -17,3 +17,6 @@ class BattleSpriteModule(LoadModule):
                 battleSprites.append(BattleSprite(int(str(key).split("/")[1]), sprImg)) # also cursed
 
         data.battleSprites = battleSprites
+    
+    def save(data: ProjectData):
+        return # this data is not saved

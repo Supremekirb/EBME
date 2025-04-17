@@ -7,6 +7,8 @@ from io import StringIO
 import yaml
 from PySide6.QtCore import QSettings
 
+from src.misc.worker import Worker
+from src.coilsnake.datamodules import MODULES
 import src.misc.common as common
 from src.coilsnake.project_data import ProjectData
 from src.objects import trigger
@@ -30,121 +32,131 @@ def _getLineEnding() -> str|None:
             raise ValueError(f"Unrecognised line ending index: {eol}")
 
 
-def writeDirectory(parent, data):   
+def writeDirectory(worker: Worker, data: ProjectData):   
     try:
-        try:
-            saveProject(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save Project.snake",
-                                 "text": "Could not save Project.snake.",
-                                 "info": str(e)})
-            raise
-        parent.updates.emit("Saving tilesets...")
-        try:
-            saveTilesets(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save tilesets",
-                                 "text": "Could not save tilesets.",
-                                 "info": str(e)})
-            raise
-        parent.updates.emit("Saving palette settings...")
-        try:
-            savePaletteSettings(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save palette settings",
-                                 "text": "Could not save palette settings.",
-                                 "info": str(e)})
-            raise
-        parent.updates.emit("Saving sectors...")
-        try:
-            saveSectors(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save sectors",
-                                 "text": "Could not save sectors.",
-                                 "info": str(e)})
-            raise
-        parent.updates.emit("Saving tiles...")
-        try:
-            saveTiles(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save tiles",
-                                 "text": "Could not save tiles.",
-                                 "info": str(e)})
-            raise
-        parent.updates.emit("Saving NPCs...")
-        try:
-            saveNPCTable(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save NPCs",
-                                 "text": "Could not save NPCs.",
-                                 "info": str(e)})
-            raise
-        parent.updates.emit("Saving NPC instances...")
-        try:
-            saveNPCInstances(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save NPC instances",
-                                 "text": "Could not save NPC instances.",
-                                 "info": str(e)})
-            raise
-        parent.updates.emit("Saving triggers...")
-        try:
-            saveTriggers(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save triggers",
-                                 "text": "Could not save triggers.",
-                                 "info": str(e)})
-            raise
-        parent.updates.emit("Saving enemies...")
-        try:
-            saveEnemyPlacements(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save enemies",
-                                 "text": "Could not save enemies.",
-                                 "info": str(e)})
-            raise
-        try:
-            saveMapEnemyGroups(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save map enemy groups",
-                                 "text": "Could not save map enemy groups.",
-                                 "info": str(e)})
-            raise
-        
-        parent.updates.emit("Saving hotspots...")
-        try:
-            saveHotspots(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save hotspots",
-                                 "text": "Could not save hotspots.",
-                                 "info": str(e)})
+        for module in MODULES:
+            try:
+                worker.updates.emit(f"Saving {module.NAME}...")
+                module.save(data)
+            except Exception as e:
+                worker.returns.emit({"title": f"Failed to save {module.NAME}",
+                                     "text": f"Could not save {module.NAME}.",
+                                     "info": f"{type(e).__name__}: {str(e)}"})
+                raise
             
-        parent.updates.emit("Saving warps...")
-        try:
-            saveWarps(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save warps",
-                                 "text": "Could not save warps.",
-                                 "info": str(e)})
+        # try:
+        #     saveProject(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save Project.snake",
+        #                          "text": "Could not save Project.snake.",
+        #                          "info": str(e)})
+        #     raise
+        # parent.updates.emit("Saving tilesets...")
+        # try:
+        #     saveTilesets(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save tilesets",
+        #                          "text": "Could not save tilesets.",
+        #                          "info": str(e)})
+        #     raise
+        # parent.updates.emit("Saving palette settings...")
+        # try:
+        #     savePaletteSettings(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save palette settings",
+        #                          "text": "Could not save palette settings.",
+        #                          "info": str(e)})
+        #     raise
+        # parent.updates.emit("Saving sectors...")
+        # try:
+        #     saveSectors(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save sectors",
+        #                          "text": "Could not save sectors.",
+        #                          "info": str(e)})
+        #     raise
+        # parent.updates.emit("Saving tiles...")
+        # try:
+        #     saveTiles(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save tiles",
+        #                          "text": "Could not save tiles.",
+        #                          "info": str(e)})
+        #     raise
+        # parent.updates.emit("Saving NPCs...")
+        # try:
+        #     saveNPCTable(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save NPCs",
+        #                          "text": "Could not save NPCs.",
+        #                          "info": str(e)})
+        #     raise
+        # parent.updates.emit("Saving NPC instances...")
+        # try:
+        #     saveNPCInstances(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save NPC instances",
+        #                          "text": "Could not save NPC instances.",
+        #                          "info": str(e)})
+        #     raise
+        # parent.updates.emit("Saving triggers...")
+        # try:
+        #     saveTriggers(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save triggers",
+        #                          "text": "Could not save triggers.",
+        #                          "info": str(e)})
+        #     raise
+        # parent.updates.emit("Saving enemies...")
+        # try:
+        #     saveEnemyPlacements(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save enemies",
+        #                          "text": "Could not save enemies.",
+        #                          "info": str(e)})
+        #     raise
+        # try:
+        #     saveMapEnemyGroups(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save map enemy groups",
+        #                          "text": "Could not save map enemy groups.",
+        #                          "info": str(e)})
+        #     raise
         
-        parent.updates.emit("Saving teleports...")
-        try:
-            saveTeleports(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save teleports",
-                                 "text": "Could not save teleports.",
-                                 "info": str(e)})
+        # parent.updates.emit("Saving hotspots...")
+        # try:
+        #     saveHotspots(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save hotspots",
+        #                          "text": "Could not save hotspots.",
+        #                          "info": str(e)})
+            
+        # parent.updates.emit("Saving warps...")
+        # try:
+        #     saveWarps(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save warps",
+        #                          "text": "Could not save warps.",
+        #                          "info": str(e)})
+        
+        # parent.updates.emit("Saving teleports...")
+        # try:
+        #     saveTeleports(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save teleports",
+        #                          "text": "Could not save teleports.",
+        #                          "info": str(e)})
 
-        parent.updates.emit("Saving music...")
-        try:
-            saveMapMusic(data)
-        except Exception as e:
-            parent.returns.emit({"title": "Failed to save map music",
-                                 "text": "Could not save map music.",
-                                 "info": str(e)})
+        # parent.updates.emit("Saving music...")
+        # try:
+        #     saveMapMusic(data)
+        # except Exception as e:
+        #     parent.returns.emit({"title": "Failed to save map music",
+        #                          "text": "Could not save map music.",
+        #                          "info": str(e)})
 
         logging.info(f"Successfully saved project at {data.dir}")
-        parent.returns.emit(True)
+        worker.returns.emit(True)
 
     except Exception:
         logging.warning(traceback.format_exc())

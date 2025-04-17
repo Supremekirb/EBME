@@ -1,12 +1,14 @@
+from src.coilsnake.datamodules.data_module import YMLResourceDataModule
+from src.coilsnake.project_data import ProjectData
 from src.objects.changes import MapChange, MapChangeEvent, TileChange
-from src.coilsnake.loadmodules.load_module import YMLCoilsnakeResourceLoadModule
 
-class MapChangesModule(YMLCoilsnakeResourceLoadModule):
+
+class MapChangesModule(YMLResourceDataModule):
     NAME = "map changes"
     MODULE = "eb.MapEventModule"
     RESOURCE = "map_changes"
     
-    def _resourceLoad(data, map_changes):
+    def _resourceLoad(data: ProjectData, map_changes):
         mapChanges = []
         for tileset, changes in map_changes.items():
             changeList = []
@@ -17,3 +19,6 @@ class MapChangesModule(YMLCoilsnakeResourceLoadModule):
                 changeList.append(MapChangeEvent(change["Event Flag"], tileChangeList))
             mapChanges.append(MapChange(tileset, changeList))
         data.mapChanges = mapChanges
+    
+    def save(data: ProjectData):
+        ...

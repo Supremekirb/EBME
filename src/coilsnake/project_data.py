@@ -26,6 +26,7 @@ class ProjectData():
     def __init__(self, directory: str):
         
         self.dir = directory
+        self.projectSnake: dict = {}
         self.tilesets: list[FullTileset] = []
         self.paletteSettings: dict[int, dict[int, PaletteSettings]] = {}
         self.sectors: numpy.ndarray[Sector] = []
