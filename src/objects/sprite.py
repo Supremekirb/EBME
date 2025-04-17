@@ -1,21 +1,17 @@
-import re
-
 from PIL import Image, ImageQt
 
 
 class Sprite:
     """Sprite image and rendering methods"""
-    def __init__(self, img: Image.Image, data):
-        self.id = data[0]
-        data = data[1]
+    def __init__(self, id: int, size: tuple[int, int], collisionHorizontal: tuple[int, int],
+                 collisionVertical: tuple[int, int], swimFlags: tuple[bool], img: Image.Image):
+        self.id = id
+        self.size = size
+        self.collisionHorizontal = collisionHorizontal
+        self.collisionVertical = collisionVertical
+        self.swimFlags = swimFlags
+        
         self.img = img
-        self.sizeRaw = data["Size"]
-        self.size = re.split("x| ", self.sizeRaw) # there's a "16x16 2" so we need a more robust split. ugh
-        self.size = int(self.size[0]), int(self.size[1])
-
-        self.collisionHorizontal = (data["East/West Collision Width"], data["East/West Collision Height"])
-        self.collisionVertical = (data["North/South Collision Width"], data["North/South Collision Height"])
-        self.swimFlags = data["Swim Flags"]
         
     def renderFacingImg(self, dir: int, anim: int=0) -> Image.Image:
         """Get the image of a frame from a sprite group, given direction

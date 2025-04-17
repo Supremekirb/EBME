@@ -3,11 +3,12 @@ from typing import Literal
 from uuid import UUID
 
 import numpy
-import yaml
 
 import src.misc.common as common
+from src.misc.exceptions import CoilsnakeResourceNotFoundError
 from src.coilsnake.fts_interpreter import FullTileset
 from src.misc.coords import EBCoords
+from src.objects.changes import MapChange
 from src.objects.enemy import EnemyGroup, EnemyMapGroup, EnemyTile
 from src.objects.hotspot import Hotspot
 from src.objects.music import MapMusicHierarchy
@@ -25,6 +26,7 @@ class ProjectData():
     def __init__(self, directory: str):
         
         self.dir = directory
+        self.projectSnake: dict = {}
         self.tilesets: list[FullTileset] = []
         self.paletteSettings: dict[int, dict[int, PaletteSettings]] = {}
         self.sectors: numpy.ndarray[Sector] = []
@@ -37,25 +39,13 @@ class ProjectData():
         self.enemyPlacements: numpy.ndarray[EnemyTile] = []
         self.enemyMapGroups: list[EnemyMapGroup] = []
         self.enemyGroups: list[EnemyGroup] = []
+        self.enemySprites: list[int] = [] # enemy id --> sprite id
         self.battleSprites: list[BattleSprite] = []
         self.hotspots: list[Hotspot] = []
         self.warps: list[Warp] = []
         self.teleports: list[Teleport] = []
         self.mapMusic: list[MapMusicHierarchy] = []
-    
-    def loadProjectSnake(self):
-        try:
-            with open(os.path.join(self.dir, "Project.snake")) as project:
-                self.projectSnake = yaml.load(project, Loader=yaml.CSafeLoader)
-
-        except FileNotFoundError as e:
-            raise FileNotFoundError(f"Could not open Project.snake at {os.path.normpath(os.path.join(self.dir, 'Project.snake'))}.") from e
-        
-        except yaml.YAMLError as e:
-            raise yaml.YAMLError(f"Could not interpret Project.snake at {os.path.normpath(os.path.join(self.dir, 'Project.snake'))}.") from e
-        
-        except Exception as e:
-            raise Exception(f"Could not read Project.snake at {os.path.normpath(os.path.join(self.dir, 'Project.snake'))}.") from e
+        self.mapChanges: list[MapChange] = []
         
 
     def getResourcePath(self, module: Literal[
@@ -81,8 +71,10 @@ class ProjectData():
         Returns:
             str: path to resource
         """
-
-        return os.path.normpath(os.path.join(self.dir, self.projectSnake['resources'][module][resource]))
+        try:
+            return os.path.normpath(os.path.join(self.dir, self.projectSnake['resources'][module][resource]))
+        except KeyError:
+            raise CoilsnakeResourceNotFoundError(f"Could not find the path to resource {module}.{resource} in Project.snake")
     
     def replaceTileset(self, newTileset: list[str], tilesetNumber: int):
         """Reload a tileset from a file. Also deals with tiles that use it.
