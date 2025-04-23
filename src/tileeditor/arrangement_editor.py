@@ -85,5 +85,8 @@ class TileArrangementWidget(TileGraphicsWidget):
         
         if not nosubpal:
             subpalette = self.currentTile.getMinitileSubpalette(index)
+            if subpalette < 0:
+                # The tile has an invalid subpalette. For "pick" purposes, fall back to subpalette 0.
+                subpalette = 0
             self.state.tileEditor.paletteView.setSubpaletteIndex(subpalette)
             self.state.tileEditor.onSubpaletteSelect()
