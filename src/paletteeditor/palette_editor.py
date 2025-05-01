@@ -640,7 +640,7 @@ class PaletteEditor(QWidget):
         
         self.paletteSettingsSpritePalette = QSpinBox()
         self.paletteSettingsSpritePalette.setToolTip("Subpalette for sprites of palette 4 to use.")
-        self.paletteSettingsSpritePalette.setMaximum(5)
+        self.paletteSettingsSpritePalette.setMaximum(8)
         self.paletteSettingsSpritePalette.editingFinished.connect(self.toPaletteSettings)
         
         self.paletteSettingsFlag = FlagInput()
