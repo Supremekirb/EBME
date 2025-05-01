@@ -20,8 +20,8 @@ class TileGraphicsModule(DataModule):
             tilegfx[t.id] = {}
             for pg in keys:
                 tilegfx[t.id][pg] = {}
-                for mt in range(common.MAXTILES):
-                    tilegfx[t.id][pg][mt] = MapTileGraphic(mt, t.id, *common.extractPaletteAndGroup(pg))
+                # for mt in range(common.MAXTILES):
+                #     tilegfx[t.id][pg][mt] = MapTileGraphic(mt, t.id, *common.extractPaletteAndGroup(pg))
 
         data.tilegfx = tilegfx
     

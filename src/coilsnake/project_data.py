@@ -108,28 +108,20 @@ class ProjectData():
                         gfx.hasRendered = False
                         gfx.hasRenderedFg = False
                     else: # clear one palette
-                        for gfx in self.tilegfx[tileset][
-                            common.combinePaletteAndGroup(paletteGroup, palette)].values():
-                            gfx.hasRendered = False
-                            gfx.hasRenderedFg = False
+                        self.tilegfx[tileset][
+                            common.combinePaletteAndGroup(paletteGroup, palette)] = {}
                 else: # clear one palette group
                     group = self.getPaletteGroup(paletteGroup)
                     for p in group.palettes:
-                        for gfx in self.tilegfx[tileset][
-                            common.combinePaletteAndGroup(paletteGroup, p.paletteID)].values():
-                            gfx.hasRendered = False
-                            gfx.hasRenderedFg = False
+                        self.tilegfx[tileset][
+                            common.combinePaletteAndGroup(paletteGroup, p.paletteID)] = {}
             else: # clear one tileset
                 for pg in self.tilegfx[tileset].values():
-                    for gfx in pg.values():
-                        gfx.hasRendered = False
-                        gfx.hasRenderedFg = False
+                    self.tilegfx[tileset][pg] = {}
         else: # clear entire cache
             for t in self.tilegfx.values():
                 for pg in t.values():
-                    for gfx in pg.values():
-                        gfx.hasRendered = False
-                        gfx.hasRenderedFg = False
+                    t[pg] = {}
                             
     # project getters
     def getProjectVersion(self) -> str:
@@ -272,7 +264,9 @@ class ProjectData():
                        palettegroup: int, 
                        palette: int, 
                        tile: int) -> MapTileGraphic:
-        return self.tilegfx[tileset][common.combinePaletteAndGroup(palettegroup, palette)][tile]
+        return self.tilegfx[tileset][common.combinePaletteAndGroup(palettegroup, palette)].setdefault(
+            tile, MapTileGraphic(tile, tileset, palettegroup, palette)
+        )
                     
     def getNPC(self, id: int) -> NPC:
         return self.npcs[id]

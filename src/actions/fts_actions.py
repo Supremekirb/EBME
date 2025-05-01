@@ -290,9 +290,9 @@ class ActionAddPalette(QUndoCommand):
         for key, t in self.projectData.tilegfx.items():
             t[common.combinePaletteAndGroup(self.palette.groupID, self.palette.paletteID)] = {}
         
-            for i in range(common.MAXTILES):
-                graphic = MapTileGraphic(i, key, self.palette.groupID, self.palette.paletteID)
-                t[common.combinePaletteAndGroup(self.palette.groupID, self.palette.paletteID)][i] = graphic
+            # for i in range(common.MAXTILES):
+            #     graphic = MapTileGraphic(i, key, self.palette.groupID, self.palette.paletteID)
+            #     t[common.combinePaletteAndGroup(self.palette.groupID, self.palette.paletteID)][i] = graphic
     
     def undo(self):   
         tileset = self.projectData.getTilesetFromPaletteGroup(self.palette.groupID)
