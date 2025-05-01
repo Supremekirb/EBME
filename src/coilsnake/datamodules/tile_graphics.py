@@ -9,14 +9,19 @@ class TileGraphicsModule(DataModule):
     
     def load(data: ProjectData):
         tilegfx = {}
+        
+        keys = []
+        for t in data.tilesets:
+            for g in t.paletteGroups:
+                for p in g.palettes:
+                    keys.append(common.combinePaletteAndGroup(g.groupID, p.paletteID))
+        
         for t in data.tilesets:
             tilegfx[t.id] = {}
-            for g in t.paletteGroups:
-                tilegfx[t.id][g.groupID] = {}
-                for p in g.palettes:
-                    tilegfx[t.id][g.groupID][p.paletteID] = {}
-                    for mt in range(common.MAXTILES):
-                        tilegfx[t.id][g.groupID][p.paletteID][mt] = MapTileGraphic(mt, t.id, g.groupID, p.paletteID)
+            for pg in keys:
+                tilegfx[t.id][pg] = {}
+                for mt in range(common.MAXTILES):
+                    tilegfx[t.id][pg][mt] = MapTileGraphic(mt, t.id, *common.extractPaletteAndGroup(pg))
 
         data.tilegfx = tilegfx
     
