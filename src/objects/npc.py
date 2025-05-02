@@ -285,15 +285,29 @@ class MapEditorNPC(QGraphicsPixmapItem):
                 else:
                     brush = None
                         
+                previewing = self.scene().state.isPreviewingPalette()
                 for tile in tiles:
-                    graphic = self.scene().projectData.getTileGraphic(tile.tileset,
-                                                                    tile.palettegroup,
-                                                                    tile.palette,
-                                                                    tile.tile)
-                    
-                    if not graphic.hasRenderedFg:
-                        palette = self.scene().projectData.getPaletteGroup(tile.palettegroup).palettes[tile.palette]
-                        graphic.renderFg(self.scene().projectData.getTileset(tile.tileset), palette)
+                    if not previewing:
+                        graphic = self.scene().projectData.getTileGraphic(tile.tileset,
+                                                                        tile.palettegroup,
+                                                                        tile.palette,
+                                                                        tile.tile)
+                        
+                        if not graphic.hasRenderedFg:
+                                palette = self.scene().projectData.getPaletteGroup(tile.palettegroup).palettes[tile.palette]
+                                graphic.renderFg(self.scene().projectData.getTileset(tile.tileset), palette)
+                    else:
+                        graphic = self.scene().projectData.getTileGraphic(
+                            tile.tileset,
+                            self.scene().state.previewingPaletteGroup,
+                            self.scene().state.previewingPalette,
+                            tile.tile)
+                        
+                        if not graphic.hasRenderedFg:
+                            palette = self.scene().projectData.getPaletteGroup(
+                                self.scene().state.previewingPaletteGroup
+                            ).palettes[self.scene().state.previewingPalette]
+                            graphic.renderFg(self.scene().projectData.getTileset(tile.tileset), palette)
                     
                     target = (tile.coords.x - math.ceil(topLeft.x()) + self.offset().x(),
                             tile.coords.y - math.ceil(topLeft.y()) + self.offset().y())

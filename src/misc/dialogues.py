@@ -4,7 +4,7 @@ from math import ceil
 from typing import TYPE_CHECKING
 
 from PIL import ImageQt
-from PySide6.QtCore import QFile, QRectF, QSettings, Qt
+from PySide6.QtCore import QFile, QRectF, QSettings, Qt, Signal
 from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                                QDialogButtonBox, QFileDialog, QFormLayout,
@@ -1333,3 +1333,49 @@ class FindUnusedMinitilesDialog(QDialog):
         if initTileset:
             dialog.tilesetInput.setValue(initTileset)
         dialog.exec()
+        
+class MapAdvancedPalettePreviewDialog(QDialog):
+    palettechanged = Signal(int, int)
+    def __init__(self, parent, projectData: ProjectData):
+        super().__init__(parent)
+        self.setWindowTitle("Advanced Palette Preview")
+        # self.setWindowModality(Qt.WindowModality.NonModal)
+        self.projectData = projectData
+        
+        layout = QFormLayout()
+        self.setLayout(layout)
+        
+        label = QLabel("Preview the map with any palette, regardless of in which tileset palette groups are located.\nCertain control codes allow any palette to be set in this way, such as in Magicant.")
+        label.setWordWrap(True)
+        layout.addRow(label)
+
+        self.paletteGroupSelect = QComboBox()
+        self.paletteGroups: list[PaletteGroup] = []
+        for i in self.projectData.tilesets:
+            for j in i.paletteGroups:
+                self.paletteGroups.append(j)
+        self.paletteGroups.sort(key=lambda pg: pg.groupID)  
+        for i in self.paletteGroups:
+            self.paletteGroupSelect.addItem(str(i.groupID))
+        self.paletteGroupSelect.currentIndexChanged.connect(self.onPaletteGroupChange)
+        layout.addRow("Palette Group", self.paletteGroupSelect)
+
+        self.paletteSelect = QComboBox()
+        for i in self.paletteGroups[0].palettes:
+            self.paletteSelect.addItem(str(i.paletteID))
+        self.paletteSelect.currentIndexChanged.connect(self.onPaletteChange)
+        layout.addRow("Palette", self.paletteSelect)
+        
+    def onPaletteGroupChange(self, new: str):
+        self.paletteSelect.blockSignals(True)
+        self.paletteSelect.clear()
+        for i in self.paletteGroups[int(new)].palettes:
+            self.paletteSelect.addItem(str(i.paletteID))
+        self.paletteSelect.setCurrentIndex(0)
+        self.paletteSelect.blockSignals(False)
+        self.onPaletteChange(self.paletteSelect.currentText())
+
+    def onPaletteChange(self, new: str):
+        palette = int(new)
+        group = int(self.paletteGroupSelect.currentText())
+        self.palettechanged.emit(group, palette)

@@ -1501,20 +1501,31 @@ class MapEditorScene(QGraphicsScene):
         presetColours: dict[int, int] = {}
         for _, value, colour in json.loads(presets):
             presetColours[value] = colour
+            
+        previewing = self.state.isPreviewingPalette()
         
         for y in range(y0, y1+1):
             for x in range(x0, x1+1):
                 coords = EBCoords.fromTile(x, y)
                 try:
                     tile = self.projectData.getTile(coords)
-                    graphic = self.projectData.getTileGraphic(tile.tileset,
-                                                            tile.palettegroup,
-                                                            tile.palette,
-                                                            tile.tile)
-                    if not graphic.hasRendered:
-                        palette = self.projectData.getPaletteGroup(tile.palettegroup).palettes[tile.palette]
-                        graphic.render(self.projectData.getTileset(tile.tileset), palette)
-                        graphic.hasRendered = True
+                    if not previewing:
+                        graphic = self.projectData.getTileGraphic(tile.tileset,
+                                                                tile.palettegroup,
+                                                                tile.palette,
+                                                                tile.tile)
+                        if not graphic.hasRendered:
+                            palette = self.projectData.getPaletteGroup(tile.palettegroup).palettes[tile.palette]
+                            graphic.render(self.projectData.getTileset(tile.tileset), palette)
+                    else:
+                        graphic = self.projectData.getTileGraphic(tile.tileset,
+                                                                  self.state.previewingPaletteGroup,
+                                                                  self.state.previewingPalette,
+                                                                  tile.tile)
+                        if not graphic.hasRendered:
+                            palette = self.projectData.getPaletteGroup(
+                                self.state.previewingPaletteGroup).palettes[self.state.previewingPalette]
+                            graphic.render(self.projectData.getTileset(tile.tileset), palette)
                         
                     painter.drawPixmap(QPoint(x*32, y*32), graphic.rendered)
                     
