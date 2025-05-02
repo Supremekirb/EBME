@@ -361,8 +361,8 @@ class TilesetDisplayGraphicsScene(QGraphicsScene):
                                                                 self.currentPalette,
                                                                 tileID)
                         if not tileGfx.hasRendered:
-                            tileGfx.render(tileset)
-                            tileGfx.hasRendered = True
+                            palette = self.projectData.getPaletteGroup(tileGfx.palettegroup).palettes[tileGfx.palette]
+                            tileGfx.render(tileset, palette)
                             
                         painter.drawPixmap(x*32, y*32, tileGfx.rendered)
                         

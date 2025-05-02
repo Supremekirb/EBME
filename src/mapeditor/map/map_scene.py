@@ -889,7 +889,8 @@ class MapEditorScene(QGraphicsScene):
             tileGraphic = self.projectData.getTileGraphic(tilesetID, paletteGroupID, paletteID, toPlace)
 
             if not tileGraphic.hasRendered:
-                tileGraphic.render(self.projectData.getTileset(tilesetID))
+                palette = self.projectData.getPaletteGroup(paletteGroupID).palettes[paletteID]
+                tileGraphic.render(self.projectData.getTileset(tilesetID), palette)
 
             # item.setPixmap(tileGraphic.rendered)
             # item.setText(str(toPlace).zfill(3))
@@ -948,7 +949,8 @@ class MapEditorScene(QGraphicsScene):
         except KeyError as e:
             raise KeyError(f"No such tile with tileset {tile.tileset}, palette group {tile.palettegroup}, palette {tile.palette}, tile {tile.tile}.") from e
         if not tileGraphic.hasRendered:
-            tileGraphic.render(self.projectData.getTileset(tile.tileset))
+            palette = self.projectData.getPaletteGroup(tile.palettegroup).palettes[tile.palette]
+            tileGraphic.render(self.projectData.getTileset(tile.tileset), palette)
         
         self.update(*tile.coords.coords(), 32, 32)
             
@@ -1510,7 +1512,8 @@ class MapEditorScene(QGraphicsScene):
                                                             tile.palette,
                                                             tile.tile)
                     if not graphic.hasRendered:
-                        graphic.render(self.projectData.getTileset(tile.tileset))
+                        palette = self.projectData.getPaletteGroup(tile.palettegroup).palettes[tile.palette]
+                        graphic.render(self.projectData.getTileset(tile.tileset), palette)
                         graphic.hasRendered = True
                         
                     painter.drawPixmap(QPoint(x*32, y*32), graphic.rendered)
@@ -1665,7 +1668,8 @@ class MapEditorScene(QGraphicsScene):
                 sector.tileset, sector.palettegroup, sector.palette, 0)
             
             if not tilegraphic.hasRendered:
-                tilegraphic.render(self.projectData.getTileset(sector.tileset))
+                palette = self.projectData.getPaletteGroup(sector.palettegroup).palettes[sector.palette]
+                tilegraphic.render(self.projectData.getTileset(sector.tileset), palette)
                 
             # get the rects of each sector that matches the current one
             rects = []

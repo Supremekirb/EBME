@@ -292,7 +292,8 @@ class MapEditorNPC(QGraphicsPixmapItem):
                                                                     tile.tile)
                     
                     if not graphic.hasRenderedFg:
-                        graphic.renderFg(self.scene().projectData.getTileset(tile.tileset))
+                        palette = self.scene().projectData.getPaletteGroup(tile.palettegroup).palettes[tile.palette]
+                        graphic.renderFg(self.scene().projectData.getTileset(tile.tileset), palette)
                     
                     target = (tile.coords.x - math.ceil(topLeft.x()) + self.offset().x(),
                             tile.coords.y - math.ceil(topLeft.y()) + self.offset().y())

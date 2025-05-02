@@ -191,8 +191,8 @@ class TileScratchScene(QGraphicsScene):
                                                               palette,
                                                               tileID)
                     if not tileGfx.hasRendered:
-                        tileGfx.render(self.projectData.getTileset(tileset))
-                        tileGfx.hasRendered = True
+                        renderpalette = self.projectData.getPaletteGroup(palettegroup).palettes[palette]
+                        tileGfx.render(self.projectData.getTileset(tileset), renderpalette)
                             
                     painter.drawPixmap(x*32, y*32, tileGfx.rendered)
                         
