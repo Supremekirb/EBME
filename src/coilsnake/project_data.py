@@ -46,6 +46,7 @@ class ProjectData():
         self.teleports: list[Teleport] = []
         self.mapMusic: list[MapMusicHierarchy] = []
         self.mapChanges: list[MapChange] = []
+        self.playerSprites: dict[common.PLAYERSPRITES, int] = {}
         
 
     def getResourcePath(self, module: Literal[

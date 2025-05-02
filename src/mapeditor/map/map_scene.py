@@ -48,6 +48,7 @@ from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
 from src.objects.sector import Sector
+from src.objects.sprite import Sprite
 from src.objects.warp import MapEditorWarp
 
 if TYPE_CHECKING:
@@ -100,10 +101,10 @@ class MapEditorScene(QGraphicsScene):
         self.previewNPCStillTimer.setInterval(500)
         self.previewNPCStillTimer.timeout.connect(self.resetPreviewNPCAnim)
         
-        spr = self.projectData.getSprite(1)
+        spr = self.projectData.getSprite(self.projectData.playerSprites[common.PLAYERSPRITES.NORMAL])
         self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(
             spr.renderFacingImg(common.DIRECTION8.down))))
-        self.previewNPC.setCollisionBounds(4, 4) # use player's hardcoded collision
+        self.previewNPC.setCollisionBounds(8, 4) # use player's hardcoded collision
         self.previewNPC.collisionBounds.setY(4)
         self.previewNPC.hide()
         self.addItem(self.previewNPC)
@@ -115,10 +116,10 @@ class MapEditorScene(QGraphicsScene):
         )
 
         # easier access
-        self.placedNPCsByID = {}
-        self.placedNPCsByUUID = {}
-        self.placedTriggersByUUID = {} 
-        self.placedEnemyTilesByGroup = {}
+        self.placedNPCsByID: dict[int, list[MapEditorNPC]] = {}
+        self.placedNPCsByUUID: dict[UUID, MapEditorNPC] = {}
+        self.placedTriggersByUUID: dict[UUID, trigger.MapEditorTrigger] = {} 
+        self.placedEnemyTilesByGroup: dict[int, list[MapEditorEnemyTile]] = {}
         self.placedHotspots: list[MapEditorHotspot] = []
         self.placedWarps: list[MapEditorWarp] = []
         self.placedTeleports: list[MapEditorWarp] = []
@@ -1594,8 +1595,35 @@ class MapEditorScene(QGraphicsScene):
     def resetPreviewNPCAnim(self):
         self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
         self.previewNPCAnimState = 0
-        sprite = self.projectData.getSprite(1).renderFacingImg(self.previewNPCCurrentDir, 0)
-        self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(sprite)))
+        sprite, forceDir = self.getPreviewNPCSprite()
+        dir = forceDir if forceDir is not None else self.previewNPCCurrentDir
+        pixmap = sprite.renderFacingImg(dir, 0)
+        self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(pixmap)))
+    
+    def getPreviewNPCSprite(self) -> tuple[Sprite, None|common.DIRECTION8]:
+        sector = self.projectData.getSector(EBCoords(self.previewNPC.x(), self.previewNPC.y()))
+        if sector.setting == "magicant sprites":
+            return self.projectData.getSprite(self.projectData.playerSprites[common.PLAYERSPRITES.MAGICANT]), None
+        if sector.setting == "lost underworld sprites":
+            return self.projectData.getSprite(self.projectData.playerSprites[common.PLAYERSPRITES.TINY]), None
+        if sector.setting == "robot sprites":
+            return self.projectData.getSprite(self.projectData.playerSprites[common.PLAYERSPRITES.ROBOT]), None
+
+        # not the best solution for trigger checking here.
+        # the items need to be visible for self.items() to find them...
+        triggersShown = list(self.placedTriggersByUUID.values())[0].isVisible()
+        trigger.MapEditorTrigger.showTriggers()
+        for i in self.items(self.previewNPC.collisionBounds.mapRectToScene(self.previewNPC.collisionBounds.rect())):
+            if isinstance(i, trigger.MapEditorTrigger):
+                if not triggersShown: trigger.MapEditorTrigger.hideTriggers()
+                t = self.projectData.triggerFromUUID(i.uuid)
+                if isinstance(t.typeData, trigger.TriggerLadder):
+                    return self.projectData.getSprite(self.projectData.playerSprites[common.PLAYERSPRITES.LADDER]), common.DIRECTION8.up
+                if isinstance(t.typeData, trigger.TriggerRope):
+                    return self.projectData.getSprite(self.projectData.playerSprites[common.PLAYERSPRITES.ROPE]), common.DIRECTION8.up
+        if not triggersShown: trigger.MapEditorTrigger.hideTriggers()
+        
+        return self.projectData.getSprite(self.projectData.playerSprites[common.PLAYERSPRITES.NORMAL]), None
         
     def moveGameModeMask(self, coords: EBCoords, forceRefreshSector: bool=False):
         coords.restrictToMap()
@@ -1607,7 +1635,7 @@ class MapEditorScene(QGraphicsScene):
         
         old = self.previewNPC.pos()
         self.previewNPC.setPos(coords.x, coords.y)
-        collidesWithTerrain = bool((self.previewNPC.sampleCollision() & common.COLLISIONBITS.SOLID or self.previewNPC.sampleCollision() & common.COLLISIONBITS.VERYSOLID))
+        collidesWithTerrain = (self.previewNPC.sampleCollision() & (common.COLLISIONBITS.SOLID | common.COLLISIONBITS.VERYSOLID))
         collidingItems = self.previewNPC.collidingItems()
         collidesWithNPC = False
         for i in collidingItems:
@@ -1617,6 +1645,9 @@ class MapEditorScene(QGraphicsScene):
                     collidesWithNPC = True
                     break
         self.previewNPC.collisionBounds.hide()
+        
+        # TODO some sort of system that lets you move along walls
+        # best way to do this would probably be to mimic the movement rewrite
         
         if not (collidesWithTerrain or collidesWithNPC) or not self.state.previewCollides:
             self.previewNPCPositionSamples.insert(0, coords)
@@ -1646,8 +1677,10 @@ class MapEditorScene(QGraphicsScene):
             if facing > 7: facing = 0
             
             self.previewNPCCurrentDir = facing
-            sprite = self.projectData.getSprite(1).renderFacingImg(facing, self.previewNPCAnimState)
-            self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(sprite)))   
+            sprite, forcedDir = self.getPreviewNPCSprite()
+            facing = forcedDir if forcedDir is not None else facing
+            pixmap = sprite.renderFacingImg(facing, self.previewNPCAnimState)
+            self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(pixmap)))   
             
             self.previewNPC.setPos(coords.x, coords.y)
         else:
