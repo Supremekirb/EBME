@@ -116,11 +116,11 @@ class ProjectData():
                         self.tilegfx[tileset][
                             common.combinePaletteAndGroup(paletteGroup, p.paletteID)] = {}
             else: # clear one tileset
-                for pg in self.tilegfx[tileset].values():
+                for pg in self.tilegfx[tileset].keys():
                     self.tilegfx[tileset][pg] = {}
         else: # clear entire cache
             for t in self.tilegfx.values():
-                for pg in t.values():
+                for pg in t.keys():
                     t[pg] = {}
                             
     # project getters
