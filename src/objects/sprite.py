@@ -3,10 +3,11 @@ from PIL import Image, ImageQt
 
 class Sprite:
     """Sprite image and rendering methods"""
-    def __init__(self, id: int, size: tuple[int, int], collisionHorizontal: tuple[int, int],
+    def __init__(self, id: int, size: tuple[int, int], length: int, collisionHorizontal: tuple[int, int],
                  collisionVertical: tuple[int, int], swimFlags: tuple[bool], img: Image.Image):
         self.id = id
         self.size = size
+        self.length = length
         self.collisionHorizontal = collisionHorizontal
         self.collisionVertical = collisionVertical
         self.swimFlags = swimFlags
@@ -69,7 +70,19 @@ class Sprite:
         if (dir == 0 or 2) or dir >= 4: # TODO test if this is so
             return self.collisionVertical
         else: return self.collisionHorizontal
-
+        
+    def getSwimFlag(self, dir: int, anim: int) -> bool:
+        dir %= 8
+        anim %= 1
+        if len(self.swimFlags) == 9:
+            if dir == 5:
+                return self.swimFlags[8]
+            dir -= dir%2
+            return self.swimFlags[dir + anim]
+        elif len(self.swimFlags) == 8:
+            dir -= dir%2
+            return self.swimFlags[dir + anim]
+        return self.swimFlags[dir*2 + anim]
 
 class BattleSprite:
     """Battle sprite. mostly just the image tbh"""

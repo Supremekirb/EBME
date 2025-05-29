@@ -12,6 +12,7 @@ from src.coilsnake.datamodules.palette_settings import PaletteSettingsModule
 from src.coilsnake.datamodules.player_gfx import PlayerGFXModule
 from src.coilsnake.datamodules.project_snake import ProjectSnakeModule
 from src.coilsnake.datamodules.sectors import SectorModule
+from src.coilsnake.datamodules.spritefx import SpriteFXModule
 from src.coilsnake.datamodules.sprites import SpriteModule
 from src.coilsnake.datamodules.teleports import TeleportModule
 from src.coilsnake.datamodules.tile_graphics import TileGraphicsModule
@@ -24,7 +25,7 @@ from src.coilsnake.datamodules.warps import WarpModule
 # If a module depends on the data loaded by another, place it after the dependency.
 MODULES = (ProjectSnakeModule,
            TilesetModule, PaletteSettingsModule, SectorModule, TileModule, 
-           TileGraphicsModule, SpriteModule, PlayerGFXModule, NPCModule, NPCInstanceModule, 
+           TileGraphicsModule, SpriteModule, PlayerGFXModule, SpriteFXModule, NPCModule, NPCInstanceModule, 
            TriggerModule, EnemyPlacementsModule, EnemyMapGroupModule, 
            EnemyGroupModule, EnemySpriteModule, BattleSpriteModule, HotspotModule,
            WarpModule, TeleportModule, MapMusicModule, MapChangesModule,)

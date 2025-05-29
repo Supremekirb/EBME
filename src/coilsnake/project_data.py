@@ -3,11 +3,12 @@ from typing import Literal
 from uuid import UUID
 
 import numpy
+from PIL import ImageQt
 
 import src.misc.common as common
-from src.misc.exceptions import CoilsnakeResourceNotFoundError
 from src.coilsnake.fts_interpreter import FullTileset
 from src.misc.coords import EBCoords
+from src.misc.exceptions import CoilsnakeResourceNotFoundError
 from src.objects.changes import MapChange
 from src.objects.enemy import EnemyGroup, EnemyMapGroup, EnemyTile
 from src.objects.hotspot import Hotspot
@@ -47,6 +48,9 @@ class ProjectData():
         self.mapMusic: list[MapMusicHierarchy] = []
         self.mapChanges: list[MapChange] = []
         self.playerSprites: dict[common.PLAYERSPRITES, int] = {}
+        
+        self._ripple_small: ImageQt.ImageQt = None
+        self._ripple_large: ImageQt.ImageQt = None
         
 
     def getResourcePath(self, module: Literal[
@@ -152,6 +156,12 @@ class ProjectData():
                         for gfx in p.values():
                             gfx.hasRendered = False
                             gfx.hasRenderedFg = False
+                            
+    # other things
+    def getRipple(self, sprite: Sprite):
+        if sprite.size[0] != 16: # apparently vanilla behaviour? See $C0AC43
+            return self._ripple_large
+        return self._ripple_small
                             
     # project getters
     def getProjectVersion(self) -> str:

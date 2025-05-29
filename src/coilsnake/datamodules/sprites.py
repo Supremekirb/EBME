@@ -30,10 +30,12 @@ class SpriteModule(YMLResourceDataModule):
             
             sizeRaw = spr["Size"]
             size = re.split("x| ", sizeRaw) # there's a "16x16 2" so we need a more robust split. ugh
+            # TODO the "2" sizes apparently are coded to ignore collision. Just map collision..?
+            # May be relevant.
             size = (int(size[0]), int(size[1]))
             sprImg = Image.open(sprPath).convert("RGBA")
             
-            spritesList.append(Sprite(id, size,
+            spritesList.append(Sprite(id, size, spr["Length"],
                                       (spr["East/West Collision Width"], spr["East/West Collision Height"]),
                                       (spr["North/South Collision Width"], spr["North/South Collision Height"]),
                                       spr["Swim Flags"],

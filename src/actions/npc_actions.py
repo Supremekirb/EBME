@@ -117,15 +117,9 @@ class ActionAddNPCInstance(QUndoCommand):
             MapEditorNPC  # i dont like it either but it's necessary
         npc = self.scene.projectData.getNPC(self.instance.npcID)
         spr = self.scene.projectData.getSprite(npc.sprite)
-        if not npc.rendered:
-            npc.render(spr)
+        inst = MapEditorNPC(self.instance.coords, self.instance.npcID, self.instance.uuid, spr)
 
-        inst = MapEditorNPC(self.instance.coords, self.instance.npcID, self.instance.uuid)
-        inst.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(npc.img)))
-        collision = spr.getFacingCollision(common.DIRECTION8[npc.direction].value)
-        inst.setCollisionBounds(collision[0], collision[1])
-        inst.setText(str(self.instance.npcID).zfill(4))
-
+        # TODO this would be better as a set instead of a list
         if not self.instance in self.scene.projectData.npcinstances:
             self.scene.projectData.npcinstances.append(self.instance)
         

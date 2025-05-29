@@ -90,22 +90,21 @@ class MapEditorScene(QGraphicsScene):
         self.sectorBrushChangeTimer.timeout.connect(self.changeSectorBrush)
         self.sectorBrushChangeTimer.start()
         
-        self.previewNPC = MapEditorNPC(EBCoords(), -1, UUID(int=0))
+        spr = self.projectData.getSprite(self.projectData.playerSprites[common.PLAYERSPRITES.NORMAL])
+        self.previewNPC = MapEditorNPC(EBCoords(), -1, UUID(int=0), spr)
         self.previewNPC.setDummy()
         self.previewNPC.setCursor(Qt.CursorShape.BlankCursor)
         self.previewNPCPositionSamples: list[EBCoords] = []
         self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
         self.previewNPCAnimState = 0
-        self.previewNPCCurrentDir = 0
+        self.previewNPCCurrentDir = common.DIRECTION8.down
         self.previewNPCStillTimer = QTimer()
         self.previewNPCStillTimer.setInterval(500)
         self.previewNPCStillTimer.timeout.connect(self.resetPreviewNPCAnim)
         
-        spr = self.projectData.getSprite(self.projectData.playerSprites[common.PLAYERSPRITES.NORMAL])
-        self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(
-            spr.renderFacingImg(common.DIRECTION8.down))))
-        self.previewNPC.setCollisionBounds(8, 4) # use player's hardcoded collision
-        self.previewNPC.collisionBounds.setY(4)
+        self.previewNPC.setSprite(spr, common.DIRECTION8.down, 0, False)
+        self.previewNPC.setCollisionBounds(8, 8) # use player's hardcoded collision
+        # self.previewNPC.collisionBounds.setY(4)
         self.previewNPC.hide()
         self.addItem(self.previewNPC)
         
@@ -1313,9 +1312,7 @@ class MapEditorScene(QGraphicsScene):
         npc.render(spr)
         
         for i in self.placedNPCsByID[id]:
-            i.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(npc.img)))
-            i.setCollisionBounds(spr.getFacingCollision(common.DIRECTION8[npc.direction].value)[0],
-                                 spr.getFacingCollision(common.DIRECTION8[npc.direction].value)[1])
+            i.setSprite(spr, common.DIRECTION8[npc.direction], 0)
 
     def refreshInstance(self, uuid: UUID):
         """Refresh an NPC instance on the map
@@ -1327,11 +1324,7 @@ class MapEditorScene(QGraphicsScene):
         placement = self.placedNPCsByUUID[uuid]
         npc = self.projectData.getNPC(inst.npcID)
         spr = self.projectData.getSprite(npc.sprite)
-        if not npc.rendered:
-            npc.render(spr)
-        placement.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(npc.img)))
-        placement.setCollisionBounds(spr.getFacingCollision(common.DIRECTION8[npc.direction].value)[0],
-                                     spr.getFacingCollision(common.DIRECTION8[npc.direction].value)[1])
+        placement.setSprite(spr, common.DIRECTION8[npc.direction], 0)
         placement.setText(str(inst.npcID).zfill(4))
         placement.id = inst.uuid
         placement.setPos(inst.coords.x, inst.coords.y)
@@ -1586,19 +1579,16 @@ class MapEditorScene(QGraphicsScene):
             # draw screen overlay
             if self.state.showPreviewScreen:
                 painter.setBrush(QBrush(QColor.fromRgb(0, 0, 0, 255*self.state.previewScreenOpacity)))
-                painter.drawPolygon(QPolygon(rect.toRect()).subtracted(QRect(self._lastCoords.x, self._lastCoords.y, 256, 224).adjusted(-128, -112, -128, -112)))
+                x, y = self.previewNPC.pos().toTuple()
+                y += 1 # this seems to make it match the game
+                painter.drawPolygon(QPolygon(rect.toRect()).subtracted(QRect(x, y, 256, 224).adjusted(-128, -112, -128, -112)))
                 
-            # draw preview npc
-            # if self.state.showPreviewNPC:
-            #     painter.drawPixmap(self.previewNPC.x()+self.previewNPC.offset().x(), self.previewNPC.y()+self.previewNPC.offset().y(), self.previewNPC.pixmap())
-            
     def resetPreviewNPCAnim(self):
         self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
         self.previewNPCAnimState = 0
         sprite, forceDir = self.getPreviewNPCSprite()
         dir = forceDir if forceDir is not None else self.previewNPCCurrentDir
-        pixmap = sprite.renderFacingImg(dir, 0)
-        self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(pixmap)))
+        self.previewNPC.setSprite(sprite, dir, 0, False)
     
     def getPreviewNPCSprite(self) -> tuple[Sprite, None|common.DIRECTION8]:
         sector = self.projectData.getSector(EBCoords(self.previewNPC.x(), self.previewNPC.y()))
@@ -1640,11 +1630,28 @@ class MapEditorScene(QGraphicsScene):
         collidesWithNPC = False
         for i in collidingItems:
             if isinstance(i, MapEditorNPC):
-                self.previewNPC.collisionBounds.show()
-                if self.previewNPC.collisionBounds in i.collisionBounds.collidingItems():
-                    collidesWithNPC = True
-                    break
-        self.previewNPC.collisionBounds.hide()
+                
+                # recreation of some of the logic in $C05FF6 playerEntityCollisionCheck
+                subjectRect = self.previewNPC.collisionBounds.rect()
+                subjectRect.setHeight(subjectRect.height())
+                
+                targetRect = i.collisionBounds.rect()
+                targetRect.setHeight(targetRect.height())
+                
+                entityPos = i.pos() - i.collisionBounds.pos()*2 + QPoint(0, 8) # 8 is the manually-added offset
+                playerPos = self.previewNPC.pos() - self.previewNPC.collisionBounds.pos()*2
+                
+                if entityPos.y() - targetRect.height() - subjectRect.height() >= playerPos.y():
+                    continue
+                if targetRect.height() + entityPos.y() - targetRect.height() <= playerPos.y():
+                    continue
+                if entityPos.x() - targetRect.width() - subjectRect.width() * 2 >= playerPos.x():
+                    continue
+                if entityPos.x() - targetRect.width() + targetRect.width() * 2 <= playerPos.x():
+                    continue
+
+                collidesWithNPC = True
+                break
         
         # TODO some sort of system that lets you move along walls
         # best way to do this would probably be to mimic the movement rewrite
@@ -1676,11 +1683,10 @@ class MapEditorScene(QGraphicsScene):
             facing = round(angle/45)
             if facing > 7: facing = 0
             
-            self.previewNPCCurrentDir = facing
             sprite, forcedDir = self.getPreviewNPCSprite()
-            facing = forcedDir if forcedDir is not None else facing
-            pixmap = sprite.renderFacingImg(facing, self.previewNPCAnimState)
-            self.previewNPC.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(pixmap)))   
+            facing = forcedDir if forcedDir is not None else common.DIRECTION8(facing)
+            self.previewNPCCurrentDir = facing
+            self.previewNPC.setSprite(sprite, facing, self.previewNPCAnimState, False)
             
             self.previewNPC.setPos(coords.x, coords.y)
         else:
@@ -2050,14 +2056,8 @@ class MapEditorScene(QGraphicsScene):
         for i in self.projectData.npcinstances:
             npc = self.projectData.getNPC(i.npcID)
             spr = self.projectData.getSprite(npc.sprite)
-            if not npc.rendered:
-                npc.render(spr)
-
-            inst = MapEditorNPC(i.coords, i.npcID, i.uuid)
-            inst.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(npc.img)))
-            collision = spr.getFacingCollision(common.DIRECTION8[npc.direction].value)
-            inst.setCollisionBounds(collision[0], collision[1])
-            inst.setText(str(i.npcID).zfill(4))
+            inst = MapEditorNPC(i.coords, i.npcID, i.uuid, spr)
+            inst.setSprite(spr, common.DIRECTION8[npc.direction], 0)
             
             if not i.npcID in self.placedNPCsByID:
                 self.placedNPCsByID[i.npcID] = [inst,]

@@ -3,7 +3,8 @@ import math
 import uuid
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QSettings, Qt
+from PIL import ImageQt
+from PySide6.QtCore import QPoint, QSettings, Qt
 from PySide6.QtGui import (QBitmap, QBrush, QColor, QImage, QKeySequence,
                            QPainter, QPainterPath, QPen, QPixmap, QRegion)
 from PySide6.QtWidgets import (QGraphicsItem, QGraphicsPixmapItem,
@@ -16,6 +17,7 @@ import src.misc.common as common
 import src.misc.icons as icons
 from src.actions.npc_actions import ActionMoveNPCInstance
 from src.misc.coords import EBCoords
+from src.objects.sprite import Sprite
 from src.objects.tile import MapTile
 
 if TYPE_CHECKING:
@@ -94,7 +96,7 @@ class MapEditorNPC(QGraphicsPixmapItem):
     visualBoundsEnabled = False
     collisionBoundsEnabled = False 
     
-    def __init__(self, coords: EBCoords, id: int, uuid: uuid.UUID):
+    def __init__(self, coords: EBCoords, id: int, uuid: uuid.UUID, sprite: Sprite):
         QGraphicsPixmapItem.__init__(self)
         MapEditorNPC.instances.append(self)
         coords.restrictToMap()
@@ -130,7 +132,12 @@ class MapEditorNPC(QGraphicsPixmapItem):
         
         self.isDummy = False
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-
+        
+        self.facing = common.DIRECTION8.up
+        self.anim = 0
+        self.sprite = sprite
+        self.setSprite(sprite)
+        self.setText(str(self.id).zfill(4))
 
         if not MapEditorNPC.NPCIDsEnabled:
             self.num.hide()
@@ -154,6 +161,19 @@ class MapEditorNPC(QGraphicsPixmapItem):
         path = QPainterPath()
         path.addRect(self.boundingRect())
         return path
+        
+    def setSprite(self, sprite: Sprite, facing: common.DIRECTION8|None = None, anim: int|None = None, updateCollisionBounds: bool=True):
+        self.sprite = sprite
+        
+        if facing is not None:
+            self.facing = facing
+        if anim is not None:
+            self.anim = anim
+            
+        img = sprite.renderFacingImg(self.facing.value, self.anim)
+        self.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(img)))
+        if updateCollisionBounds:
+            self.setCollisionBounds(*sprite.getFacingCollision(self.facing.value))
     
     # reimplementing function to properly offset and reposition image,
     # ID display, and visual bounds properly.
@@ -163,7 +183,6 @@ class MapEditorNPC(QGraphicsPixmapItem):
     def setPixmap(self, pixmap: QPixmap | QImage | str) -> None:
         offsetX = pixmap.width()//2
         offsetY = pixmap.height()-8 
- 
         self.setOffset(offsetX*-1, offsetY*-1)
         self.numBgRect.setRect(0-offsetX, -13-offsetY, 27, 13)
         self.numShadow.setPos(2-offsetX, -11-offsetY)
@@ -178,6 +197,17 @@ class MapEditorNPC(QGraphicsPixmapItem):
     def setCollisionBounds(self, w: int, h: int) -> None:
         pixmap = self.pixmap()
         offsetY = 0
+        # TODO BIG!!
+        # There are actually TWO hitboxes in play
+        # One for checking map collision, and another for checking entity collision.
+        # The below offset thing is for map collision.
+        # It's been disabled for now.
+        # This will need to be added as two separate rects (that display separately too!)
+        # Right now, it's accurate to the entity hitbox.
+        # For comparing collision between two hitboxes, comparing the QRects directly will NOT be accurate.
+        # The left and top will be off by one. I assume this is a >= vs > issue
+        # So do it manually! See moveGameModeMask for an example.
+
         # for each of the following sprite sizes, add the following offset
         # provided by jtolmar
         # EntitySize._8x16:  2
@@ -225,8 +255,11 @@ class MapEditorNPC(QGraphicsPixmapItem):
             case (64, 80):
                 offsetY += -7
 
-        self.collisionBounds.setRect(-w, -h, w*2, h*2)
-        self.collisionBounds.setY(offsetY)
+        self.collisionBounds.setRect(-w, -h, w*2, h)
+        self.collisionBounds.setY(self.sprite.size[1] + self.offset().y())
+        
+        # see todo above
+        # self.collisionBounds.setY(offsetY)
         
     def sampleCollision(self) -> int:
         colliderTopLeft = self.mapToScene(self.collisionBounds.rect().topLeft())
@@ -245,8 +278,40 @@ class MapEditorNPC(QGraphicsPixmapItem):
         else:
             self.visualBounds.setPen(REDPEN)
             self.collisionBounds.setPen(CYANPEN)
+
+
+        collision = self.sampleCollision()
+        
+        if collision & (common.COLLISIONBITS.WATER):
+            swimflag = self.sprite.getSwimFlag(self.facing.value, self.anim)
             
-        super().paint(painter, option, a)
+            # sinking into the water
+            pixmapBackup = self.pixmap()
+            if swimflag:
+                offset = 0
+            elif collision & (common.COLLISIONBITS.SUNSTROKE):
+                offset = 16
+            else: 
+                offset = 8
+            self.setPixmap(pixmapBackup.copy(0, 0, pixmapBackup.width(), pixmapBackup.height()-offset))
+            super().paint(painter, option, a)
+            
+            # draw ripple
+            ripple = QPixmap.fromImage(self.scene().projectData.getRipple(self.sprite))
+            offsetX = -ripple.width()//2
+            offsetY = 0
+            # this adjustment seems accurate from testing
+            # have not checked code for this
+            if ripple.width() == 16:
+                offsetY = -2
+            painter.drawPixmap(offsetX, offsetY, ripple)
+            
+            # prevents artefacts as we are painting outisde of our bounding rect
+            self.scene().update(self.sceneBoundingRect().adjusted(-32, -32, 32, 32))
+            
+            self.setPixmap(pixmapBackup)
+        else:  
+            super().paint(painter, option, a)
         
         if QSettings().value("mapeditor/MaskNPCsWithForeground", type=bool, defaultValue=True):
         # get the mask based on tiles we intersect with
@@ -259,7 +324,7 @@ class MapEditorNPC(QGraphicsPixmapItem):
             
             collision = self.sampleCollision()
             
-            if collision & common.COLLISIONBITS.FOREGROUNDBOTTOM or collision & common.COLLISIONBITS.FOREGROUNDTOP:
+            if collision & (common.COLLISIONBITS.FOREGROUNDBOTTOM | common.COLLISIONBITS.FOREGROUNDTOP):
                 height = self.pixmap().rect().height()
                 half = (8 * round((height//2)/8))
                 diff = height-half

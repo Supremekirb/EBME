@@ -232,6 +232,73 @@ PLAYERSPRITES = IntEnum("PLAYERSPRITES", ["NORMAL",
 
 MINITILENOFOREGROUND = 384
 
+
+# TODO will use these later when map vs entity collision is properly figured out
+# $C42A1F
+COLLISIONWIDTHS = {
+    (8,  16): 8,
+    (16, 16): 8,
+    (24, 16): 12,
+    (32, 16): 16,
+    (48, 16): 24,
+    (16, 24): 8,
+    (24, 24): 12,
+    (16, 32): 8,
+    (32, 24): 16,
+    (48, 32): 24,
+    (24, 48): 12,
+    (16, 48): 8,
+    (32, 48): 16,
+    (48, 48): 24,
+    (64, 48): 32,
+    (64, 64): 32,
+    (64, 80): 32,
+}
+
+# $C42A41
+# subtracted from entity Y and added to COLLISIONHEIGHTS2 to get the top of a hitbox
+COLLISIONHEIGHTS1 = {
+    (8,  16): 8,
+    (16, 16): 8,
+    (24, 16): 8,
+    (32, 16): 8,
+    (48, 16): 8,
+    (16, 24): 24,
+    (24, 24): 24,
+    (16, 32): 24,
+    (32, 24): 24,
+    (48, 32): 24,
+    (24, 48): 32,
+    (16, 48): 40,
+    (32, 48): 40,
+    (48, 48): 40,
+    (64, 48): 40,
+    (64, 64): 56,
+    (64, 80): 72,
+}
+
+# $C42AEB
+# added to entity Y after COLLISIONHEIGHTS1 to get the top of a hitbox
+COLLISIONHEIGHTS2 = {
+    (8,  16): 10,
+    (16, 16): 0,
+    (24, 16): 10,
+    (32, 16): 10,
+    (48, 16): 10,
+    (16, 24): 24,
+    (24, 24): 24,
+    (16, 32): 24,
+    (32, 24): 16,
+    (48, 32): 16,
+    (24, 48): 0,
+    (16, 48): 40,
+    (32, 48): 32,
+    (48, 48): 32,
+    (64, 48): 32,
+    (64, 64): 0,
+    (64, 80): 65
+}
+
 def getCoilsnakeVersion(id: int) -> str:
     try:
         return COILSNAKEVERSIONNAMES[id]
