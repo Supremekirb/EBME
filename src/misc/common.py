@@ -380,6 +380,15 @@ def normaliseFileExtension(path: str, ext: str) -> str:
         path += "." + ext
     return path
 
+def combinePaletteAndGroup(group: int, palette: int) -> str:
+    return f"{group}/{palette}"
+def extractPaletteAndGroup(combined: str) -> tuple[int, int]:
+    split = combined.split("/")
+    if len(split) != 2:
+        raise ValueError(f"Invalid palette group + palette string combination: {combined}")
+    
+    return int(split[0]), int(split[1])
+
 def showErrorMsg(title: str="Error", text: str="Error.", info: str=None,
                  icon: QMessageBox.Icon=QMessageBox.Icon.Critical):
     """Uniform error message box handling

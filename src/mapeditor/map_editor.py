@@ -29,6 +29,7 @@ from src.coilsnake.fts_interpreter import Tile
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.dialogues import (AboutDialog, CoordsDialog, FindDialog,
+                                MapAdvancedPalettePreviewDialog,
                                 RenderMapDialog, SettingsDialog)
 from src.misc.map_music_editor import MapMusicEditor
 from src.objects.enemy import EnemyTile
@@ -167,6 +168,15 @@ class MapEditor(QWidget):
     
     def renderMap(self, x1 = 0, y1 = 0, x2 = 0, y2 = 0, immediate = False):
         RenderMapDialog.renderMap(self, self.scene, x1, y1, x2, y2, immediate)
+    
+    def openAdvancedPreview(self):
+        if not self.state.isPreviewingPalette():
+            menu = MapAdvancedPalettePreviewDialog(self, self.projectData)
+            menu.palettechanged.connect(self.state.setPreviewPalette)
+            # no way to accept it, so rejected covers this
+            menu.rejected.connect(self.state.clearPreviewPalette)
+            menu.onPaletteGroupChange(menu.paletteGroupSelect.currentText())
+            menu.show()
 
     def setupUI(self):
         self.view.setLayoutDirection(Qt.LayoutDirection.RightToLeft) # vert. scrollbar on left edge
@@ -395,7 +405,10 @@ class MapEditor(QWidget):
         self.clearAction.triggered.connect(self.scene.onClear)
         self.mapMusicAction = QAction(icons.ICON_MUSIC_LIST, "&Map music editor...")
         self.mapMusicAction.triggered.connect(lambda: MapMusicEditor.openMapMusicEditor(self, self.scene.undoStack, self.projectData))
-        self.menuTools.addActions([self.renderMapAction, self.png2ftsAction, self.clearAction, self.mapMusicAction, self.parent().sharedActionTileSpace])
+        self.advancedPreviewAction = QAction(icons.ICON_PALETTE, "&Advanced palette preview...")
+        self.advancedPreviewAction.triggered.connect(self.openAdvancedPreview)
+        self.menuTools.addActions([self.renderMapAction, self.png2ftsAction, self.clearAction, self.mapMusicAction, 
+                                   self.advancedPreviewAction, self.parent().sharedActionTileSpace])
         self.parent().tileScratchSpace.scene.tileSelected.connect(self.scene.tileScratchSpacePicked)
 
         self.menuHelp = QMenu("&Help")
@@ -446,6 +459,10 @@ class MapEditorState():
         
         self.allModeShowsCollision = True
         
+        self.previewingPaletteGroup: int|None = None
+        self.previewingPalette: int|None = None
+    
+    # TODO these two are unused. remove
     def selectTrigger(self, trigger: Trigger, add: bool=False):
         """Select a trigger or add one to the current  
 
@@ -466,3 +483,16 @@ class MapEditorState():
     def deselectTrigger(self, trigger: Trigger):
         self.currentTriggers.remove(trigger)
         self.mapeditor.sidebarTrigger.fromTriggers()
+    
+    def setPreviewPalette(self, group: int, palette: int):
+        self.previewingPaletteGroup = group
+        self.previewingPalette = palette
+        self.mapeditor.scene.update()
+    
+    def clearPreviewPalette(self):
+        self.previewingPaletteGroup = None
+        self.previewingPalette = None
+        self.mapeditor.scene.update()
+    
+    def isPreviewingPalette(self):
+        return self.previewingPaletteGroup is not None and self.previewingPalette is not None

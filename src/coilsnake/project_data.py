@@ -32,7 +32,7 @@ class ProjectData():
         self.paletteSettings: dict[int, dict[int, PaletteSettings]] = {}
         self.sectors: numpy.ndarray[Sector] = []
         self.tiles: numpy.ndarray[MapTile] = []
-        self.tilegfx: dict[int, dict[int, dict[int, dict[int, MapTileGraphic]]]] = {}
+        self.tilegfx: dict[int, dict[str, dict[int, MapTileGraphic]]] = {}
         self.npcs: list[NPC] = []
         self.npcinstances: list[NPCInstance] = []
         self.sprites: list[Sprite] = []
@@ -102,28 +102,6 @@ class ProjectData():
         self.tilesets[tilesetNumber] = newTileset
     
         self.clobberTileGraphicsCache(tilesetNumber)
-
-    def resolveTileGraphic(self, tileset: int, palettegroup: int, palette: int, tile: int) -> MapTileGraphic:
-        """Find the closest valid tile graphic if the requested one is invalid."""
-        tile = common.cap(tile, 0, common.MAXTILES)
-
-        for i in self.tilegfx.items():
-            if i[0] == tileset:
-                break
-            else:
-                tileset = i[0]
-        for i in self.tilegfx[tileset].items():
-            if i[0] == palettegroup:
-                break
-            else:
-                palettegroup = i[0]
-        for i in self.tilegfx[tileset][palettegroup].items():
-            if i[0] == palette:
-                break
-            else:
-                palette = i[0]
-                
-        return self.tilegfx[tileset][palettegroup][palette][tile]
     
     def clobberTileGraphicsCache(self, tileset: int|None=None, paletteGroup: int|None=None, palette: int|None=None, tile: int|None=None):
         """Clear cached tile graphics. Failing to specify an argument clears all graphics under that argument."""
@@ -135,27 +113,20 @@ class ProjectData():
                         gfx.hasRendered = False
                         gfx.hasRenderedFg = False
                     else: # clear one palette
-                        for gfx in self.tilegfx[tileset][paletteGroup][palette].values():
-                            gfx.hasRendered = False
-                            gfx.hasRenderedFg = False
+                        self.tilegfx[tileset][
+                            common.combinePaletteAndGroup(paletteGroup, palette)] = {}
                 else: # clear one palette group
-                    for p in self.tilegfx[tileset][paletteGroup].values():
-                        for gfx in p.values():
-                            gfx.hasRendered = False
-                            gfx.hasRenderedFg = False
+                    group = self.getPaletteGroup(paletteGroup)
+                    for p in group.palettes:
+                        self.tilegfx[tileset][
+                            common.combinePaletteAndGroup(paletteGroup, p.paletteID)] = {}
             else: # clear one tileset
-                for pg in self.tilegfx[tileset].values():
-                    for p in pg.values():
-                        for gfx in p.values():
-                            gfx.hasRendered = False
-                            gfx.hasRenderedFg = False
+                for pg in self.tilegfx[tileset].keys():
+                    self.tilegfx[tileset][pg] = {}
         else: # clear entire cache
             for t in self.tilegfx.values():
-                for pg in t.values():
-                    for p in pg.values():
-                        for gfx in p.values():
-                            gfx.hasRendered = False
-                            gfx.hasRenderedFg = False
+                for pg in t.keys():
+                    t[pg] = {}
                             
     # other things
     def getRipple(self, sprite: Sprite):
@@ -304,7 +275,9 @@ class ProjectData():
                        palettegroup: int, 
                        palette: int, 
                        tile: int) -> MapTileGraphic:
-        return self.tilegfx[tileset][palettegroup][palette][tile]
+        return self.tilegfx[tileset][common.combinePaletteAndGroup(palettegroup, palette)].setdefault(
+            tile, MapTileGraphic(tile, tileset, palettegroup, palette)
+        )
                     
     def getNPC(self, id: int) -> NPC:
         return self.npcs[id]

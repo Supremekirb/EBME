@@ -287,10 +287,12 @@ class ActionAddPalette(QUndoCommand):
         settings = PaletteSettings(0, 0, 0)
         self.projectData.paletteSettings[self.palette.groupID][self.palette.paletteID] = settings
         
-        newGraphics = self.projectData.tilegfx[tileset.id][self.palette.groupID][self.palette.paletteID] = {}
-        for i in range(common.MAXTILES):
-            graphic = MapTileGraphic(i, tileset.id, self.palette.groupID, self.palette.paletteID)
-            newGraphics[i] = graphic
+        for key, t in self.projectData.tilegfx.items():
+            t[common.combinePaletteAndGroup(self.palette.groupID, self.palette.paletteID)] = {}
+        
+            # for i in range(common.MAXTILES):
+            #     graphic = MapTileGraphic(i, key, self.palette.groupID, self.palette.paletteID)
+            #     t[common.combinePaletteAndGroup(self.palette.groupID, self.palette.paletteID)][i] = graphic
     
     def undo(self):   
         tileset = self.projectData.getTilesetFromPaletteGroup(self.palette.groupID)
@@ -299,7 +301,11 @@ class ActionAddPalette(QUndoCommand):
         
         self.projectData.paletteSettings[self.palette.groupID].pop(self.palette.paletteID, None)
         
-        self.projectData.tilegfx[tileset.id][self.palette.groupID].pop(self.palette.paletteID, None) 
+        for t in self.projectData.tilegfx.values():
+            keys = list(t.keys())
+            for key in keys:
+                if key == common.combinePaletteAndGroup(self.palette.groupID, self.palette.paletteID):
+                    t.pop(key, None)
                    
     def mergeWith(self, other):
         return False
