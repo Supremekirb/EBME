@@ -208,6 +208,21 @@ class Tile:
             self.metadata.append(int(self.tile[i] + self.tile[i+1] + self.tile[i+2] + self.tile[i+3], 16))
             self.collision.append(int(self.tile[i+4] + self.tile[i+5], 16))
     
+    @staticmethod
+    def _createErrorMinitile():
+        img = Image.new("RGBA", (8, 8))
+        # Make a red + light-green checkerboard to indicate an error.
+        c1 = (255, 0, 0, 255)
+        c2 = (0, 255, 160, 255)
+        for y in range(8):
+            for x in range(8):
+                c = c2 if (x ^ y) & 0b100 else c1
+                img.putpixel((x, y), c)
+        return img
+
+    # Make one instance of this minitile once, and reuse it in each 
+    _ERROR_MINITILE = _createErrorMinitile()
+
     def getMetadata(self, id):
         """Return the SNES metadata of a given minitile placement in a tile"""
         return self.metadata[id]
@@ -221,11 +236,7 @@ class Tile:
     def getMinitileSubpalette(self, id):
         """Get subpalette from placement metadata"""
         metadata = self.getMetadata(id)
-        # TODO Verify that this fix for metadata avoidance causing backwards indexing in non-vanilla projects is correct
-        # See DM with Gabbi about the issue (causing bright green tiles in EBBR)
         subPal = (((metadata & 0x1C00) >> 10)-2)
-        if subPal < 0:
-            return 0
         return subPal # minitile subpalette is bits 10-12 (bit 13 - priority flag - is irrelevant and never set in fts files). Subtract 2 because the first two are reserved for other things in the game, and we are indexing from 0
 
     def getMinitileHorizontalFlip(self, id):
@@ -271,7 +282,10 @@ class Tile:
         x = 0
         y = 0
         for id, subpalette, hflip, vflip, collision in self.getMinitileDataList():
-            if fgOnly:
+            if subpalette < 0:
+                # This tile has an invalid subpalette. Display an error checkerboard pattern to indicate to the user that they should replace it.
+                minitile = self._ERROR_MINITILE
+            elif fgOnly:
                 minitile = fts.minitiles[id].ForegroundToImage(palette.subpalettes[subpalette])
             elif bgOnly:
                 minitile = fts.minitiles[id].BackgroundToImage(palette.subpalettes[subpalette])
