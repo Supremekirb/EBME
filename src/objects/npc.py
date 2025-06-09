@@ -174,6 +174,12 @@ class MapEditorNPC(QGraphicsPixmapItem):
         self.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(img)))
         if updateCollisionBounds:
             self.setCollisionBounds(*sprite.getFacingCollision(self.facing.value))
+        
+    def setFacing(self, facing: common.DIRECTION8):
+        self.facing = facing
+        img = self.sprite.renderFacingImg(self.facing.value, self.anim)
+        self.setPixmap(QPixmap.fromImage(ImageQt.ImageQt(img)))
+        self.setCollisionBounds(*self.sprite.getFacingCollision(self.facing.value))
     
     # reimplementing function to properly offset and reposition image,
     # ID display, and visual bounds properly.

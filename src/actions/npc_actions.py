@@ -118,6 +118,7 @@ class ActionAddNPCInstance(QUndoCommand):
         npc = self.scene.projectData.getNPC(self.instance.npcID)
         spr = self.scene.projectData.getSprite(npc.sprite)
         inst = MapEditorNPC(self.instance.coords, self.instance.npcID, self.instance.uuid, spr)
+        inst.setFacing(common.DIRECTION8[npc.direction])
 
         # TODO this would be better as a set instead of a list
         if not self.instance in self.scene.projectData.npcinstances:
