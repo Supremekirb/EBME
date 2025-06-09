@@ -46,20 +46,30 @@ class MapEditorView(QGraphicsView):
         super().leaveEvent(event)
 
     def mousePressEvent(self, event: QMouseEvent):
+        # TODO - it's probably possible to move much of this logic out to the scene itself.
+        # that'll make it easier to create other interactive views in the future, if necessary.
+        # Alternatively, create a generic MapEditorView class.
+        
+        # coord copying requires this event always
+        if event.buttons() == Qt.MouseButton.RightButton and Qt.KeyboardModifier.AltModifier in event.modifiers():
+            return super().mousePressEvent(event)
+        
+        # we're wanting to pan, so don't click on stuff
         if ((event.modifiers() == Qt.KeyboardModifier.ShiftModifier and event.buttons() == Qt.MouseButton.LeftButton) or
             Qt.MouseButton.MiddleButton in event.buttons()):
             return
         
+        # contextMenuEvent handles this, so return (is this necessary?)
         if Qt.MouseButton.RightButton in event.buttons() and self.state.mode in [common.MODEINDEX.NPC, common.MODEINDEX.TRIGGER]:
             return
-            
-        if self.state.mode in [common.MODEINDEX.TILE, common.MODEINDEX.SECTOR, common.MODEINDEX.ENEMY,
-                                common.MODEINDEX.HOTSPOT, common.MODEINDEX.WARP, common.MODEINDEX.COLLISION,
-                                common.MODEINDEX.GAME, common.MODEINDEX.ALL]:
-            self.setDragMode(QGraphicsView.DragMode.NoDrag)
-        else:
+        
+        # adjust rubberband drag mode
+        if self.state.mode in [common.MODEINDEX.NPC, common.MODEINDEX.TRIGGER]:
+            # requires being unset and reset apparently..?
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
             self.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
+        else:
+            self.setDragMode(QGraphicsView.DragMode.NoDrag)
         
         super().mousePressEvent(event)
         

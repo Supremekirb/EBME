@@ -389,6 +389,17 @@ class SettingsDialog(QDialog):
         self.showUndoRedo = QCheckBox("")
         self.personalisationLayout.addRow("Show undo/redo timeline:", self.showUndoRedo)
         self.personalisationLayout.addWidget(QLabel("Restart to show/hide timeline."))
+        
+        self.coordCopyStyle = QComboBox()
+        self.coordCopyStyle.addItems(["(x, y)",
+                                      "(x y)",
+                                      "x, y",
+                                      "x y"])
+        self.personalisationLayout.addRow("Alt+Right-click coordinate copy style:", self.coordCopyStyle)
+        
+        self.coordCopyAuto = QCheckBox("")
+        self.personalisationLayout.addRow("Adapt coordinate copying to mode:", self.coordCopyAuto)
+        self.personalisationLayout.addWidget((QLabel("When disabled, copied coordinates will be in pixel scale.")))
 
         self.defaultProgramsBox = QGroupBox("Default programs")
         self.defaultProgramsLayout = QFormLayout()
@@ -459,6 +470,8 @@ class SettingsDialog(QDialog):
         self.applicationTheme.setCurrentText(self.settings.value("personalisation/applicationTheme", QApplication.style().objectName(), type=str))
         self.smoothGoto.setCurrentText(self.settings.value("personalisation/smoothGoto", "Always enabled", type=str))
         self.showUndoRedo.setChecked(self.settings.value("main/showUndoRedo", True, type=bool))
+        self.coordCopyStyle.setCurrentText(self.settings.value("personalisation/coordCopyStyle", "(x, y)", type=str))
+        self.coordCopyAuto.setChecked(self.settings.value("personalisation/coordCopyAuto", True, type=bool))
         self.textEditorCommand.setText(self.settings.value("programs/textEditorCommand", ""))
         # self.imageEditorCommand.setText(self.settings.value("programs/imageEditorCommand", ""))
         self.png2ftsLabel.setText(self.settings.value("programs/png2fts", ""))
@@ -473,6 +486,8 @@ class SettingsDialog(QDialog):
         
         self.settings.setValue("personalisation/applicationTheme", self.applicationTheme.currentText())
         self.settings.setValue("personalisation/smoothGoto", self.smoothGoto.currentText())
+        self.settings.setValue("personalisation/coordCopyStyle", self.coordCopyStyle.currentText())
+        self.settings.setValue("personalisation/coordCopyAuto", self.coordCopyAuto.isChecked())
         
         self.settings.setValue("programs/textEditorCommand", self.textEditorCommand.text())
 

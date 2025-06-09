@@ -245,59 +245,81 @@ class MapEditorScene(QGraphicsScene):
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         coords = EBCoords(event.scenePos().x(), event.scenePos().y())
-        if self.state.tempMode == common.TEMPMODEINDEX.NONE:
-            match self.state.mode:
-                case common.MODEINDEX.TILE:
-                    if event.buttons() == Qt.MouseButton.LeftButton:
-                        if event.modifiers() == Qt.KeyboardModifier.NoModifier:
-                            self.placeTile(coords)
-                        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-                            self.pickTile(coords)
-                    if event.buttons() == Qt.MouseButton.RightButton:
-                        if event.modifiers() == Qt.KeyboardModifier.NoModifier:
-                            self.selectSector(coords)
-                        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-                            self.selectSector(coords, True)
-                            
-                case common.MODEINDEX.SECTOR:
-                    if event.buttons() == Qt.MouseButton.LeftButton:
-                        if event.modifiers() == Qt.KeyboardModifier.NoModifier:
-                            self.selectSector(coords)
-                        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-                            self.selectSector(coords, True)
-                
-                case common.MODEINDEX.ENEMY:
-                    if event.buttons() == Qt.MouseButton.LeftButton:
-                        if event.modifiers() == Qt.KeyboardModifier.NoModifier:
-                            self.placeEnemyTile(coords)
-                        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-                            self.pickEnemyTile(coords)
-                
-                case common.MODEINDEX.COLLISION:
-                    if event.buttons() == Qt.MouseButton.LeftButton:
-                        if event.modifiers() == Qt.KeyboardModifier.NoModifier:
-                            self.placeCollision(coords)
-                        elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-                            self.pickCollision(coords)
-                
-                case common.MODEINDEX.GAME:
-                    if event.buttons() == Qt.MouseButton.LeftButton:
-                        if event.modifiers() == Qt.KeyboardModifier.NoModifier:
-                            self.state.previewLocked = not self.state.previewLocked
-                            if not self.state.previewLocked:
-                                self.moveGameModeMask(coords)
-                                self.previewNPC.setCursor(Qt.CursorShape.BlankCursor)
-                            else:
-                                self.previewNPC.setCursor(Qt.CursorShape.ArrowCursor)
-                                
+        
+        if event.buttons() == Qt.MouseButton.RightButton and event.modifiers() == Qt.KeyboardModifier.AltModifier:
+            if QSettings().value("personalisation/coordCopyAuto", True, type=bool):
+                match self.state.mode:
+                    case common.MODEINDEX.TILE:
+                        toCopy = coords.coordsTile()
+                    case common.MODEINDEX.SECTOR:
+                        toCopy = coords.coordsSector()
+                    case common.MODEINDEX.ENEMY:
+                        toCopy = coords.coordsEnemy()
+                    case common.MODEINDEX.NPC | common.MODEINDEX.ALL | common.MODEINDEX.GAME:
+                        toCopy = coords.coords()
+                    case _:
+                        toCopy = coords.coordsWarp()
+            else:
+                toCopy = coords.coords()
+            QApplication.clipboard().setText(QSettings().value
+                                             ("personalisation/coordCopyStyle", "(x, y)", type=str)
+                                             .replace('x', str(toCopy[0]))
+                                             .replace('y', str(toCopy[1])))
+            
         else:
-            # handle temporary mode
-            match self.state.tempMode:
-                case common.TEMPMODEINDEX.IMPORTMAP:
-                    self.finaliseImportMap(coords)
+            if self.state.tempMode == common.TEMPMODEINDEX.NONE:
+                match self.state.mode:
+                    case common.MODEINDEX.TILE:
+                        if event.buttons() == Qt.MouseButton.LeftButton:
+                            if event.modifiers() == Qt.KeyboardModifier.NoModifier:
+                                self.placeTile(coords)
+                            if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                                self.pickTile(coords)
+                        if event.buttons() == Qt.MouseButton.RightButton:
+                            if event.modifiers() == Qt.KeyboardModifier.NoModifier:
+                                self.selectSector(coords)
+                            if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                                self.selectSector(coords, True)
+                                
+                    case common.MODEINDEX.SECTOR:
+                        if event.buttons() == Qt.MouseButton.LeftButton:
+                            if event.modifiers() == Qt.KeyboardModifier.NoModifier:
+                                self.selectSector(coords)
+                            if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                                self.selectSector(coords, True)
                     
-                case common.TEMPMODEINDEX.SETDOORDEST:
-                    self.finaliseDoorDest(coords)
+                    case common.MODEINDEX.ENEMY:
+                        if event.buttons() == Qt.MouseButton.LeftButton:
+                            if event.modifiers() == Qt.KeyboardModifier.NoModifier:
+                                self.placeEnemyTile(coords)
+                            if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                                self.pickEnemyTile(coords)
+                    
+                    case common.MODEINDEX.COLLISION:
+                        if event.buttons() == Qt.MouseButton.LeftButton:
+                            if event.modifiers() == Qt.KeyboardModifier.NoModifier:
+                                self.placeCollision(coords)
+                            elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                                self.pickCollision(coords)
+                    
+                    case common.MODEINDEX.GAME:
+                        if event.buttons() == Qt.MouseButton.LeftButton:
+                            if event.modifiers() == Qt.KeyboardModifier.NoModifier:
+                                self.state.previewLocked = not self.state.previewLocked
+                                if not self.state.previewLocked:
+                                    self.moveGameModeMask(coords)
+                                    self.previewNPC.setCursor(Qt.CursorShape.BlankCursor)
+                                else:
+                                    self.previewNPC.setCursor(Qt.CursorShape.ArrowCursor)
+                                    
+            else:
+                # handle temporary mode
+                match self.state.tempMode:
+                    case common.TEMPMODEINDEX.IMPORTMAP:
+                        self.finaliseImportMap(coords)
+                        
+                    case common.TEMPMODEINDEX.SETDOORDEST:
+                        self.finaliseDoorDest(coords)
                     
         super().mousePressEvent(event)
     
@@ -332,6 +354,10 @@ class MapEditorScene(QGraphicsScene):
         # (also on some systems (mine) it looks like RMB is still in mouseButtons at this point so...)
         if QApplication.mouseButtons() not in [Qt.MouseButton.NoButton, Qt.MouseButton.RightButton]:
             return
+        
+        # if we're holding Alt, don't do anything, because we're copying coords in mousePressEvent
+        if Qt.KeyboardModifier.AltModifier in event.modifiers():
+            return super().contextMenuEvent(event)
         
         items = self.items(event.scenePos())
         
