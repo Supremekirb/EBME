@@ -1,0 +1,34 @@
+{
+    "waves": [
+        {
+            "enemies": [
+                {"name": "gnat", "max": 20, "count": 40}
+            ]
+        },
+        {
+            "enemies": [
+                {"name": "attack", "max": 10, "count": 40}
+            ]
+        },
+        {
+            "enemies": [
+                {"name": "bomb", "max": 3, "count": 20},
+                {"name": "spawner", "max": 3, "count": 20}
+            ]
+        },
+        {
+            "enemies": [
+                {"name": "attack", "max": 4, "count": 20},
+                {"name": "spawner", "max": 3, "count": 20}
+            ]
+        },
+        {
+            "enemies": [
+                {"name": "gnat", "max": 4, "count": 10},
+                {"name": "attack", "max": 3, "count": 10},
+                {"name": "spawner", "max": 2, "count": 10},
+                {"name": "bomb", "max": 2, "count": 10}
+            ]
+        }
+    ]
+}

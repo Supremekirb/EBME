@@ -60,6 +60,8 @@ class GameState:
         inst = GameState.INSTANCE
         if inst.rank == 15:
             if inst.level == 3:
+                return # keep playing the existing music
+            if inst.level == 2:
                 GameState.playBGM("finalboss")
             else:
                 GameState.playBGM("hardboss")
@@ -177,7 +179,10 @@ class GameState:
                 if inst.score in (25, 50, 75):
                     inst.scene.spawnLife()
             else:
-                if inst.score == 90:
+                if inst.rank == 15 and inst.level == 3:
+                    if inst.score in (150, 100, 50):
+                        inst.scene.spawnLife()
+                elif inst.score == 90:
                     inst.scene.spawnLife()
         else:
             inst.scene.scoreItem.hide()
@@ -194,7 +199,13 @@ class GameState:
             inst.level = 1
             pass # other next level logic
         
-        inst.resetScore()
+        if inst.level == 3 and inst.rank == 15:
+            inst.score = 200
+            inst.scene.scoreItem.setScore(inst.score)
+            inst.scene.scoreItem.show()
+        else:
+            inst.resetScore()
+            
         inst.getScene().clearEnemies()
         RoundStartCutsceneHandler("LEVEL", str(inst.level), callback=GameState._nextLevel)
     
@@ -206,7 +217,10 @@ class GameState:
     @staticmethod
     def _nextLevel():
         inst = GameState.INSTANCE
-        inst.levelManager = LevelManager(common.absolutePath(f"assets/gnat/levels/{str(inst.level)}.json"))
+        if inst.level == 3 and inst.rank == 15:
+            inst.levelManager = LevelManager(common.absolutePath(f"assets/gnat/levels/special.json"))
+        else:
+            inst.levelManager = LevelManager(common.absolutePath(f"assets/gnat/levels/{str(inst.level)}.json"))
         inst.levelManager.startSpawning()
         
         # Boss debug

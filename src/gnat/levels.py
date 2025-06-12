@@ -6,14 +6,12 @@ class LevelManager:
     def __init__(self, fp: str):
         self.waves: list[Wave] = []
         self.currentWave: Wave = None
-        self.music: str = None
         
         self.read(fp)
         
     def read(self, fp: str):
         with open(fp) as file:
             levelObj = json.load(file)
-            self.music = levelObj["music"]
             for wave in levelObj["waves"]:
                 enemies = []
                 for enemy in wave["enemies"]:
