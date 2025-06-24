@@ -6,7 +6,8 @@ from PIL import Image
 
 from src.coilsnake.datamodules.data_module import YMLResourceDataModule
 from src.coilsnake.project_data import ProjectData
-from src.misc.exceptions import CoilsnakeResourceNotFoundError
+from src.misc.exceptions import (CoilsnakeResourceNotFoundError,
+                                 SubResourceNotFoundError)
 from src.objects.sprite import Sprite
 
 
@@ -33,7 +34,10 @@ class SpriteModule(YMLResourceDataModule):
             # TODO the "2" sizes apparently are coded to ignore collision. Just map collision..?
             # May be relevant.
             size = (int(size[0]), int(size[1]))
-            sprImg = Image.open(sprPath).convert("RGBA")
+            try:
+                sprImg = Image.open(sprPath).convert("RGBA")
+            except FileNotFoundError as e:
+                raise SubResourceNotFoundError(f"Couldn't find sprite at {sprPath}") from e
             
             spritesList.append(Sprite(id, size, spr["Length"],
                                       (spr["East/West Collision Width"], spr["East/West Collision Height"]),
