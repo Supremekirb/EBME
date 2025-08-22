@@ -1,14 +1,20 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHBoxLayout,
-                               QLabel, QPushButton, QSizePolicy, QVBoxLayout,
+from PySide6.QtCore import QFile, QIODevice, QTextStream
+from PySide6.QtGui import QIntValidator
+from PySide6.QtWidgets import (QComboBox, QFileDialog, QFormLayout, QGroupBox,
+                               QHBoxLayout, QItemDelegate, QLabel, QLineEdit,
+                               QPushButton, QSizePolicy, QTableWidget,
+                               QTableWidgetItem, QToolButton, QVBoxLayout,
                                QWidget)
 
 import src.misc.common as common
+import src.misc.icons as icons
 from src.actions.sector_actions import ActionChangeSectorAttributes
 from src.coilsnake.project_data import ProjectData
+from src.misc.dialogues import ImportUserdataDialog, NewUserdataDialog
 from src.misc.map_music_editor import MapMusicEditor
-from src.objects.sector import Sector
+from src.objects.sector import Int8, Int16, Sector
 from src.widgets.input import BaseChangerSpinbox, CoordsInput
 from src.widgets.layout import HSeparator
 
@@ -42,6 +48,7 @@ class SidebarSector(QWidget):
         self.townMapImageSelect.blockSignals(True)
         self.townMapPos.x.blockSignals(True)
         self.townMapPos.y.blockSignals(True)
+        self.dataTable.blockSignals(True)
         
         sectors = self.state.currentSectors
         # if all sectors are the same, show their data
@@ -111,6 +118,15 @@ class SidebarSector(QWidget):
         else:
             self.townMapPos.y.clear()
             
+        
+        self.dataTable.clearContents()
+        self.dataTable.setRowCount(0)
+        # can't hash this type
+        if len(sectors) == 1:
+            self.populateUserDataOne(sectors[0])
+        else:
+            self.populateUserDataMany()
+            
         # unblock signals
         self.tilesetSelect.blockSignals(False)
         self.paletteGroupSelect.blockSignals(False)
@@ -124,6 +140,7 @@ class SidebarSector(QWidget):
         self.townMapImageSelect.blockSignals(False)
         self.townMapPos.x.blockSignals(False)
         self.townMapPos.y.blockSignals(False)
+        self.dataTable.blockSignals(False)
         
             
     def toSectors(self):
@@ -149,6 +166,8 @@ class SidebarSector(QWidget):
             
             self.mapeditor.scene.undoStack.push(action)
             self.mapeditor.scene.refreshSector(i.coords)
+            
+            i.userdata = i.userdata | self.userDataToDict()
             
         self.mapeditor.scene.undoStack.endMacro()
     
@@ -177,7 +196,90 @@ class SidebarSector(QWidget):
         self.tilesetSelect.blockSignals(False)
         self.paletteGroupSelect.blockSignals(False)
         self.paletteSelect.blockSignals(False)
+        
+
+    def exportBinary(self):
+        dir, _ = QFileDialog.getSaveFileName(self, "Save sector userdata binary", self.projectData.dir, "Binary file (*.bin)")
+        if dir:
+            data = []
+            for i in self.projectData.sectors.flat:
+                i: Sector
+                data.append(i.serialiseUserData())
+
+            with open(dir, "wb") as file:
+                file.write(bytes().join(data))
             
+    
+    def exportCCS(self):
+        dir, _ = QFileDialog.getSaveFileName(self, "Save sector userdata struct layout", self.projectData.dir, "CCScript file (*.ccs)")
+        if dir:
+            with open(dir, "w") as file:
+                file.write(Sector.serialiseStructLayoutToCCS())
+        
+    def importBinary(self):
+        if ImportUserdataDialog.importUserdata(self, self.projectData):
+            self.fromSectors()
+        
+    def addUserdata(self):
+        if NewUserdataDialog.addNewUserdata(self):
+            self.fromSectors()
+    
+    def removeUserdata(self):
+        selected = self.dataTable.selectedItems()
+        if len(selected) == 0: return
+        
+        for i in selected:
+            key = self.dataTable.verticalHeaderItem(i.row()).text()
+            self.dataTable.removeRow(i.row())
+            
+            Sector.SECTORS_USERDATA.pop(key)
+            for s in self.projectData.sectors.flat:
+                s: Sector
+                s.userdata.pop(key, 0)
+        
+        self.fromSectors()
+    
+    def userDataToDict(self):
+        data = {}
+        for i in range(0, self.dataTable.rowCount()):
+            item = self.dataTable.item(i, 0)
+            if item.text() == "": continue # this is OR'd onto the dict later, so blank keys are ignored.
+            data[self.dataTable.verticalHeaderItem(i).text()] = int(item.text())
+        return data
+
+    def populateUserDataOne(self, sector: Sector):
+        for k, v in Sector.SECTORS_USERDATA.items():
+            row = self.dataTable.rowCount()
+            self.dataTable.insertRow(row)
+            match v:
+                case a if a is Int8:
+                    delegate = SidebarSectorInt8Delegate
+                case b if b is Int16:
+                    delegate = SidebarSectorInt16Delegate
+                case _:
+                    raise ValueError(f"Unknown user data type {str(v)}")
+            self.dataTable.setItem(row, 0, QTableWidgetItem(str(sector.userdata.get(k, 0))))
+            self.dataTable.setItemDelegateForRow(row, delegate(self))
+            header = QTableWidgetItem()
+            header.setText(k)
+            self.dataTable.setVerticalHeaderItem(row, header)
+        
+    def populateUserDataMany(self):
+        for k, v in Sector.SECTORS_USERDATA.items():
+            row = self.dataTable.rowCount()
+            self.dataTable.insertRow(row)
+            match v:
+                case a if a is Int8:
+                    delegate = SidebarSectorInt8Delegate
+                case b if b is Int16:
+                    delegate = SidebarSectorInt16Delegate
+                case _:
+                    raise ValueError(f"Unknown user data type {str(k)}")
+            self.dataTable.setItem(row, 0, QTableWidgetItem(""))
+            self.dataTable.setItemDelegateForRow(row, delegate(self))
+            header = QTableWidgetItem()
+            header.setText(k)
+            self.dataTable.setVerticalHeaderItem(row, header)
 
     def setupUI(self):
         self.sectorLabel = QLabel("Sector 0 at (0, 0)")
@@ -310,6 +412,52 @@ class SidebarSector(QWidget):
 
         self.mapData.setLayout(self.mapDataLayout)
         #####
+        
+        #####
+        self.userData = QGroupBox("User Data", self)
+        userDataLayout = QFormLayout(self.userData)
+        
+        controlButtonsLayout = QHBoxLayout()
+        
+        self.exportBinaryButton = QToolButton(icon=icons.ICON_EXPORT)
+        self.exportBinaryButton.setToolTip("Export .bin file")
+        self.exportBinaryButton.clicked.connect(self.exportBinary)
+        
+        self.exportCCSButton = QToolButton(icon=icons.ICON_TEXT_FILE)
+        self.exportCCSButton.setToolTip("Export .ccs definitions file")
+        self.exportCCSButton.clicked.connect(self.exportCCS)
+        
+        self.importBinaryButton = QToolButton(icon=icons.ICON_IMPORT)
+        self.importBinaryButton.setToolTip("Import .bin file")
+        self.importBinaryButton.clicked.connect(self.importBinary)
+        
+        controlButtonsLayout.addWidget(self.exportBinaryButton)
+        controlButtonsLayout.addWidget(self.exportCCSButton)
+        controlButtonsLayout.addWidget(self.importBinaryButton)
+        
+        fieldButtonsLayout = QHBoxLayout()
+        
+        self.addUserdataButton = QToolButton(icon=icons.ICON_NEW)
+        self.addUserdataButton.setToolTip("Add user data field")
+        self.addUserdataButton.clicked.connect(self.addUserdata)
+        
+        self.removeUserdataButton = QToolButton(icon=icons.ICON_DELETE)
+        self.removeUserdataButton.setToolTip("Remove user data field")
+        self.removeUserdataButton.clicked.connect(self.removeUserdata)
+        
+        fieldButtonsLayout.addWidget(self.addUserdataButton)
+        fieldButtonsLayout.addWidget(self.removeUserdataButton)
+        
+        self.dataTable = QTableWidget(0, 1)
+        self.dataTable.setHorizontalHeaderLabels(["Value"])
+        self.dataTable.cellChanged.connect(self.toSectors)
+        
+        userDataLayout.addRow(controlButtonsLayout)
+        userDataLayout.addRow(fieldButtonsLayout)
+        userDataLayout.addRow(self.dataTable)
+        
+        self.userData.setLayout(userDataLayout)
+        #####
 
         self.contentLayout = QVBoxLayout(self)
         self.contentLayout.addWidget(self.sectorLabel)
@@ -317,5 +465,32 @@ class SidebarSector(QWidget):
         self.contentLayout.addWidget(self.paletteData)
         self.contentLayout.addWidget(self.miscData)
         self.contentLayout.addWidget(self.mapData)
+        self.contentLayout.addWidget(HSeparator())
+        self.contentLayout.addWidget(self.userData)
 
         self.setLayout(self.contentLayout)
+        
+
+# item delegate which allows only integers and limits the input to 2^8
+class SidebarSectorInt8Delegate(QItemDelegate):
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+    def createEditor(self, parent, option, index):
+        editor = QLineEdit(parent)
+        sizeLimit = 2**8
+        
+        editor.setValidator(QIntValidator(0, sizeLimit-1, editor))
+        return editor
+
+# item delegate which allows only integers and limits the input to 2^16
+class SidebarSectorInt16Delegate(QItemDelegate):
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+    def createEditor(self, parent, option, index):
+        editor = QLineEdit(parent)
+        sizeLimit = 2**16
+        
+        editor.setValidator(QIntValidator(0, sizeLimit-1, editor))
+        return editor

@@ -55,6 +55,9 @@ def init_icons():
     global ICON_RELOAD
     ICON_RELOAD = icon("ph.arrows-clockwise")
     
+    global ICON_TEXT_FILE
+    ICON_TEXT_FILE = icon("ph.file-text")
+    
     global ICON_SETTINGS
     ICON_SETTINGS = icon("ph.gear")
     

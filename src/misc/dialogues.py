@@ -1,18 +1,20 @@
 import logging
 import traceback
 from math import ceil
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, OrderedDict
 
 from PIL import ImageQt
 from PySide6.QtCore import QFile, QRectF, QSettings, Qt, Signal
 from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                                QDialogButtonBox, QFileDialog, QFormLayout,
-                               QGraphicsScene, QGroupBox, QHBoxLayout, QLabel,
-                               QLineEdit, QListWidget, QListWidgetItem,
-                               QMessageBox, QPushButton, QScrollArea,
-                               QSizePolicy, QSpinBox, QStyleFactory, QTextEdit,
-                               QUndoView, QVBoxLayout, QWidget)
+                               QGraphicsScene, QGroupBox, QHBoxLayout,
+                               QItemDelegate, QLabel, QLineEdit, QListWidget,
+                               QListWidgetItem, QMessageBox, QPushButton,
+                               QScrollArea, QSizePolicy, QSpinBox,
+                               QStyleFactory, QTableWidget, QTableWidgetItem,
+                               QTextEdit, QToolButton, QUndoView, QVBoxLayout,
+                               QWidget)
 
 import src.misc.common as common
 import src.misc.icons as icons
@@ -24,6 +26,7 @@ from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
                                            PaletteGroup, Subpalette)
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
+from src.objects.sector import USERDATA_TYPES, Int8, Int16, Sector
 from src.widgets.input import ColourButton, CoordsInput
 from src.widgets.layout import HorizontalGraphicsView, HSeparator
 from src.widgets.misc import IconLabel
@@ -1394,3 +1397,213 @@ class MapAdvancedPalettePreviewDialog(QDialog):
         palette = int(new)
         group = int(self.paletteGroupSelect.currentText())
         self.palettechanged.emit(group, palette)
+
+
+class NewUserdataDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        self.setWindowTitle("New User Data Field")
+        form = QFormLayout(self)
+        
+        self.newName = QLineEdit()
+        self.newType = QComboBox()
+        for i in USERDATA_TYPES:
+            self.newType.addItem(str(i), i)
+            
+        confirmCancelLayout = QHBoxLayout()
+        self.confirmButton = QPushButton("Add")
+        self.cancelButton = QPushButton("Cancel")
+        confirmCancelLayout.addWidget(self.confirmButton)
+        confirmCancelLayout.addWidget(self.cancelButton)
+        
+        self.confirmButton.pressed.connect(self.validateAndAdd)
+        self.cancelButton.pressed.connect(self.reject)
+        
+        form.addRow("Name", self.newName)
+        form.addRow("Data type", self.newType)
+        form.addRow(confirmCancelLayout)
+        
+    def validateAndAdd(self):
+        if self.newName.text() in Sector.SECTORS_USERDATA.keys():
+            common.showErrorMsg("Error adding user data field",
+                                "This name is already in use.")
+        elif self.newName.text() == "":
+            common.showErrorMsg("Error adding user data field",
+                                "Field name cannot be blank.")
+        else:
+            Sector.SECTORS_USERDATA[self.newName.text()] = self.newType.currentData(Qt.ItemDataRole.UserRole)    
+            self.accept()
+    
+    @staticmethod
+    def addNewUserdata(parent):
+        try:
+            dialog = NewUserdataDialog(parent)
+            return dialog.exec()
+        except Exception as e:
+            logging.warning(f"Error adding userdata: {str(e)}")
+            return False
+
+
+class ImportUserdataDialog(QDialog):
+    class DatatypeDelegate(QItemDelegate):
+        def __init__(self, parent):
+            super().__init__(parent)
+        
+        def createEditor(self, parent, option, index):
+            editor = QComboBox(parent)
+            editor.addItem(str(Int8), Int8)
+            editor.addItem(str(Int16), Int16)
+            
+            return editor
+    
+    def __init__(self, parent, projectData: ProjectData):
+        super().__init__(parent)
+        
+        self.projectData = projectData
+
+        self.setWindowTitle("Importing Sector Userdata")
+        form = QFormLayout(self)
+
+        self.binInputLayout = QHBoxLayout()
+        self.binInput = QLineEdit()
+        self.binInput.setPlaceholderText("Path to binary file")
+        self.binBrowse = QPushButton("Browse...")
+        self.binBrowse.clicked.connect(self.binBrowseClicked)
+        self.binInputLayout.addWidget(self.binInput)
+        self.binInputLayout.addWidget(self.binBrowse)
+        
+        self.autofillStructure = QPushButton("Autofill struct data via generated CCS...")
+        self.autofillStructure.clicked.connect(self.autofillClicked)
+        
+        tableControlsLayout = QHBoxLayout()
+        self.addFieldButton = QToolButton(icon=icons.ICON_NEW)
+        self.addFieldButton.setToolTip("Add struct field")
+        self.addFieldButton.clicked.connect(self.addField)
+        self.removeFieldButton = QToolButton(icon=icons.ICON_DELETE)
+        self.removeFieldButton.setToolTip("Remove struct field")
+        self.removeFieldButton.clicked.connect(self.removeField)
+        tableControlsLayout.addWidget(self.addFieldButton)
+        tableControlsLayout.addWidget(self.removeFieldButton)
+        
+        self.structureTable = QTableWidget(0, 2)
+        self.structureTable.setHorizontalHeaderLabels(("Name", "Data type"))
+        self.structureTable.setItemDelegateForColumn(1, ImportUserdataDialog.DatatypeDelegate(self))
+        
+        self.newType = QComboBox()
+        for i in USERDATA_TYPES:
+            self.newType.addItem(str(i), i)
+
+        confirmCancelLayout = QHBoxLayout()
+        self.confirmButton = QPushButton("Import")
+        self.cancelButton = QPushButton("Cancel")
+        confirmCancelLayout.addWidget(self.confirmButton)
+        confirmCancelLayout.addWidget(self.cancelButton)
+
+        self.confirmButton.pressed.connect(self.validateAndImport)
+        self.cancelButton.pressed.connect(self.reject)
+
+        form.addRow("Data", self.binInputLayout)
+        form.addRow("Structure", self.autofillStructure)
+        form.addRow(tableControlsLayout)
+        form.addRow(self.structureTable)
+        form.addRow(confirmCancelLayout)
+    
+    def binBrowseClicked(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Open Userdata Binary", self.projectData.dir, "Binary files (*.bin)")
+        if path:
+            self.binInput.setText(path)
+    
+    def autofillClicked(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Open Userdata Structure CCS", self.projectData.dir, "CCScript files (*.ccs)")
+        if path:
+            try:
+                structure = {}
+                with open(path) as file:
+                    for line in file.readlines():
+                        if line.startswith("define SECTORUSERDATA_"):
+                            structure[line.split("define SECTORUSERDATA_")[-1].split(" =")[0]] = line.split(
+                                " // Type: ")[-1].strip()
+                
+                self.structureTable.clearContents()
+                self.structureTable.setRowCount(0)
+                
+                for k, v in structure.items():
+                    row = self.structureTable.rowCount()
+                    self.structureTable.insertRow(row)
+                    self.structureTable.setItem(row, 0, QTableWidgetItem(k))
+                    self.structureTable.setItem(row, 1, QTableWidgetItem(v))
+                            
+            except Exception as e:
+                common.showErrorMsg("Failed to autofill userdata structure",
+                                    "Couldn't read userdata structure from CCScript file.",
+                                    str(e))
+                raise
+    
+    def addField(self):
+        row = self.structureTable.rowCount()
+        self.structureTable.insertRow(row)
+        self.structureTable.setItem(row, 0, QTableWidgetItem("New field"))
+        self.structureTable.setItem(row, 1, QTableWidgetItem("Int8"))
+    
+    def removeField(self):
+        selected = self.structureTable.selectedItems()
+        if len(selected) == 0: return
+
+        for i in selected:
+            self.structureTable.removeRow(i.row())
+
+    def validateAndImport(self):
+        if self.binInput.text() == "":
+            return common.showErrorMsg("Failed to import user data",
+                                       "A binary file must be specified!")
+        
+        if self.structureTable.rowCount() == 0:
+            return common.showErrorMsg("Failed to import binary data",
+                                       "Structure cannot be empty.")
+        
+        names = [self.structureTable.item(i, 0).text() for i in range(0, self.structureTable.rowCount())]
+        types = [self.structureTable.item(i, 1).text() for i in range(0, self.structureTable.rowCount())]
+        if len(set(names)) != len(names):
+            return common.showErrorMsg("Failed to import user data",
+                                "Two fields have the same name.")
+        if any(i == "" for i in names):
+            return common.showErrorMsg("Failed to import user data",
+                                "No fields can have blank names.")
+        
+        # set user data names/types
+        Sector.SECTORS_USERDATA = OrderedDict()
+        for n, t in zip(names, types):
+            # we can assume that there won't be more than 1 match
+            typeIdx = [i for i,typename in enumerate(USERDATA_TYPES) if str(typename) == t][0]
+            
+            Sector.SECTORS_USERDATA[n] = USERDATA_TYPES[typeIdx]
+        
+        # clear existing user data
+        for i in self.projectData.sectors.flat:
+            i: Sector
+            i.userdata = {}
+        
+        # read file
+        # TODO: validate binary size matches expected. Probably best to set up dtype size infrastructure first
+        with open(self.binInput.text(), "rb") as file:
+            sectorID = 0
+            while file.peek(1) != bytes():
+                for k, v in Sector.SECTORS_USERDATA.items():
+                    match v:
+                        case a if a is Int8:
+                            self.projectData.sectorFromID(sectorID).userdata[k] = int.from_bytes(file.read(1), "little")
+                        case b if b is Int16:
+                            self.projectData.sectorFromID(sectorID).userdata[k] = int.from_bytes(file.read(2), "little")
+                sectorID += 1
+        
+        self.accept()
+    
+    @staticmethod
+    def importUserdata(parent, projectData: ProjectData):
+        try:
+            dialog = ImportUserdataDialog(parent, projectData)
+            return dialog.exec()
+        except Exception as e:
+            logging.warning(f"Error importing userdata: {str(e)}")
+            return False
