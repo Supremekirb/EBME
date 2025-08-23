@@ -82,7 +82,7 @@ class Sector:
             serialised += f"define SECTORUSERDATA_{k} = {offset} // Type: {v[1]}\n"
             offset += v[0]
         
-        serialised += f"define SECTORUSERDATA_SIZEOF = {offset}"
+        serialised += f"define SIZEOF_SECTORUSERDATA = {offset}"
         return serialised
     
     @classmethod
