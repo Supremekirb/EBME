@@ -81,6 +81,8 @@ class Sector:
         for k, v in structData.items():
             serialised += f"define SECTORUSERDATA_{k} = {offset} // Type: {v[1]}\n"
             offset += v[0]
+        
+        serialised += f"define SECTORUSERDATA_SIZEOF = {offset}"
         return serialised
     
     @classmethod
