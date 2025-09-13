@@ -91,6 +91,7 @@ class FullTileset:
         while fts[offset] != "\n": # palette listing is of variable length, so check it until we hit a whitespace gap
             # verify that data is in base 32
             self.verify_b32(fts[offset])
+            # TODO - sorting this afterwards would be a good idea
             palettes.append(Palette(fts[offset])) # create list of palettes
             offset+=1
         
