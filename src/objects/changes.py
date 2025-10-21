@@ -9,7 +9,8 @@ class MapChange:
         self.events = changes
 
 class MapChangeEvent:
-    def __init__(self, flag: int, changes: list["TileChange"]):
+    def __init__(self, tileset: int, flag: int, changes: list["TileChange"]):
+        self.tileset = tileset
         self.flag = flag
         self.changes = changes
         

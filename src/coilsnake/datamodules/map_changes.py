@@ -16,7 +16,7 @@ class MapChangesModule(YMLResourceDataModule):
                 tileChangeList = []
                 for tileChange in change["Tile Changes"]:
                     tileChangeList.append(TileChange(tileChange["Before"], tileChange["After"]))
-                changeList.append(MapChangeEvent(change["Event Flag"], tileChangeList))
+                changeList.append(MapChangeEvent(tileset, change["Event Flag"], tileChangeList))
             mapChanges.append(MapChange(tileset, changeList))
         data.mapChanges = mapChanges
     

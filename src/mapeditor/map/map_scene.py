@@ -44,11 +44,13 @@ from src.actions.warp_actions import (ActionMoveTeleport, ActionMoveWarp,
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.dialogues import ClearDialog
+from src.objects.changes import MapChangeEvent
 from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import MapEditorNPC, NPCInstance
 from src.objects.sector import Sector
 from src.objects.sprite import Sprite
+from src.objects.tile import MapTile
 from src.objects.warp import MapEditorWarp
 
 if TYPE_CHECKING:
@@ -152,6 +154,8 @@ class MapEditorScene(QGraphicsScene):
         self.doorDestLine.setZValue(common.MAPZVALUES.DOORDESTLINE)
         self.doorDestLine.hide()
         
+        self.enabledMapEvents: list[MapChangeEvent] = []
+        
         self.dontUpdateModeNextAction = False
         """Avoid updating the current mode when pushing an action to the stack. Unset after the action is received. Won't affect undo/redo later on."""
         
@@ -228,6 +232,9 @@ class MapEditorScene(QGraphicsScene):
                             self.placeCollision(coords)
                         elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                             self.pickCollision(coords)
+                case common.MODEINDEX.CHANGES:
+                    if event.buttons() == Qt.MouseButton.LeftButton:
+                        self.pickMapChanges(coords)
                 case common.MODEINDEX.GAME:
                     if not self.state.previewLocked: # only move if we're not panning - messes with anim
                         if not (Qt.KeyboardModifier.ShiftModifier in event.modifiers() and \
@@ -249,7 +256,7 @@ class MapEditorScene(QGraphicsScene):
         if event.buttons() == Qt.MouseButton.RightButton and event.modifiers() == Qt.KeyboardModifier.AltModifier:
             if QSettings().value("personalisation/coordCopyAuto", True, type=bool):
                 match self.state.mode:
-                    case common.MODEINDEX.TILE:
+                    case common.MODEINDEX.TILE | common.MODEINDEX.CHANGES:
                         toCopy = coords.coordsTile()
                     case common.MODEINDEX.SECTOR:
                         toCopy = coords.coordsSector()
@@ -301,6 +308,10 @@ class MapEditorScene(QGraphicsScene):
                                 self.placeCollision(coords)
                             elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                                 self.pickCollision(coords)
+                    
+                    case common.MODEINDEX.CHANGES:
+                        if event.buttons() == Qt.MouseButton.LeftButton:
+                            self.pickMapChanges(coords)
                     
                     case common.MODEINDEX.GAME:
                         if event.buttons() == Qt.MouseButton.LeftButton:
@@ -1049,7 +1060,10 @@ class MapEditorScene(QGraphicsScene):
         if item:
             self.parent().sidebarCollision.presets.list.setCurrentItem(item)
             
-        
+    def pickMapChanges(self, coords: EBCoords):
+        coords.restrictToMap()
+        tileset = self.projectData.getTile(coords).tileset
+        self.parent().sidebarChanges.fromTileset(tileset)
             
     def pickEnemyTile(self, coords: EBCoords):
         """Pick an enemy tile at this location and load it into the sidebar
@@ -1529,11 +1543,21 @@ class MapEditorScene(QGraphicsScene):
                 coords = EBCoords.fromTile(x, y)
                 try:
                     tile = self.projectData.getTile(coords)
+                    
+                    # handle map events
+                    for i in self.enabledMapEvents:
+                        if i.tileset == tile.tileset:
+                            for j in i.changes:
+                                if j.before == tile.tile:
+                                    # not sure how i feel about doing it this way
+                                    # doesnt seem to impact performance
+                                    tile = MapTile(j.after, tile.coords, tile.tileset, tile.palettegroup, tile.palette)
+                                    
                     if not previewing:
                         graphic = self.projectData.getTileGraphic(tile.tileset,
-                                                                tile.palettegroup,
-                                                                tile.palette,
-                                                                tile.tile)
+                                                                    tile.palettegroup,
+                                                                    tile.palette,
+                                                                    tile.tile)
                         if not graphic.hasRendered:
                             palette = self.projectData.getPaletteGroup(tile.palettegroup).palettes[tile.palette]
                             graphic.render(self.projectData.getTileset(tile.tileset), palette)
@@ -1585,7 +1609,7 @@ class MapEditorScene(QGraphicsScene):
         font = painter.font()
         font.setPointSize(12)
         painter.setFont(font)
-        if QSettings().value("mapeditor/ShowTileIDs", False, bool) and self.state.mode in (common.MODEINDEX.TILE, common.MODEINDEX.ALL):
+        if QSettings().value("mapeditor/ShowTileIDs", False, bool) and self.state.mode in (common.MODEINDEX.TILE, common.MODEINDEX.CHANGES, common.MODEINDEX.ALL):
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(QColor(0, 0, 0, 128))
             painter.drawRect(rect)
@@ -1595,10 +1619,21 @@ class MapEditorScene(QGraphicsScene):
                     try:
                         coords = EBCoords.fromTile(x, y)
                         tile = self.projectData.getTile(coords)
+                        # for map changes, tile IDs are shown with the 'after' in the main place and the 'before' underneath
+                        for i in self.enabledMapEvents:
+                            if i.tileset == tile.tileset:
+                                for j in i.changes:
+                                    if j.before == tile.tile:
+                                        # not sure how i feel about doing it this way
+                                        # doesnt seem to impact performance
+                                        painter.setPen(Qt.GlobalColor.gray)
+                                        painter.drawText((x*32)+7, (y*32)+32, str(tile.tile).zfill(3))   
+                                        tile = MapTile(j.after, tile.coords, tile.tileset, tile.palettegroup, tile.palette)
+
                         painter.setPen(Qt.GlobalColor.black)
                         painter.drawText((x*32)+8, (y*32)+23, str(tile.tile).zfill(3))
                         painter.setPen(Qt.GlobalColor.white)
-                        painter.drawText((x*32)+7, (y*32)+22, str(tile.tile).zfill(3))
+                        painter.drawText((x*32)+7, (y*32)+22, str(tile.tile).zfill(3))           
                     except Exception:
                         logging.warning(traceback.format_exc())
         
@@ -1932,7 +1967,6 @@ class MapEditorScene(QGraphicsScene):
             for c in range(common.EBMAPHEIGHT//32):
                 tile = self.projectData.getTile(EBCoords.fromTile(r, c))
                 action = ActionPlaceTile(tile, 0)
-                tile.isPlaced = False
                 self.undoStack.push(action)
             if r % 8 == 0: # only once every 8 rows (compromise between speed & user clarity)
                 progressDialog.setValue(progressDialog.value()+1)

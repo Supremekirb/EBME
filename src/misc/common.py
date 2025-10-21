@@ -126,6 +126,7 @@ MODEINDEX = IntEnum("MODEINDEX", ["TILE",
                                   "HOTSPOT", 
                                   "WARP",
                                   "COLLISION",
+                                  "CHANGES",
                                   "ALL", 
                                   "GAME"], 
                                   start=0)
