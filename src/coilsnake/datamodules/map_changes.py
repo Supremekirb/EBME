@@ -1,3 +1,4 @@
+from calendar import c
 from src.coilsnake.datamodules.data_module import YMLResourceDataModule
 from src.coilsnake.project_data import ProjectData
 from src.objects.changes import MapChange, MapChangeEvent, TileChange
@@ -7,6 +8,7 @@ class MapChangesModule(YMLResourceDataModule):
     NAME = "map changes"
     MODULE = "eb.MapEventModule"
     RESOURCE = "map_changes"
+    FLOW_STYLE = None
     
     def _resourceLoad(data: ProjectData, map_changes):
         mapChanges = []
@@ -20,5 +22,16 @@ class MapChangesModule(YMLResourceDataModule):
             mapChanges.append(MapChange(tileset, changeList))
         data.mapChanges = mapChanges
     
-    def save(data: ProjectData):
-        ...
+    def _resourceSave(data: ProjectData):
+        changes_yml = {}
+        for i in data.mapChanges:
+            events = []
+            for event in i.events:
+                changes = []
+                for tile in event.changes:
+                    # coilsnake dumps them in this order, counterintuitively. Probably just alphabetical stuff
+                    changes.append({"After": tile.after, "Before": tile.before})
+                events.append({"Event Flag": event.flag, "Tile Changes": changes})
+            changes_yml[i.tileset] = events
+
+        return changes_yml
