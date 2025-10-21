@@ -158,6 +158,13 @@ class MapEditorScene(QGraphicsScene):
         self._lastSector = self.projectData.getSector(EBCoords(0, 0))
         self._lastCoords = EBCoords(0, 0)
     
+    def setBreadcrumb(self, coords: EBCoords):
+        for sector in self.state.currentSectors:
+            sector.userdata["WarpX"] = coords.coords()[0]
+            sector.userdata["WarpY"] = coords.coords()[1]
+            sector.userdata["Breadcrumbs"] = 3
+        self.parent().sidebarSector.fromSectors()
+    
     def updateSelected(self):
         match self.state.mode:
             case common.MODEINDEX.NPC:
@@ -332,7 +339,7 @@ class MapEditorScene(QGraphicsScene):
                         self.selectMultipleSectors(coords)
                 case common.MODEINDEX.SECTOR:
                     if event.buttons() == Qt.MouseButton.LeftButton:
-                        self.selectMultipleSectors(coords)
+                        self.selectSector(coords)
                     
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):        
         if self.state.tempMode == common.TEMPMODEINDEX.NONE:
@@ -374,6 +381,7 @@ class MapEditorScene(QGraphicsScene):
             y = event.scenePos().y()
             match self.state.mode:
                 case common.MODEINDEX.SECTOR:
+                    return self.setBreadcrumb(EBCoords(event.scenePos().x(), event.scenePos().y()))
                     if len(self.state.currentSectors) > 1:
                         entireSectorStr = "Copy entirety of sectors"
                         dataSectorStr = "Copy data of sectors"
