@@ -1,4 +1,3 @@
-from calendar import c
 from src.coilsnake.datamodules.data_module import YMLResourceDataModule
 from src.coilsnake.project_data import ProjectData
 from src.objects.changes import MapChange, MapChangeEvent, TileChange
