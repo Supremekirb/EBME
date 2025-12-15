@@ -1,13 +1,16 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHeaderView,
-                               QSizePolicy, QTreeWidget, QTreeWidgetItem,
-                               QVBoxLayout, QWidget)
+                               QPlainTextEdit, QSizePolicy, QTreeWidget,
+                               QTreeWidgetItem, QVBoxLayout, QWidget)
 
+from src.actions.changes_actions import ActionChangeMapChangeEvent
 from src.actions.fts_actions import ActionChangeCollision
 from src.coilsnake.project_data import ProjectData
-from src.objects.changes import MapChangeEventListItem, TileChangeListItem
+from src.objects.changes import (MapChangeEvent, MapChangeEventListItem,
+                                 TileChangeListItem)
 from src.widgets.collision import CollisionPresetList, PresetItem
+from src.widgets.input import FlagInput
 from src.widgets.tile import TileCollisionWidget
 
 if TYPE_CHECKING:
@@ -23,28 +26,88 @@ class SidebarChanges(QWidget):
         
         self.setupUI()
     
+    def refreshCurrent(self):
+        currentItem = self.eventsTree.currentItem()
+        if isinstance(currentItem, TileChangeListItem):
+            currentItem = currentItem.parent()
+
+        # Re-select it and update its text
+        if isinstance(currentItem, MapChangeEventListItem):
+            currentItem.updateFlagText()
+            currentItem.refreshChildren()
+            self.fromEvent(currentItem)
+        
+    def selectEvent(self, event: MapChangeEvent):
+        currentItem = self.eventsTree.currentItem()
+        if isinstance(currentItem, TileChangeListItem):
+            currentItem = currentItem.parent()
+            
+        # If it's the same as the selection, just refresh it
+        if currentItem and currentItem.event == event:
+            self.refreshCurrent()
+            
+        # Only rebuild the list if we need to.
+        # Otherwise this will cause collapsed-items state to be reset.
+        if self.tilesetSelect.currentIndex() != event.tileset:
+            self.fromTileset(event.tileset)
+        
+        # Search until we find it
+        # (triggers fromEvent always, as we do refreshCurrent in the case of it already being selected)
+        for i in range(self.eventsTree.topLevelItemCount()):
+            item: MapChangeEventListItem = self.eventsTree.topLevelItem(i)
+            if item.event == event:
+                self.eventsTree.setCurrentItem(item)
+                self.eventsTree.scrollToItem(item)
+                break
+        else:
+            raise ValueError(f"Event not found in its tileset ({event.tileset})")
+        
     def fromTileset(self, tilesetID: int):
         self.tilesetSelect.setCurrentIndex(tilesetID)
         self.mapeditor.scene.enabledMapEvents = []
         self.eventsTree.clear()
         items = []
         for i in self.projectData.mapChanges[tilesetID].events:
-            self.mapeditor.scene.enabledMapEvents.append(i)
-            item = MapChangeEventListItem(i)
-            changes = []
-            for j in i.changes:
-                entry = TileChangeListItem(j)
-                changes.append(entry)
-            item.addChildren(changes)
-                
-            items.append(item)
+            items.append(MapChangeEventListItem(i))
             
         self.eventsTree.addTopLevelItems(items)
         
         self.mapeditor.scene.update()
         
-    def fromEvent(self, item: QTreeWidgetItem):
-        ...
+    def fromEvent(self, item: MapChangeEventListItem|TileChangeListItem):
+        self.eventFlag.blockSignals(True)
+        self.eventComment.blockSignals(True)
+        
+        if isinstance(item, TileChangeListItem):
+            item = item.parent()
+
+        if item is None:
+            # disable things
+            self.eventFlag.setDisabled(True)
+            self.eventComment.setPlaceholderText("Select an event.")
+            self.eventComment.setDisabled(True)
+            self.eventComment.setPlainText("")
+        else:
+            # re-enable things
+            self.eventFlag.setDisabled(False)
+            self.eventFlag.setValue(item.event.flag)
+            self.eventComment.setPlaceholderText("")
+            self.eventComment.setDisabled(False)
+            self.eventComment.setPlainText(item.event.comment)
+        
+        self.eventFlag.blockSignals(False)
+        self.eventComment.blockSignals(False)
+    
+    def toEvent(self):
+        item: MapChangeEventListItem|TileChangeListItem = self.eventsTree.currentItem()
+        if item is None:
+            return
+        if isinstance(item, TileChangeListItem):
+            item = item.parent()
+        event = item.event
+        action = ActionChangeMapChangeEvent(event, self.eventFlag.value(), event.changes, self.eventComment.toPlainText())
+        self.mapeditor.scene.undoStack.push(action)
+        self.mapeditor.view.update()
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -63,7 +126,22 @@ class SidebarChanges(QWidget):
         self.eventsTree.currentItemChanged.connect(self.fromEvent)
         self.eventsTree.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         
+        self.eventFlag = FlagInput()
+        self.eventFlag.setDisabled(True)
+        self.eventFlag.valueChanged.connect(self.toEvent)
+        self.eventFlag.inverted.connect(self.toEvent)
+        self.eventFlag.valueChanged.connect(self.refreshCurrent)
+        self.eventFlag.inverted.connect(self.refreshCurrent)
+        
+        self.eventComment = QPlainTextEdit()
+        self.eventComment.setPlaceholderText("Select an event.")
+        self.eventComment.setDisabled(True)
+        self.eventComment.textChanged.connect(self.toEvent)
+        self.eventComment.setSizePolicy(self.eventComment.sizePolicy().horizontalPolicy(), QSizePolicy.Policy.Minimum)
+        
         eventsLayout.addRow("Tileset", self.tilesetSelect)
+        eventsLayout.addRow("Flag", self.eventFlag)
+        eventsLayout.addRow("Comment", self.eventComment)
         eventsLayout.addRow(self.eventsTree)
         
         eventsGroupbox.setLayout(eventsLayout)

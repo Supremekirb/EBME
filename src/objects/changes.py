@@ -9,10 +9,11 @@ class MapChange:
         self.events = changes
 
 class MapChangeEvent:
-    def __init__(self, tileset: int, flag: int, changes: list["TileChange"]):
+    def __init__(self, tileset: int, flag: int, changes: list["TileChange"], comment: str=None):
         self.tileset = tileset
         self.flag = flag
         self.changes = changes
+        self.comment = comment
         
 
 class TileChange:
@@ -26,10 +27,29 @@ class MapChangeEventListItem(QTreeWidgetItem):
         super().__init__()
         self.event = event
         self.updateFlagText()
+        self.createChildren()
+        self.refreshChildren()
         self.setIcon(0, icons.ICON_FLAG)
         
     def updateFlagText(self):
         self.setText(0, str(self.event.flag) if self.event.flag < 0x8000 else f"{self.event.flag - 0x8000} (Inverted)")
+    
+    def createChildren(self):
+        for i in range(self.childCount()):
+            self.removeChild(i)
+        
+        changes = []
+        for j in self.event.changes:
+            entry = TileChangeListItem(j)
+            changes.append(entry)
+        self.addChildren(changes)
+    
+    def refreshChildren(self):
+        # Doesn't recalculate if children exist or not
+        for i in range(self.childCount()):
+            child = self.child(i)
+            if isinstance(child, TileChangeListItem):
+                child.updateChangeText()
 
 class TileChangeListItem(QTreeWidgetItem):
     def __init__(self, change: TileChange):

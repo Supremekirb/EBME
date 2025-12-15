@@ -180,6 +180,8 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "REMOVEPALETTE", # cannot merge with itself
                                       "ADDPALETTESETTINGSCHILD", # cannot merge with itself
                                       "REMOVEPALETTESETTINGSCHILD", # cannot merge with itself
+                                      "CHANGEMAPCHANGEEVENT", # can merge with itself if 'changes' list is identical
+                                      "CHANGETILECHANGE", # can merge with itself
                                       ])
 
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18

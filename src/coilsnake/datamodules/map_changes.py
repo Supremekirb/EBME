@@ -17,7 +17,11 @@ class MapChangesModule(YMLResourceDataModule):
                 tileChangeList = []
                 for tileChange in change["Tile Changes"]:
                     tileChangeList.append(TileChange(tileChange["Before"], tileChange["After"]))
-                changeList.append(MapChangeEvent(tileset, change["Event Flag"], tileChangeList))
+                if "EBME_Comment" in change:
+                    comment = change["EBME_Comment"]
+                else:
+                    comment = None 
+                changeList.append(MapChangeEvent(tileset, change["Event Flag"], tileChangeList, comment))
             mapChanges.append(MapChange(tileset, changeList))
         data.mapChanges = mapChanges
     
@@ -30,7 +34,7 @@ class MapChangesModule(YMLResourceDataModule):
                 for tile in event.changes:
                     # coilsnake dumps them in this order, counterintuitively. Probably just alphabetical stuff
                     changes.append({"After": tile.after, "Before": tile.before})
-                events.append({"Event Flag": event.flag, "Tile Changes": changes})
+                events.append({"Event Flag": event.flag, "Tile Changes": changes, "EBME_Comment": event.comment})
             changes_yml[i.tileset] = events
 
         return changes_yml
