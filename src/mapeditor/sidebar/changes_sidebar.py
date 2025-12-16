@@ -3,12 +3,13 @@ from typing import TYPE_CHECKING
 from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHeaderView,
                                QPlainTextEdit, QSizePolicy, QTreeWidget,
                                QTreeWidgetItem, QVBoxLayout, QWidget)
+from PySide6.QtCore import Qt
 
 from src.actions.changes_actions import ActionChangeMapChangeEvent
 from src.actions.fts_actions import ActionChangeCollision
 from src.coilsnake.project_data import ProjectData
 from src.objects.changes import (MapChangeEvent, MapChangeEventListItem,
-                                 TileChangeListItem)
+                                 MapChangesTree, TileChangeListItem)
 from src.widgets.collision import CollisionPresetList, PresetItem
 from src.widgets.input import FlagInput
 from src.widgets.tile import TileCollisionWidget
@@ -64,7 +65,7 @@ class SidebarChanges(QWidget):
         
     def fromTileset(self, tilesetID: int):
         self.tilesetSelect.setCurrentIndex(tilesetID)
-        self.mapeditor.scene.enabledMapEvents = []
+        self.mapeditor.scene.enabledMapEvents.clear()
         self.eventsTree.clear()
         items = []
         for i in self.projectData.mapChanges[tilesetID].events:
@@ -83,16 +84,14 @@ class SidebarChanges(QWidget):
 
         if item is None:
             # disable things
-            self.eventFlag.setDisabled(True)
+            self.eventGroupBox.setDisabled(True)
             self.eventComment.setPlaceholderText("Select an event.")
-            self.eventComment.setDisabled(True)
             self.eventComment.setPlainText("")
         else:
             # re-enable things
-            self.eventFlag.setDisabled(False)
+            self.eventGroupBox.setDisabled(False)
             self.eventFlag.setValue(item.event.flag)
             self.eventComment.setPlaceholderText("")
-            self.eventComment.setDisabled(False)
             self.eventComment.setPlainText(item.event.comment)
         
         self.eventFlag.blockSignals(False)
@@ -107,7 +106,16 @@ class SidebarChanges(QWidget):
         event = item.event
         action = ActionChangeMapChangeEvent(event, self.eventFlag.value(), event.changes, self.eventComment.toPlainText())
         self.mapeditor.scene.undoStack.push(action)
-        self.mapeditor.view.update()
+        self.mapeditor.scene.update()
+    
+    def onChangePreviewState(self, item: MapChangeEventListItem, state: Qt.CheckState):
+        event = item.event
+        match state:
+            case Qt.CheckState.Checked:
+                self.mapeditor.scene.enabledMapEvents.add(event)
+            case Qt.CheckState.Unchecked:
+                self.mapeditor.scene.enabledMapEvents.discard(event)
+        self.mapeditor.scene.update()
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -118,16 +126,21 @@ class SidebarChanges(QWidget):
         self.tilesetSelect.setToolTip("Changes in this tileset. Tileset = fts in /Tilesets.")
         self.tilesetSelect.currentIndexChanged.connect(self.fromTileset)
         
-        self.eventsTree = QTreeWidget()
+        self.eventsTree = MapChangesTree()
         self.eventsTree.setColumnCount(2)
         self.eventsTree.setHeaderLabels(["Event", "Preview"])
         self.eventsTree.header().setStretchLastSection(False)
         self.eventsTree.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.eventsTree.currentItemChanged.connect(self.fromEvent)
+        self.eventsTree.previewStateChanged.connect(self.onChangePreviewState)
         self.eventsTree.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         
+        self.eventGroupBox = QGroupBox("Event Data")
+        eventGroupBoxLayout = QFormLayout()
+        self.eventGroupBox.setLayout(eventGroupBoxLayout)
+        self.eventGroupBox.setDisabled(True)
+        
         self.eventFlag = FlagInput()
-        self.eventFlag.setDisabled(True)
         self.eventFlag.valueChanged.connect(self.toEvent)
         self.eventFlag.inverted.connect(self.toEvent)
         self.eventFlag.valueChanged.connect(self.refreshCurrent)
@@ -135,14 +148,15 @@ class SidebarChanges(QWidget):
         
         self.eventComment = QPlainTextEdit()
         self.eventComment.setPlaceholderText("Select an event.")
-        self.eventComment.setDisabled(True)
         self.eventComment.textChanged.connect(self.toEvent)
         self.eventComment.setSizePolicy(self.eventComment.sizePolicy().horizontalPolicy(), QSizePolicy.Policy.Minimum)
         
         eventsLayout.addRow("Tileset", self.tilesetSelect)
-        eventsLayout.addRow("Flag", self.eventFlag)
-        eventsLayout.addRow("Comment", self.eventComment)
         eventsLayout.addRow(self.eventsTree)
+        
+        eventGroupBoxLayout.addRow("Flag", self.eventFlag)
+        eventGroupBoxLayout.addRow("Comment", self.eventComment)
+        eventsLayout.addRow(self.eventGroupBox)
         
         eventsGroupbox.setLayout(eventsLayout)
         

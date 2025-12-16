@@ -155,7 +155,7 @@ class MapEditorScene(QGraphicsScene):
         self.doorDestLine.setZValue(common.MAPZVALUES.DOORDESTLINE)
         self.doorDestLine.hide()
         
-        self.enabledMapEvents: list[MapChangeEvent] = []
+        self.enabledMapEvents: set[MapChangeEvent] = set()
         
         self.dontUpdateModeNextAction = False
         """Avoid updating the current mode when pushing an action to the stack. Unset after the action is received. Won't affect undo/redo later on."""

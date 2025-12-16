@@ -1,4 +1,5 @@
-from PySide6.QtWidgets import QTreeWidgetItem
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
 
 import src.misc.icons as icons
 
@@ -30,6 +31,7 @@ class MapChangeEventListItem(QTreeWidgetItem):
         self.createChildren()
         self.refreshChildren()
         self.setIcon(0, icons.ICON_FLAG)
+        self.setCheckState(1, Qt.CheckState.Unchecked)
         
     def updateFlagText(self):
         self.setText(0, str(self.event.flag) if self.event.flag < 0x8000 else f"{self.event.flag - 0x8000} (Inverted)")
@@ -50,6 +52,21 @@ class MapChangeEventListItem(QTreeWidgetItem):
             child = self.child(i)
             if isinstance(child, TileChangeListItem):
                 child.updateChangeText()
+    
+    # reimplementing this for checkbox state change signal. A bit unfortunate that this is needed.
+    # inspired by https://stackoverflow.com/a/32403843
+    def setData(self, column: int, role: int, value):
+        isCheck = column == 1 \
+                and role == Qt.ItemDataRole.CheckStateRole \
+                and self.data(column, role) is not None \
+                and self.checkState(1) != value
+        super().setData(column, role, value)
+        if isCheck:
+            tree: MapChangesTree = self.treeWidget()
+            tree.previewStateChanged.emit(self, self.checkState(1))
+# See above...
+class MapChangesTree(QTreeWidget):
+    previewStateChanged = Signal(MapChangeEventListItem, Qt.CheckState)
 
 class TileChangeListItem(QTreeWidgetItem):
     def __init__(self, change: TileChange):
