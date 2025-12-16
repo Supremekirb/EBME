@@ -1,13 +1,14 @@
 from typing import TYPE_CHECKING
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHeaderView,
                                QPlainTextEdit, QSizePolicy, QTreeWidget,
                                QTreeWidgetItem, QVBoxLayout, QWidget)
-from PySide6.QtCore import Qt
 
 from src.actions.changes_actions import ActionChangeMapChangeEvent
 from src.actions.fts_actions import ActionChangeCollision
 from src.coilsnake.project_data import ProjectData
+from src.misc.dialogues import TileChangeEditDialog
 from src.objects.changes import (MapChangeEvent, MapChangeEventListItem,
                                  MapChangesTree, TileChangeListItem)
 from src.widgets.collision import CollisionPresetList, PresetItem
@@ -116,6 +117,12 @@ class SidebarChanges(QWidget):
             case Qt.CheckState.Unchecked:
                 self.mapeditor.scene.enabledMapEvents.discard(event)
         self.mapeditor.scene.update()
+    
+    def onDoubleClick(self, item: MapChangeEventListItem|TileChangeListItem):
+        if isinstance(item, TileChangeListItem):
+            action = TileChangeEditDialog.configureTileChange(self, self.projectData, item.parent().event.tileset, item.change)
+            if action is not None:
+                self.mapeditor.scene.undoStack.push(action)
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -133,6 +140,7 @@ class SidebarChanges(QWidget):
         self.eventsTree.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.eventsTree.currentItemChanged.connect(self.fromEvent)
         self.eventsTree.previewStateChanged.connect(self.onChangePreviewState)
+        self.eventsTree.itemDoubleClicked.connect(self.onDoubleClick)
         self.eventsTree.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         
         self.eventGroupBox = QGroupBox("Event Data")

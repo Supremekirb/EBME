@@ -299,7 +299,7 @@ class TilesetDisplayGraphicsScene(QGraphicsScene):
     tileSelected = Signal(int)
     tilePicked = Signal(int)
         
-    def __init__(self, projectData: ProjectData, horizontal: bool = False, rowSize: int = 6, forcedPalette: Palette|None=None):
+    def __init__(self, projectData: ProjectData, horizontal: bool = False, rowSize: int = 6, forcedPalette: Palette|None=None, forcedTileIDs: bool = False):
         super().__init__()
         
         self.projectData = projectData
@@ -307,6 +307,7 @@ class TilesetDisplayGraphicsScene(QGraphicsScene):
         self.rowSize = rowSize
         self.forcedPalette = forcedPalette
         self.forcedPaletteCache: dict[int, QPixmap] = {}
+        self.forcedTileIDs = forcedTileIDs
         
         self.selectionIndicator = QGraphicsPixmapItem(QPixmap(":/ui/selectTile.png"))
         
@@ -382,7 +383,7 @@ class TilesetDisplayGraphicsScene(QGraphicsScene):
                     painter.drawPixmap(x*32, y*32, QPixmap(":ui/errorTile.png"))
                     logging.warning(traceback.format_exc())
                     
-        if QSettings().value("mapeditor/ShowTileIDs", False, bool):
+        if self.forcedTileIDs or QSettings().value("mapeditor/ShowTileIDs", False, bool):
             painter.setFont("EBMain")
             font = painter.font()
             font.setPointSize(12)
