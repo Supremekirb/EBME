@@ -83,7 +83,7 @@ class TileChangeListItem(QTreeWidgetItem):
         self.setIcon(0, icons.ICON_TILE_CHANGE)
         
     def updateChangeText(self):
-        self.setText(0, f"{self.change.before} → {self.change.after}")
+        self.setText(0, f"{str(self.change.before).zfill(3)} → {str(self.change.after).zfill(3)}")
 
     def parent(self) -> MapChangeEventListItem:
         return super().parent()

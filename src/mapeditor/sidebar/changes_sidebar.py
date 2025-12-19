@@ -153,8 +153,21 @@ class SidebarChanges(QWidget):
         self.eventFlag.blockSignals(True)
         self.eventComment.blockSignals(True)
         
+        if isinstance(item, MapChangeEventListItem):
+            self.addTileChangeButton.setDisabled(False)
+            self.removeEventButton.setDisabled(False)
+            self.moveEventUpButton.setDisabled(False)
+            self.moveEventDownButton.setDisabled(False)
+            
         if isinstance(item, TileChangeListItem):
             item = item.parent()
+            self.removeTileChangeButton.setDisabled(False)
+            self.moveTileChangeUpButton.setDisabled(False)
+            self.moveTileChangeDownButton.setDisabled(False)
+        else:
+            self.removeTileChangeButton.setDisabled(True)
+            self.moveTileChangeUpButton.setDisabled(True)
+            self.moveTileChangeDownButton.setDisabled(True)
 
         if item is None:
             # disable things
@@ -162,19 +175,15 @@ class SidebarChanges(QWidget):
             self.eventComment.setPlaceholderText("Select an event.")
             self.eventComment.setPlainText("")
             self.addTileChangeButton.setDisabled(True)
-            self.removeTileChangeButton.setDisabled(True)
-            self.moveTileChangeUpButton.setDisabled(True)
-            self.moveTileChangeDownButton.setDisabled(True)
+            self.removeEventButton.setDisabled(True)
+            self.moveEventUpButton.setDisabled(True)
+            self.moveEventDownButton.setDisabled(True)
         else:
             # re-enable things
             self.eventGroupBox.setDisabled(False)
             self.eventFlag.setValue(item.event.flag)
             self.eventComment.setPlaceholderText("")
             self.eventComment.setPlainText(item.event.comment)
-            self.addTileChangeButton.setDisabled(False)
-            self.removeTileChangeButton.setDisabled(False)
-            self.moveTileChangeUpButton.setDisabled(False)
-            self.moveTileChangeDownButton.setDisabled(False)
         
         self.eventFlag.blockSignals(False)
         self.eventComment.blockSignals(False)
@@ -233,6 +242,7 @@ class SidebarChanges(QWidget):
         currentSelected = self.eventsTree.currentItem()
         if isinstance(currentSelected, TileChangeListItem):
             event = currentSelected.parent().event
+            currentSelected = currentSelected.parent()
         elif isinstance(currentSelected, MapChangeEventListItem):
             event = currentSelected.event
         else:
@@ -250,6 +260,7 @@ class SidebarChanges(QWidget):
         currentSelected = self.eventsTree.currentItem()
         if isinstance(currentSelected, TileChangeListItem):
             event = currentSelected.parent().event
+            currentSelected = currentSelected.parent()
         elif isinstance(currentSelected, MapChangeEventListItem):
             event = currentSelected.event
         else:
@@ -278,8 +289,9 @@ class SidebarChanges(QWidget):
             return common.showErrorMsg("Cannot add tile change.", 
                                 "You must first select a tile change or a map change event.", icon=QMessageBox.Icon.Warning)
 
-        action = ActionAddTileChange(event, index)
-        self.mapeditor.scene.undoStack.push(action)
+        action = TileChangeEditDialog.newTileChange(self, self.projectData, event.tileset, event, index)
+        if action is not None:
+            self.mapeditor.scene.undoStack.push(action)
     
     def onRemoveTileChange(self):
         currentSelected = self.eventsTree.currentItem()
@@ -353,16 +365,19 @@ class SidebarChanges(QWidget):
         self.removeEventButton = QToolButton()
         self.removeEventButton.setIcon(icons.ICON_DELETE)
         self.removeEventButton.setToolTip("Remove selected event")
+        self.removeEventButton.setDisabled(True)
         self.removeEventButton.clicked.connect(self.onRemoveEvent)
         
         self.moveEventUpButton = QToolButton()
         self.moveEventUpButton.setIcon(icons.ICON_UP)
         self.moveEventUpButton.setToolTip("Move selected event up")
+        self.moveEventUpButton.setDisabled(True)
         self.moveEventUpButton.clicked.connect(self.onMoveEventUp)
         
         self.moveEventDownButton = QToolButton()
         self.moveEventDownButton.setIcon(icons.ICON_DOWN)
         self.moveEventDownButton.setToolTip("Move selected event down")
+        self.moveEventDownButton.setDisabled(True)
         self.moveEventDownButton.clicked.connect(self.onMoveEventDown)
         
         addEventButtonsLayout.addWidget(self.addEventButton)
@@ -410,7 +425,7 @@ class SidebarChanges(QWidget):
         self.eventFlag = FlagInput()
         self.eventFlag.valueChanged.connect(self.toEvent)
         self.eventFlag.inverted.connect(self.toEvent)
-        self.eventFlag.valueChanged.connect(self.refreshEvent)
+        self.eventFlag.valueChanged.connect(lambda: self.refreshEvent()) # Otherwise it passes an int and that messes with some things
         self.eventFlag.inverted.connect(self.refreshEvent)
         self.eventFlag.spinbox.setToolTip("When the flag is set, the tile changes associated with this event will be applied.")
         

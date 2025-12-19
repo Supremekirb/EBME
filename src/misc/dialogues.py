@@ -17,7 +17,8 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
 import src.misc.common as common
 import src.misc.icons as icons
 import src.misc.quotes as quotes
-from src.actions.changes_actions import ActionChangeTileChange
+from src.actions.changes_actions import (ActionAddTileChange,
+                                         ActionChangeTileChange)
 from src.actions.fts_actions import (ActionChangeSubpaletteColour,
                                      ActionReplacePalette, ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
@@ -1398,20 +1399,35 @@ class MapAdvancedPalettePreviewDialog(QDialog):
         self.palettechanged.emit(group, palette)
 
 class TileChangeEditDialog(QDialog):
-    def __init__(self, parent, projectData: ProjectData, tileset: int, change: TileChange, event: MapChangeEvent):
+    def __init__(self, parent, projectData: ProjectData, tileset: int, change: TileChange):
         super().__init__(parent)
         self.setWindowTitle("Editing Tile Change")
         self.projectData = projectData # we just need this to render it
+        self.paletteGroups = self.projectData.getTileset(tileset).paletteGroups
         self.tilechange = change
-        self.mapevent = event # This is needed to construct the action
         
         self.selectedBefore = change.before
         self.selectedAfter = change.after
         
-        # TODO - Palette selection
-        
         layout = QVBoxLayout()
         self.setLayout(layout)
+        
+        paletteGroupBox = QGroupBox("Preview display")
+        paletteGroupBoxLayout = QFormLayout()
+        paletteGroupBox.setLayout(paletteGroupBoxLayout)
+        self.paletteGroupSelect = QComboBox()
+        self.paletteSelect = QComboBox()
+        
+        for i in self.paletteGroups:
+            self.paletteGroupSelect.addItem(str(i.groupID))
+        for i in self.paletteGroups[0].palettes:
+            self.paletteSelect.addItem(str(i.paletteID))
+            
+        self.paletteGroupSelect.currentIndexChanged.connect(self.onPaletteGroupChange)
+        self.paletteSelect.currentIndexChanged.connect(self.onPaletteChange)
+        
+        paletteGroupBoxLayout.addRow("Palette Group", self.paletteGroupSelect)
+        paletteGroupBoxLayout.addRow("Palette", self.paletteSelect)
         
         self.tilesetBeforeDisplay = TilesetDisplayGraphicsScene(projectData, horizontal=True, forcedTileIDs=True)
         self.tilesetBeforeDisplay.currentTileset = tileset
@@ -1441,6 +1457,7 @@ class TileChangeEditDialog(QDialog):
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         
+        layout.addWidget(paletteGroupBox)
         layout.addWidget(QLabel("Before"))
         layout.addWidget(self.tilesetBeforeDisplayView)
         layout.addWidget(QLabel("After"))
@@ -1455,10 +1472,37 @@ class TileChangeEditDialog(QDialog):
         
     def onSelectAfterTile(self, tile: int):
         self.selectedAfter = tile
+    
+    def onPaletteGroupChange(self, new: int):
+        self.paletteSelect.blockSignals(True)
+        self.paletteSelect.clear()
+        for i in self.paletteGroups[new].palettes:
+            self.paletteSelect.addItem(str(i.paletteID))
+        self.paletteSelect.setCurrentIndex(0)
+        self.paletteSelect.blockSignals(False)
+        self.onPaletteChange(self.paletteSelect.currentIndex())
+
+    def onPaletteChange(self, new: int):
+        group = self.paletteGroups[self.paletteGroupSelect.currentIndex()].groupID
+        palette = self.paletteGroups[self.paletteGroupSelect.currentIndex()].palettes[new].paletteID
+        self.tilesetBeforeDisplay.currentPalette = self.tilesetAfterDisplay.currentPalette = palette
+        self.tilesetBeforeDisplay.currentPaletteGroup = self.tilesetAfterDisplay.currentPaletteGroup = group
+        self.tilesetBeforeDisplay.update()
+        self.tilesetAfterDisplay.update()
         
     @staticmethod
     def configureTileChange(parent, projectData: ProjectData, tileset: int, change: TileChange, event: MapChangeEvent) -> ActionChangeTileChange|None:
-        dialog = TileChangeEditDialog(parent, projectData, tileset, change, event)
+        dialog = TileChangeEditDialog(parent, projectData, tileset, change)
         result = dialog.exec()
         if result == QDialog.DialogCode.Accepted:
-            return ActionChangeTileChange(dialog.tilechange, dialog.mapevent, dialog.selectedBefore, dialog.selectedAfter)
+            return ActionChangeTileChange(change, event, dialog.selectedBefore, dialog.selectedAfter)
+    
+    @staticmethod
+    def newTileChange(parent, projectData: ProjectData, tileset: int, event: MapChangeEvent, index: int) -> ActionAddTileChange|None:
+        change = TileChange(0, 0)
+        dialog = TileChangeEditDialog(parent, projectData, tileset, change)
+        result = dialog.exec()
+        if result == QDialog.DialogCode.Accepted:
+            change.before = dialog.selectedBefore
+            change.after = dialog.selectedAfter
+            return ActionAddTileChange(event, index, change)

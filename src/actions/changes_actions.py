@@ -146,12 +146,12 @@ class ActionChangeTileChange(QUndoCommand):
         return common.ACTIONINDEX.CHANGETILECHANGE
 
 class ActionAddTileChange(QUndoCommand):
-    def __init__(self, event: MapChangeEvent, index: int):
+    def __init__(self, event: MapChangeEvent, index: int, change: TileChange):
         super().__init__()
         self.setText("Add new tile change")
         
         self.event = event
-        self.change = TileChange(0, 0) # TODO - prompt user for values?
+        self.change = change
         self.index = index
         
     def redo(self):
