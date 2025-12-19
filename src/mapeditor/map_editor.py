@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (QGraphicsPixmapItem, QGridLayout, QInputDialog,
 import src.mapeditor.map.map_scene as map_scene
 import src.mapeditor.map.map_view as map_view
 import src.mapeditor.sidebar.all_sidebar as all_sidebar
+import src.mapeditor.sidebar.changes_sidebar as changes_sidebar
 import src.mapeditor.sidebar.collision_sidebar as collision_sidebar
 import src.mapeditor.sidebar.enemy_sidebar as enemy_sidebar
 import src.mapeditor.sidebar.game_sidebar as game_sidebar
@@ -198,6 +199,7 @@ class MapEditor(QWidget):
         self.sidebarHotspot = hotspot_sidebar.SidebarHotspot(self, self.state, self, self.projectData)
         self.sidebarWarp = warp_sidebar.SidebarWarp(self, self.state, self, self.projectData)
         self.sidebarCollision = collision_sidebar.SidebarCollision(self, self.state, self, self.projectData)
+        self.sidebarChanges = changes_sidebar.SidebarChanges(self, self.state, self, self.projectData)
         self.sidebarAll = all_sidebar.SidebarAll(self, self.state, self, self.projectData)
         self.sidebarGame = game_sidebar.SidebarGame(self, self.state, self, self.projectData)
 
@@ -209,6 +211,7 @@ class MapEditor(QWidget):
         self.sidebar.addTab(self.sidebarHotspot, icons.EBICON_HOTSPOT, "Hotspot")
         self.sidebar.addTab(self.sidebarWarp, icons.EBICON_WARP, "Warp && TP")
         self.sidebar.addTab(self.sidebarCollision, icons.EBICON_COLLISION, "Collision")
+        self.sidebar.addTab(self.sidebarChanges, icons.EBICON_CHANGES, "Changes")
         self.sidebar.addTab(self.sidebarAll, icons.EBICON_ALL, "View All")
         self.sidebar.addTab(self.sidebarGame, icons.EBICON_GAME, "View Game")
         self.sidebar.setTabPosition(QTabWidget.TabPosition.West)
@@ -376,14 +379,16 @@ class MapEditor(QWidget):
         self.modeWarpAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.WARP))
         self.modeCollisionAction = QAction(icons.EBICON_COLLISION, "&Collision", shortcut=QKeySequence("F8"))
         self.modeCollisionAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.COLLISION))
-        self.modeAllAction = QAction(icons.EBICON_ALL, "&All", shortcut=QKeySequence("F9"))
+        self.modeChangesAction = QAction(icons.EBICON_CHANGES, "Chan&ges", shortcut=QKeySequence("F9"))
+        self.modeChangesAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.CHANGES))
+        self.modeAllAction = QAction(icons.EBICON_ALL, "&All", shortcut=QKeySequence("F10"))
         self.modeAllAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.ALL))
-        self.modeGameAction = QAction(icons.EBICON_GAME, "&Game", shortcut=QKeySequence("F10"))
+        self.modeGameAction = QAction(icons.EBICON_GAME, "&Game", shortcut=QKeySequence("F11"))
         self.modeGameAction.triggered.connect(lambda: self.sidebar.setCurrentIndex(common.MODEINDEX.GAME))
         
         self.menuMode.addActions([self.modeTileAction, self.modeSectorAction, self.modeNPCAction, self.modeTriggerAction,
                                   self.modeEnemyAction, self.modeHotspotAction, self.modeWarpAction, self.modeCollisionAction,
-                                  self.modeAllAction, self.modeGameAction])
+                                  self.modeChangesAction, self.modeAllAction, self.modeGameAction])
         
         self.menuGoto = QMenu("&Go to")
         self.gotoGenericAction = QAction(icons.ICON_FIND, "&Find...", shortcut=QKeySequence.Find)

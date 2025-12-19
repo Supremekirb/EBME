@@ -59,6 +59,8 @@
         <file alias="modeWarpDark.png">assets/ui/modeWarpDark.png</file>
         <file alias="modeCollision.png">assets/ui/modeCollision.png</file>
         <file alias="modeCollisionDark.png">assets/ui/modeCollisionDark.png</file>
+        <file alias="modeChanges.png">assets/ui/modeChanges.png</file>
+        <file alias="modeChangesDark.png">assets/ui/modeChangesDark.png</file>
         <file alias="selectTile.png">assets/ui/selectTile.png</file>
         <file alias="teleport.png">assets/ui/teleport.png</file>
         <file alias="warp.png">assets/ui/warp.png</file>

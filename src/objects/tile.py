@@ -20,8 +20,6 @@ class MapTile:
         self.palettegroup = palettegroup
         self.tileset = tileset
 
-        self.isPlaced = False
-
 class MapTileGraphic:
     """Graphics for a map tile. Contains a rendered image. All args are IDs"""
     def __init__(self, tile, tileset, palettegroup, palette):

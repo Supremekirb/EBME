@@ -15,6 +15,7 @@ class PlayerGFXModule(YMLResourceDataModule):
         gfx[common.PLAYERSPRITES.ROPE] = playable_char_gfx_table[0]["Rope Sprite Group"]
         gfx[common.PLAYERSPRITES.TINY] = playable_char_gfx_table[0]["Tiny Sprite Group"]
         gfx[common.PLAYERSPRITES.ROBOT] = playable_char_gfx_table[0]["Robot Sprite Group"]
+        # TODO - should probably make this (and other harcoded things?) configurable, with defaults to match vanilla and a reset button.
         gfx[common.PLAYERSPRITES.MAGICANT] = 6 # woo hardcoding! love earthbound
         data.playerSprites = gfx
 

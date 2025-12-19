@@ -110,6 +110,10 @@ class FlagInput(QHBoxLayout):
         
         self.invert.blockSignals(False)
         self.spinbox.blockSignals(False)
+    
+    def setDisabled(self, disabled: bool):
+        self.invert.setDisabled(disabled)
+        self.spinbox.setDisabled(disabled)
         
         
     def text(self) -> str:

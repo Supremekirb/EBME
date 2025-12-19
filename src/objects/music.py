@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QTreeWidgetItem
 
 from src.misc import icons
+import src.misc.common as common
 
 
 class MapMusicEntry:
@@ -48,22 +49,11 @@ class MapMusicHierarchy:
         self.moveEntryTo(index, index-1)
     
     def moveEntryTo(self, entry: MapMusicEntry|int, target: int):
-        """Shift an entry to a specified index. It will be inserted to the left of the item at this index.
-
-        Args:
-            entry (MapMusicEntry | int): The entry to move. Can be an entry object or an index.
-            target (int): The target location.
-        """
         if isinstance(entry, MapMusicEntry):
             index = self.entries.index(entry)
         else:
             index = entry
-        
-        # if the target is greater than the entry, we need to insert it before the target otherwise it's to the right
-        if target > index:
-            target -= 1
-        
-        self.entries.insert(target, self.entries.pop(index))
+        common.moveListItem(self.changes, index, target)
         
 class MapMusicHierarchyListItem(QTreeWidgetItem):
     def __init__(self, hierachy: MapMusicHierarchy):
