@@ -1398,14 +1398,17 @@ class MapAdvancedPalettePreviewDialog(QDialog):
         self.palettechanged.emit(group, palette)
 
 class TileChangeEditDialog(QDialog):
-    def __init__(self, parent, projectData: ProjectData, tileset: int, change: TileChange):
+    def __init__(self, parent, projectData: ProjectData, tileset: int, change: TileChange, event: MapChangeEvent):
         super().__init__(parent)
         self.setWindowTitle("Editing Tile Change")
         self.projectData = projectData # we just need this to render it
         self.tilechange = change
+        self.mapevent = event # This is needed to construct the action
         
         self.selectedBefore = change.before
         self.selectedAfter = change.after
+        
+        # TODO - Palette selection
         
         layout = QVBoxLayout()
         self.setLayout(layout)
@@ -1454,8 +1457,8 @@ class TileChangeEditDialog(QDialog):
         self.selectedAfter = tile
         
     @staticmethod
-    def configureTileChange(parent, projectData: ProjectData, tileset: int, change: TileChange) -> ActionChangeTileChange|None:
-        dialog = TileChangeEditDialog(parent, projectData, tileset, change)
+    def configureTileChange(parent, projectData: ProjectData, tileset: int, change: TileChange, event: MapChangeEvent) -> ActionChangeTileChange|None:
+        dialog = TileChangeEditDialog(parent, projectData, tileset, change, event)
         result = dialog.exec()
         if result == QDialog.DialogCode.Accepted:
-            return ActionChangeTileChange(dialog.tilechange, dialog.selectedBefore, dialog.selectedAfter)
+            return ActionChangeTileChange(dialog.tilechange, dialog.mapevent, dialog.selectedBefore, dialog.selectedAfter)

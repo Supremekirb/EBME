@@ -23,7 +23,11 @@ from PySide6.QtWidgets import (QApplication, QGraphicsLineItem,
 import src.misc.common as common
 import src.misc.icons as icons
 import src.objects.trigger as trigger
-from src.actions.changes_actions import ActionChangeMapChangeEvent, ActionChangeTileChange
+from src.actions.changes_actions import (ActionAddMapChangeEvent, ActionAddTileChange,
+                                         ActionChangeMapChangeEvent,
+                                         ActionChangeTileChange, ActionMoveMapChangeEvent,
+                                         ActionMoveTileChange, ActionRemoveMapChangeEvent,
+                                         ActionRemoveTileChange)
 from src.actions.enemy_actions import (ActionPlaceEnemyTile,
                                        ActionUpdateEnemyMapGroup)
 from src.actions.fts_actions import (ActionAddPalette, ActionChangeCollision,
@@ -518,9 +522,16 @@ class MapEditorScene(QGraphicsScene):
                 actionType = "mapchange"
                 self.parent().sidebarChanges.selectEvent(c.event)
             
-            if isinstance(c, ActionChangeTileChange):
+            if isinstance(c, ActionChangeTileChange) or isinstance(c, ActionAddTileChange) or isinstance(c, ActionRemoveTileChange) \
+                or isinstance(c, ActionMoveTileChange):
                 actionType = "mapchange"
-                self.parent().sidebarChanges.refreshCurrent()
+                self.parent().sidebarChanges.refreshEvent(c.event)
+                
+            # dont forget to update the enabled map changes!
+            if isinstance(c, ActionAddMapChangeEvent) or isinstance(c, ActionRemoveMapChangeEvent) \
+                or isinstance(c, ActionMoveMapChangeEvent):
+                actionType = "mapchange"
+                self.parent().sidebarChanges.fromTileset(c.event.tileset)
 
         match actionType:
             case "tile":

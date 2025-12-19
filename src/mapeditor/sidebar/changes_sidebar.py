@@ -1,18 +1,30 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHeaderView,
-                               QPlainTextEdit, QSizePolicy, QTreeWidget,
-                               QTreeWidgetItem, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHBoxLayout,
+                               QHeaderView, QMessageBox, QPlainTextEdit,
+                               QPushButton, QSizePolicy, QToolButton,
+                               QTreeWidget, QTreeWidgetItem, QVBoxLayout,
+                               QWidget)
 
-from src.actions.changes_actions import ActionChangeMapChangeEvent
+import src.misc.common as common
+from src.actions.changes_actions import (ActionAddMapChangeEvent,
+                                         ActionAddTileChange,
+                                         ActionChangeMapChangeEvent,
+                                         ActionMoveMapChangeEvent,
+                                         ActionMoveTileChange,
+                                         ActionRemoveMapChangeEvent,
+                                         ActionRemoveTileChange)
 from src.actions.fts_actions import ActionChangeCollision
 from src.coilsnake.project_data import ProjectData
+from src.misc import icons as icons
 from src.misc.dialogues import TileChangeEditDialog
 from src.objects.changes import (MapChangeEvent, MapChangeEventListItem,
-                                 MapChangesTree, TileChangeListItem)
+                                 MapChangesTree, TileChange,
+                                 TileChangeListItem)
 from src.widgets.collision import CollisionPresetList, PresetItem
 from src.widgets.input import FlagInput
+from src.widgets.misc import IconLabel
 from src.widgets.tile import TileCollisionWidget
 
 if TYPE_CHECKING:
@@ -28,16 +40,54 @@ class SidebarChanges(QWidget):
         
         self.setupUI()
     
-    def refreshCurrent(self):
-        currentItem = self.eventsTree.currentItem()
-        if isinstance(currentItem, TileChangeListItem):
-            currentItem = currentItem.parent()
+    def refreshEvent(self, event: MapChangeEvent|None = None):
+        # Attempt to refresh current if None is passed
+        if event is None:
+            currentItem = self.eventsTree.currentItem()
+            if isinstance(currentItem, MapChangeEventListItem):
+                event = currentItem.event
+            elif isinstance(currentItem, TileChangeListItem):
+                event = currentItem.parent().event
+            else:
+                return
+    
+        lastItem = self.eventsTree.currentItem()
+        lastTileChange = None
+        
+        if isinstance(lastItem, TileChangeListItem):
+            lastTileChange = lastItem.change
+            lastItem = lastItem.parent()
+        
+        for i in range(self.eventsTree.topLevelItemCount()):
+            item: MapChangeEventListItem = self.eventsTree.topLevelItem(i)
+            if item.event == event:
+                item.updateFlagText()
+                item.rebuildChildren()
+                
+                # Now figure out if we need to re-select it (or a child)
+                if lastItem is not None and item.event == lastItem.event:
+                    self.fromEvent(item) # Loads data into the other UI elements
+                    # If a tile change was previously selected, reselect it.
+                    if lastTileChange is not None:
+                        for i in range(item.childCount()):
+                            if (child := item.child(i)).change == lastTileChange: # Big fan of this line tbh
+                                self.eventsTree.setCurrentItem(child)
+                                break
+    
+    def selectTileChange(self, event: MapChangeEvent, change: TileChange):           
+        # Search until we find it
+        for i in range(self.eventsTree.topLevelItemCount()):
+            item: MapChangeEventListItem = self.eventsTree.topLevelItem(i)
+            if item.event == event:
+                for j in range(item.childCount()):
+                    child: TileChangeListItem = item.child(j)
+                    if child.change == change:
+                        self.eventsTree.setCurrentItem(child)
+                        self.eventsTree.scrollToItem(child)
+                        break
+                break
+        # Otherwise it was likely removed as a part of an undo/redo, so we can ignore it.
 
-        # Re-select it and update its text
-        if isinstance(currentItem, MapChangeEventListItem):
-            currentItem.updateFlagText()
-            currentItem.refreshChildren()
-            self.fromEvent(currentItem)
         
     def selectEvent(self, event: MapChangeEvent):
         currentItem = self.eventsTree.currentItem()
@@ -46,7 +96,7 @@ class SidebarChanges(QWidget):
             
         # If it's the same as the selection, just refresh it
         if currentItem and currentItem.event == event:
-            self.refreshCurrent()
+            self.refreshEvent()
             
         # Only rebuild the list if we need to.
         # Otherwise this will cause collapsed-items state to be reset.
@@ -61,10 +111,26 @@ class SidebarChanges(QWidget):
                 self.eventsTree.setCurrentItem(item)
                 self.eventsTree.scrollToItem(item)
                 break
-        else:
-            raise ValueError(f"Event not found in its tileset ({event.tileset})")
+        # Otherwise it was likely removed as a part of an undo/redo, so we can ignore it.
         
     def fromTileset(self, tilesetID: int):
+        # Attempt to preserve the selected item.
+        lastItem = self.eventsTree.currentItem()
+        # it's necessary to do this now as the item will be deleted internally
+        # when the list is cleared.
+        if lastItem is not None:
+            if isinstance(lastItem, MapChangeEventListItem):
+                lastThing = (lastItem.event,)
+            elif isinstance(lastItem, TileChangeListItem):
+                lastThing = (lastItem.parent().event, lastItem.change) # eh
+            else:
+                lastThing = None
+        else:
+            lastThing = None
+        
+        if lastThing is not None and lastThing[0].tileset != tilesetID:
+            lastThing = None # Prevents re-selection as we do not want it
+        
         self.tilesetSelect.setCurrentIndex(tilesetID)
         self.mapeditor.scene.enabledMapEvents.clear()
         self.eventsTree.clear()
@@ -74,6 +140,13 @@ class SidebarChanges(QWidget):
             
         self.eventsTree.addTopLevelItems(items)
         
+        # Re-select the old selected item if applicable
+        if lastThing is not None:
+            if len(lastThing) == 1: # just the event
+                self.selectEvent(*lastThing)
+            else: # both event and tile change
+                self.selectTileChange(*lastThing)
+
         self.mapeditor.scene.update()
         
     def fromEvent(self, item: MapChangeEventListItem|TileChangeListItem):
@@ -88,12 +161,20 @@ class SidebarChanges(QWidget):
             self.eventGroupBox.setDisabled(True)
             self.eventComment.setPlaceholderText("Select an event.")
             self.eventComment.setPlainText("")
+            self.addTileChangeButton.setDisabled(True)
+            self.removeTileChangeButton.setDisabled(True)
+            self.moveTileChangeUpButton.setDisabled(True)
+            self.moveTileChangeDownButton.setDisabled(True)
         else:
             # re-enable things
             self.eventGroupBox.setDisabled(False)
             self.eventFlag.setValue(item.event.flag)
             self.eventComment.setPlaceholderText("")
             self.eventComment.setPlainText(item.event.comment)
+            self.addTileChangeButton.setDisabled(False)
+            self.removeTileChangeButton.setDisabled(False)
+            self.moveTileChangeUpButton.setDisabled(False)
+            self.moveTileChangeDownButton.setDisabled(False)
         
         self.eventFlag.blockSignals(False)
         self.eventComment.blockSignals(False)
@@ -120,9 +201,127 @@ class SidebarChanges(QWidget):
     
     def onDoubleClick(self, item: MapChangeEventListItem|TileChangeListItem):
         if isinstance(item, TileChangeListItem):
-            action = TileChangeEditDialog.configureTileChange(self, self.projectData, item.parent().event.tileset, item.change)
+            action = TileChangeEditDialog.configureTileChange(self, self.projectData, item.parent().event.tileset, item.change, item.parent().event)
             if action is not None:
                 self.mapeditor.scene.undoStack.push(action)
+            
+    def onAddEvent(self):
+        currentSelected = self.eventsTree.currentItem()
+        if isinstance(currentSelected, TileChangeListItem):
+            index = self.eventsTree.indexOfTopLevelItem(currentSelected.parent())+1
+        elif isinstance(currentSelected, MapChangeEventListItem):
+            index = self.eventsTree.indexOfTopLevelItem(currentSelected)+1
+        else:
+            index = self.eventsTree.topLevelItemCount()
+
+        event = MapChangeEvent(self.tilesetSelect.currentIndex())
+        action = ActionAddMapChangeEvent(event, self.projectData.mapChanges[event.tileset], index)
+        self.mapeditor.scene.undoStack.push(action)
+    
+    def onRemoveEvent(self):
+        currentSelected = self.eventsTree.currentItem()
+        if isinstance(currentSelected, TileChangeListItem):
+            currentSelected = currentSelected.parent()
+        if currentSelected is None:
+            return common.showErrorMsg("Cannot remove map change event.",
+                                       "You must first select a map change event.", icon=QMessageBox.Icon.Warning)
+
+        action = ActionRemoveMapChangeEvent(currentSelected.event, self.projectData.mapChanges[currentSelected.event.tileset])
+        self.mapeditor.scene.undoStack.push(action)
+    
+    def onMoveEventUp(self):
+        currentSelected = self.eventsTree.currentItem()
+        if isinstance(currentSelected, TileChangeListItem):
+            event = currentSelected.parent().event
+        elif isinstance(currentSelected, MapChangeEventListItem):
+            event = currentSelected.event
+        else:
+            return common.showErrorMsg("Cannot move map change event.", 
+                                "You must first select a map change event.", icon=QMessageBox.Icon.Warning)
+            
+        index = self.eventsTree.indexOfTopLevelItem(currentSelected)
+
+        if index == 0: return
+
+        action = ActionMoveMapChangeEvent(event, self.projectData.mapChanges[event.tileset], index-1)
+        self.mapeditor.scene.undoStack.push(action)
+    
+    def onMoveEventDown(self):
+        currentSelected = self.eventsTree.currentItem()
+        if isinstance(currentSelected, TileChangeListItem):
+            event = currentSelected.parent().event
+        elif isinstance(currentSelected, MapChangeEventListItem):
+            event = currentSelected.event
+        else:
+            return common.showErrorMsg("Cannot move map change event.", 
+                                "You must first select a map change event.", icon=QMessageBox.Icon.Warning)
+
+        index = self.eventsTree.indexOfTopLevelItem(currentSelected)
+
+        if index == self.eventsTree.topLevelItemCount()-1: return
+
+        action = ActionMoveMapChangeEvent(event, self.projectData.mapChanges[event.tileset], index+2)
+        self.mapeditor.scene.undoStack.push(action)
+    
+    def onAddTileChange(self):
+        currentSelected = self.eventsTree.currentItem()
+        if isinstance(currentSelected, TileChangeListItem):
+            event = currentSelected.parent().event
+            index = event.changes.index(currentSelected.change)+1
+        elif isinstance(currentSelected, MapChangeEventListItem):
+            event = currentSelected.event
+            index = len(currentSelected.event.changes)
+        else:
+            index = None
+
+        if index is None:
+            return common.showErrorMsg("Cannot add tile change.", 
+                                "You must first select a tile change or a map change event.", icon=QMessageBox.Icon.Warning)
+
+        action = ActionAddTileChange(event, index)
+        self.mapeditor.scene.undoStack.push(action)
+    
+    def onRemoveTileChange(self):
+        currentSelected = self.eventsTree.currentItem()
+        if isinstance(currentSelected, TileChangeListItem):
+            event = currentSelected.parent().event
+            change = currentSelected.change
+        else:
+            return common.showErrorMsg("Cannot remove tile change.", 
+                                "You must first select a tile change.", icon=QMessageBox.Icon.Warning)
+
+        action = ActionRemoveTileChange(event, change)
+        self.mapeditor.scene.undoStack.push(action)
+    
+    def onMoveTileChangeUp(self):
+        currentSelected = self.eventsTree.currentItem()
+        if isinstance(currentSelected, TileChangeListItem):
+            event = currentSelected.parent().event
+            change = currentSelected.change
+            index = currentSelected.parent().indexOfChild(currentSelected)
+        else:
+            return common.showErrorMsg("Cannot move tile change.", 
+                                "You must first select a tile change.", icon=QMessageBox.Icon.Warning)
+        
+        if index == 0: return
+
+        action = ActionMoveTileChange(event, change, index-1)
+        self.mapeditor.scene.undoStack.push(action)
+    
+    def onMoveTileChangeDown(self):
+        currentSelected = self.eventsTree.currentItem()
+        if isinstance(currentSelected, TileChangeListItem):
+            event = currentSelected.parent().event
+            change = currentSelected.change
+            index = currentSelected.parent().indexOfChild(currentSelected)
+        else:
+            return common.showErrorMsg("Cannot move tile change.", 
+                                "You must first select a tile change.", icon=QMessageBox.Icon.Warning)
+        
+        if index == currentSelected.parent().childCount()-1: return
+
+        action = ActionMoveTileChange(event, change, index+2)
+        self.mapeditor.scene.undoStack.push(action)
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -143,6 +342,66 @@ class SidebarChanges(QWidget):
         self.eventsTree.itemDoubleClicked.connect(self.onDoubleClick)
         self.eventsTree.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         
+        
+        addEventButtonsLayout = QHBoxLayout()
+        
+        self.addEventButton = QToolButton()
+        self.addEventButton.setIcon(icons.ICON_NEW)
+        self.addEventButton.setToolTip("Add new event")
+        self.addEventButton.clicked.connect(self.onAddEvent)
+        
+        self.removeEventButton = QToolButton()
+        self.removeEventButton.setIcon(icons.ICON_DELETE)
+        self.removeEventButton.setToolTip("Remove selected event")
+        self.removeEventButton.clicked.connect(self.onRemoveEvent)
+        
+        self.moveEventUpButton = QToolButton()
+        self.moveEventUpButton.setIcon(icons.ICON_UP)
+        self.moveEventUpButton.setToolTip("Move selected event up")
+        self.moveEventUpButton.clicked.connect(self.onMoveEventUp)
+        
+        self.moveEventDownButton = QToolButton()
+        self.moveEventDownButton.setIcon(icons.ICON_DOWN)
+        self.moveEventDownButton.setToolTip("Move selected event down")
+        self.moveEventDownButton.clicked.connect(self.onMoveEventDown)
+        
+        addEventButtonsLayout.addWidget(self.addEventButton)
+        addEventButtonsLayout.addWidget(self.removeEventButton)
+        addEventButtonsLayout.addWidget(self.moveEventUpButton)
+        addEventButtonsLayout.addWidget(self.moveEventDownButton)
+        
+        
+        addTileChangeButtonsLayout = QHBoxLayout()
+        self.addTileChangeButton = QToolButton()
+        self.addTileChangeButton.setIcon(icons.ICON_NEW)
+        self.addTileChangeButton.setToolTip("Add new tile change")
+        self.addTileChangeButton.setDisabled(True)
+        self.addTileChangeButton.clicked.connect(self.onAddTileChange)
+        
+        self.removeTileChangeButton = QToolButton()
+        self.removeTileChangeButton.setIcon(icons.ICON_DELETE)
+        self.removeTileChangeButton.setToolTip("Remove selected tile change")
+        self.removeTileChangeButton.setDisabled(True)
+        self.removeTileChangeButton.clicked.connect(self.onRemoveTileChange)
+        
+        self.moveTileChangeUpButton = QToolButton()
+        self.moveTileChangeUpButton.setIcon(icons.ICON_UP)
+        self.moveTileChangeUpButton.setToolTip("Move selected tile change up")
+        self.moveTileChangeUpButton.setDisabled(True)
+        self.moveTileChangeUpButton.clicked.connect(self.onMoveTileChangeUp)
+        
+        self.moveTileChangeDownButton = QToolButton()
+        self.moveTileChangeDownButton.setIcon(icons.ICON_DOWN)
+        self.moveTileChangeDownButton.setToolTip("Move selected tile change down")
+        self.moveTileChangeDownButton.setDisabled(True)
+        self.moveTileChangeDownButton.clicked.connect(self.onMoveTileChangeDown)
+        
+        addTileChangeButtonsLayout.addWidget(self.addTileChangeButton)
+        addTileChangeButtonsLayout.addWidget(self.removeTileChangeButton)
+        addTileChangeButtonsLayout.addWidget(self.moveTileChangeUpButton)
+        addTileChangeButtonsLayout.addWidget(self.moveTileChangeDownButton)
+
+        
         self.eventGroupBox = QGroupBox("Event Data")
         eventGroupBoxLayout = QFormLayout()
         self.eventGroupBox.setLayout(eventGroupBoxLayout)
@@ -151,8 +410,9 @@ class SidebarChanges(QWidget):
         self.eventFlag = FlagInput()
         self.eventFlag.valueChanged.connect(self.toEvent)
         self.eventFlag.inverted.connect(self.toEvent)
-        self.eventFlag.valueChanged.connect(self.refreshCurrent)
-        self.eventFlag.inverted.connect(self.refreshCurrent)
+        self.eventFlag.valueChanged.connect(self.refreshEvent)
+        self.eventFlag.inverted.connect(self.refreshEvent)
+        self.eventFlag.spinbox.setToolTip("When the flag is set, the tile changes associated with this event will be applied.")
         
         self.eventComment = QPlainTextEdit()
         self.eventComment.setPlaceholderText("Select an event.")
@@ -161,6 +421,9 @@ class SidebarChanges(QWidget):
         
         eventsLayout.addRow("Tileset", self.tilesetSelect)
         eventsLayout.addRow(self.eventsTree)
+        
+        eventsLayout.addRow(IconLabel("Event", icons.ICON_FLAG), addEventButtonsLayout)
+        eventsLayout.addRow(IconLabel("Tile change", icons.ICON_TILE_CHANGE), addTileChangeButtonsLayout)
         
         eventGroupBoxLayout.addRow("Flag", self.eventFlag)
         eventGroupBoxLayout.addRow("Comment", self.eventComment)

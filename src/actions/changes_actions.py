@@ -48,12 +48,82 @@ class ActionChangeMapChangeEvent(QUndoCommand):
     def id(self):
         return common.ACTIONINDEX.CHANGEMAPCHANGEEVENT
 
+
+class ActionAddMapChangeEvent(QUndoCommand):
+    def __init__(self, event: MapChangeEvent, tilesetEvents: MapChange, index: int):
+        super().__init__()
+        self.setText("Add new map change event")
+        
+        self.event = event
+        self.tilesetEvents = tilesetEvents
+        self.index = index
+        
+    def redo(self):
+        self.tilesetEvents.events.insert(self.index, self.event)
+    
+    def undo(self):
+        ActionRemoveMapChangeEvent.redo(self)
+    
+    def mergeWith(self, other: QUndoCommand):
+        return False
+
+    def id(self):
+        return common.ACTIONINDEX.ADDMAPCHANGEEVENT
+
+
+class ActionRemoveMapChangeEvent(QUndoCommand):
+    def __init__(self, event: MapChangeEvent, tilesetEvents: MapChange):
+        super().__init__()
+        self.setText("Remove map change event")
+        
+        self.event = event
+        self.tilesetEvents = tilesetEvents
+        self.index = self.tilesetEvents.events.index(event)
+        
+    def redo(self):
+        self.tilesetEvents.events.remove(self.event)
+    
+    def undo(self):
+        ActionAddMapChangeEvent.redo(self)
+    
+    def mergeWith(self, other: QUndoCommand):
+        return False
+
+    def id(self):
+        return common.ACTIONINDEX.REMOVEMAPCHANGEEVENT
+        
+class ActionMoveMapChangeEvent(QUndoCommand):
+    def __init__(self, event: MapChangeEvent, tilesetEvents: MapChange, target: int):
+        super().__init__()
+        self.setText("Move map change event")
+        
+        self.event = event
+        self.tilesetEvents = tilesetEvents
+        self.target = target
+        
+        self._target = tilesetEvents.events.index(event)
+        if self._target > self.target:
+            self._target += 1
+    
+    def redo(self):
+        self.tilesetEvents.moveEventTo(self.event, self.target)
+
+    def undo(self):
+        self.tilesetEvents.moveEventTo(self.event, self._target)
+
+    def id(self):
+        return common.ACTIONINDEX.MOVEMAPCHANGEEVENT
+
+    def mergeWith(self, other: QUndoCommand):
+        return False
+
 class ActionChangeTileChange(QUndoCommand):
-    def __init__(self, change: TileChange, before: int, after: int):
+    def __init__(self, change: TileChange, event: MapChangeEvent, before: int, after: int):
         super().__init__()
         self.setText("Edit tile change")
         
         self.change = change
+        self.event = event # Needs this so we know what to refresh in the UI on undo/redo
         
         self.before = before
         self.after = after
@@ -70,14 +140,76 @@ class ActionChangeTileChange(QUndoCommand):
         self.change.after = self._after
     
     def mergeWith(self, other: QUndoCommand):
-        # wrong action type
-        if other.id() != common.ACTIONINDEX.CHANGETILECHANGE:
-            return False
-        # operates on wrong change
-        if other.change != self.change:
-            return False
-        # 'changes' list mismatches
-        # success
-        self.before = other.before
-        self.after = other.after
-        return True
+        return False
+
+    def id(self):
+        return common.ACTIONINDEX.CHANGETILECHANGE
+
+class ActionAddTileChange(QUndoCommand):
+    def __init__(self, event: MapChangeEvent, index: int):
+        super().__init__()
+        self.setText("Add new tile change")
+        
+        self.event = event
+        self.change = TileChange(0, 0) # TODO - prompt user for values?
+        self.index = index
+        
+    def redo(self):
+        self.event.changes.insert(self.index, self.change)
+    
+    def undo(self):
+        ActionRemoveTileChange.redo(self)
+    
+    def mergeWith(self, other: QUndoCommand):
+        return False
+
+    def id(self):
+        return common.ACTIONINDEX.ADDTILECHANGE
+
+
+class ActionRemoveTileChange(QUndoCommand):
+    def __init__(self, event: MapChangeEvent, change: TileChange):
+        super().__init__()
+        self.setText("Remove tile change")
+        
+        self.event = event
+        self.change = change
+        self.index = self.event.changes.index(change)
+        
+    def redo(self):
+        self.event.changes.remove(self.change)
+    
+    def undo(self):
+        ActionAddTileChange.redo(self)
+    
+    def mergeWith(self, other: QUndoCommand):
+        return False
+
+    def id(self):
+        return common.ACTIONINDEX.REMOVETILECHANGE
+
+
+class ActionMoveTileChange(QUndoCommand):
+    def __init__(self, event: MapChangeEvent, change: TileChange, target: int):
+        super().__init__()
+        self.setText("Move tile change")
+        
+        self.event = event
+        self.change = change
+        self.target = target
+        
+        self._target = event.changes.index(change)
+        if self._target > self.target:
+            self._target += 1
+    
+    def redo(self):
+        self.event.moveTileChangeTo(self.change, self.target)
+
+    def undo(self):
+        self.event.moveTileChangeTo(self.change, self._target)
+
+    def id(self):
+        return common.ACTIONINDEX.MOVETILECHANGE
+
+    def mergeWith(self, other: QUndoCommand):
+        return False

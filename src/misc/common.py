@@ -181,7 +181,13 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "ADDPALETTESETTINGSCHILD", # cannot merge with itself
                                       "REMOVEPALETTESETTINGSCHILD", # cannot merge with itself
                                       "CHANGEMAPCHANGEEVENT", # can merge with itself if 'changes' list is identical
-                                      "CHANGETILECHANGE", # can merge with itself
+                                      "ADDMAPCHANGEEVENT", # cannot merge with itself
+                                      "REMOVEMAPCHANGEEVENT", # cannot merge with itself
+                                      "MOVEMAPCHANGEEVENT", # cannot merge with itself
+                                      "CHANGETILECHANGE", # cannot merge with itself
+                                      "ADDTILECHANGE", # cannot merge with itself
+                                      "REMOVETILECHANGE", # cannot merge with itself
+                                      "MOVETILECHANGE", # cannot merge with itself
                                       ])
 
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18
@@ -376,6 +382,13 @@ def cap(val: float, min_: float, max_: float):
 # https://stackoverflow.com/a/2267428
 def baseN(num: int, base: int, numerals="0123456789abcdefghijklmnopqrstuvwxyz"):
     return ((num == 0) and numerals[0]) or (baseN(num // base, base, numerals).lstrip(numerals[0]) + numerals[num % base])
+
+def moveListItem(sequence: list, source: int, target: int):
+        """Shift an item at an index in a sequence to another specified index. It will be inserted to the left of the item at this index."""
+        # if the target is greater than the source, we need to insert it before the target otherwise it's to the right
+        if target > source:
+            target -= 1
+        sequence.insert(target, sequence.pop(source))
 
 def normaliseFileExtension(path: str, ext: str) -> str:
     """Add a file extension to a path if the path doesn't already have a file extension."""
