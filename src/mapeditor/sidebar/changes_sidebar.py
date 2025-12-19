@@ -3,29 +3,23 @@ from typing import TYPE_CHECKING
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHBoxLayout,
                                QHeaderView, QMessageBox, QPlainTextEdit,
-                               QPushButton, QSizePolicy, QToolButton,
-                               QTreeWidget, QTreeWidgetItem, QVBoxLayout,
-                               QWidget)
+                               QSizePolicy, QToolButton, QVBoxLayout, QWidget)
 
 import src.misc.common as common
 from src.actions.changes_actions import (ActionAddMapChangeEvent,
-                                         ActionAddTileChange,
                                          ActionChangeMapChangeEvent,
                                          ActionMoveMapChangeEvent,
                                          ActionMoveTileChange,
                                          ActionRemoveMapChangeEvent,
                                          ActionRemoveTileChange)
-from src.actions.fts_actions import ActionChangeCollision
 from src.coilsnake.project_data import ProjectData
 from src.misc import icons as icons
 from src.misc.dialogues import TileChangeEditDialog
 from src.objects.changes import (MapChangeEvent, MapChangeEventListItem,
                                  MapChangesTree, TileChange,
                                  TileChangeListItem)
-from src.widgets.collision import CollisionPresetList, PresetItem
 from src.widgets.input import FlagInput
 from src.widgets.misc import IconLabel
-from src.widgets.tile import TileCollisionWidget
 
 if TYPE_CHECKING:
     from src.mapeditor.map_editor import MapEditor, MapEditorState
