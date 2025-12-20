@@ -393,12 +393,10 @@ class SettingsDialog(QDialog):
         self.personalisationLayout.addRow("Show undo/redo timeline:", self.showUndoRedo)
         self.personalisationLayout.addWidget(QLabel("Restart to show/hide timeline."))
         
-        self.coordCopyStyle = QComboBox()
-        self.coordCopyStyle.addItems(["(x, y)",
-                                      "(x y)",
-                                      "x, y",
-                                      "x y"])
-        self.personalisationLayout.addRow("Alt+Right-click coordinate copy style:", self.coordCopyStyle)
+        self.coordCopyStyle = QLineEdit()
+        self.coordCopyStyle.setPlaceholderText(r"Default: (%X, %Y)")
+        self.personalisationLayout.addRow("Alt+Right-click coordinate copy pattern:", self.coordCopyStyle)
+        self.personalisationLayout.addWidget(QLabel(r"Use %X and %Y to represent the X and Y coordinates."))
         
         self.coordCopyAuto = QCheckBox("")
         self.personalisationLayout.addRow("Adapt coordinate copying to mode:", self.coordCopyAuto)
@@ -411,7 +409,7 @@ class SettingsDialog(QDialog):
         self.textEditorSetterLayout = QHBoxLayout()
         self.textEditorCommand = QLineEdit()
         self.textEditorCommand.setPlaceholderText("(Auto)")
-        self.textEditorHint = QLabel("Use %F to represent the file path and %L to represent the line number.")
+        self.textEditorHint = QLabel(r"Use %F to represent the file path and %L to represent the line number.")
         self.textEditorClear = QPushButton("Use default")
         self.textEditorClear.clicked.connect(lambda: self.textEditorCommand.setText(""))
         self.textEditorSetterLayout.addWidget(self.textEditorCommand)
@@ -473,7 +471,7 @@ class SettingsDialog(QDialog):
         self.applicationTheme.setCurrentText(self.settings.value("personalisation/applicationTheme", QApplication.style().objectName(), type=str))
         self.smoothGoto.setCurrentText(self.settings.value("personalisation/smoothGoto", "Always enabled", type=str))
         self.showUndoRedo.setChecked(self.settings.value("main/showUndoRedo", True, type=bool))
-        self.coordCopyStyle.setCurrentText(self.settings.value("personalisation/coordCopyStyle", "(x, y)", type=str))
+        self.coordCopyStyle.setText(self.settings.value("personalisation/coordCopyStyle", r"(%X, %Y)", type=str))
         self.coordCopyAuto.setChecked(self.settings.value("personalisation/coordCopyAuto", True, type=bool))
         self.textEditorCommand.setText(self.settings.value("programs/textEditorCommand", ""))
         # self.imageEditorCommand.setText(self.settings.value("programs/imageEditorCommand", ""))
@@ -489,7 +487,7 @@ class SettingsDialog(QDialog):
         
         self.settings.setValue("personalisation/applicationTheme", self.applicationTheme.currentText())
         self.settings.setValue("personalisation/smoothGoto", self.smoothGoto.currentText())
-        self.settings.setValue("personalisation/coordCopyStyle", self.coordCopyStyle.currentText())
+        self.settings.setValue("personalisation/coordCopyStyle", self.coordCopyStyle.text() if self.coordCopyStyle.text() != "" else r"(%X, %Y)")
         self.settings.setValue("personalisation/coordCopyAuto", self.coordCopyAuto.isChecked())
         
         self.settings.setValue("programs/textEditorCommand", self.textEditorCommand.text())

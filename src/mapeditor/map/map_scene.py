@@ -274,9 +274,9 @@ class MapEditorScene(QGraphicsScene):
             else:
                 toCopy = coords.coords()
             QApplication.clipboard().setText(QSettings().value
-                                             ("personalisation/coordCopyStyle", "(x, y)", type=str)
-                                             .replace('x', str(toCopy[0]))
-                                             .replace('y', str(toCopy[1])))
+                                             ("personalisation/coordCopyStyle", r"(%X, %Y)", type=str)
+                                             .replace(r'%X', str(toCopy[0]))
+                                             .replace(r'%Y', str(toCopy[1])))
             
         else:
             if self.state.tempMode == common.TEMPMODEINDEX.NONE:
