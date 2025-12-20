@@ -4,7 +4,7 @@ import traceback
 from typing import TYPE_CHECKING
 
 import requests
-from PySide6.QtCore import QSettings, Qt, QThread, QTimer
+from PySide6.QtCore import QPoint, QSettings, Qt, QThread, QTimer
 from PySide6.QtGui import QAction, QKeySequence, QPixmap
 from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
                                QHBoxLayout, QLabel, QLineEdit, QListWidget,
@@ -345,7 +345,15 @@ class Project(QWidget):
                 self.recentsList.takeItem(10)
 
         # either way, take this opportunity to save the recents to settings
+        self.saveRecents()
+
+    def saveRecents(self):
         settings = QSettings()
+        # Clear all recorded recents
+        for i in range(0, common.MAXRECENTS):
+            settings.remove(f"main/recents/{i}Path")
+            settings.remove(f"main/recents/{i}Name")
+        # Populate it again with our list
         for i, recent in enumerate(self.recents):
             settings.setValue(f"main/recents/{i}Path", recent["path"])
             settings.setValue(f"main/recents/{i}Name", recent["name"])
@@ -353,6 +361,21 @@ class Project(QWidget):
     def openFromRecents(self, path):
         if self.openAction.isEnabled():
             self.openDirectory(path)
+
+    def onRecentsContextMenu(self, point: QPoint):
+        if self.recentsList.itemAt(point) is not None:
+            globalPoint = self.recentsList.mapToGlobal(point)
+            action = QAction(icons.ICON_DELETE, "&Remove from recents list")
+            action.triggered.connect(self.deleteSelectedRecent)
+            contextMenu = QMenu()
+            contextMenu.addAction(action)
+            contextMenu.exec(globalPoint)
+    
+    def deleteSelectedRecent(self):
+        index = self.recentsList.currentIndex().row()
+        self.recentsList.takeItem(index)
+        self.recents.pop(index)
+        self.saveRecents()
 
     def loadProjectInfo(self):
         self.projectTitleInput.setText(self.projectData.getProjectName())
@@ -440,6 +463,8 @@ class Project(QWidget):
         self.recentsLayout.addWidget(self.recentsList)
         self.recentsBox.setLayout(self.recentsLayout)
         self.populateRecents()
+        self.recentsList.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.recentsList.customContextMenuRequested.connect(self.onRecentsContextMenu)
         self.recentsList.itemDoubleClicked.connect(lambda: self.openFromRecents(self.recents[self.recentsList.currentIndex().row()]["path"]))
 
         self.projectInfo = QGroupBox("Project Info")
