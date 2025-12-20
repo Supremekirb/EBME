@@ -18,6 +18,7 @@ def init_icons():
     global EBICON_HOTSPOT
     global EBICON_WARP
     global EBICON_COLLISION
+    global EBICON_CHANGES
     global EBICON_ALL
     global EBICON_GAME
     
@@ -31,6 +32,7 @@ def init_icons():
         EBICON_HOTSPOT = QIcon(":/ui/modeHotspotDark.png")
         EBICON_WARP = QIcon(":/ui/modeWarpDark.png")
         EBICON_COLLISION = QIcon(":/ui/modeCollisionDark.png")
+        EBICON_CHANGES = QIcon(":/ui/modeChangesDark.png")
         EBICON_ALL = QIcon(":/ui/modeAllDark.png")
         EBICON_GAME = QIcon(":/ui/modeGameDark.png")
     else:
@@ -42,6 +44,7 @@ def init_icons():
         EBICON_HOTSPOT = QIcon(":/ui/modeHotspot.png")
         EBICON_WARP = QIcon(":/ui/modeWarp.png")
         EBICON_COLLISION = QIcon(":/ui/modeCollision.png")
+        EBICON_CHANGES = QIcon(":/ui/modeChanges.png")
         EBICON_ALL = QIcon(":/ui/modeAll.png")
         EBICON_GAME = QIcon(":/ui/modeGame.png")
     

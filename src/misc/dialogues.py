@@ -19,6 +19,8 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
 import src.misc.common as common
 import src.misc.icons as icons
 import src.misc.quotes as quotes
+from src.actions.changes_actions import (ActionAddTileChange,
+                                         ActionChangeTileChange)
 from src.actions.fts_actions import (ActionChangeSubpaletteColour,
                                      ActionReplacePalette, ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
@@ -26,6 +28,7 @@ from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
                                            PaletteGroup, Subpalette)
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
+from src.objects.changes import MapChangeEvent, TileChange
 from src.objects.sector import USERDATA_TYPES, Int8, Int16, Sector
 from src.widgets.input import ColourButton, CoordsInput
 from src.widgets.layout import HorizontalGraphicsView, HSeparator
@@ -138,7 +141,7 @@ class FindDialog(QDialog):
             dialog = FindDialog(parent, projectData)
             result = dialog.exec()
 
-            if result == QDialog.Accepted:
+            if result == QDialog.DialogCode.Accepted:
                 if dialog.resultsList.currentItem():
                     return dialog.resultsList.currentItem().obj
                 else:
@@ -206,7 +209,7 @@ class CoordsDialog(QDialog):
             dialog = CoordsDialog(parent)
             result = dialog.exec()
 
-            if result == QDialog.Accepted:
+            if result == QDialog.DialogCode.Accepted:
                 CoordsDialog.LAST_TYPE = dialog.coordsType.currentIndex()
                 match dialog.coordsType.currentText():
                     case "Pixels (1:1)":
@@ -393,12 +396,10 @@ class SettingsDialog(QDialog):
         self.personalisationLayout.addRow("Show undo/redo timeline:", self.showUndoRedo)
         self.personalisationLayout.addWidget(QLabel("Restart to show/hide timeline."))
         
-        self.coordCopyStyle = QComboBox()
-        self.coordCopyStyle.addItems(["(x, y)",
-                                      "(x y)",
-                                      "x, y",
-                                      "x y"])
-        self.personalisationLayout.addRow("Alt+Right-click coordinate copy style:", self.coordCopyStyle)
+        self.coordCopyStyle = QLineEdit()
+        self.coordCopyStyle.setPlaceholderText(r"Default: (%X, %Y)")
+        self.personalisationLayout.addRow("Alt+Right-click coordinate copy pattern:", self.coordCopyStyle)
+        self.personalisationLayout.addWidget(QLabel(r"Use %X and %Y to represent the X and Y coordinates."))
         
         self.coordCopyAuto = QCheckBox("")
         self.personalisationLayout.addRow("Adapt coordinate copying to mode:", self.coordCopyAuto)
@@ -411,7 +412,7 @@ class SettingsDialog(QDialog):
         self.textEditorSetterLayout = QHBoxLayout()
         self.textEditorCommand = QLineEdit()
         self.textEditorCommand.setPlaceholderText("(Auto)")
-        self.textEditorHint = QLabel("Use %F to represent the file path and %L to represent the line number.")
+        self.textEditorHint = QLabel(r"Use %F to represent the file path and %L to represent the line number.")
         self.textEditorClear = QPushButton("Use default")
         self.textEditorClear.clicked.connect(lambda: self.textEditorCommand.setText(""))
         self.textEditorSetterLayout.addWidget(self.textEditorCommand)
@@ -473,7 +474,7 @@ class SettingsDialog(QDialog):
         self.applicationTheme.setCurrentText(self.settings.value("personalisation/applicationTheme", QApplication.style().objectName(), type=str))
         self.smoothGoto.setCurrentText(self.settings.value("personalisation/smoothGoto", "Always enabled", type=str))
         self.showUndoRedo.setChecked(self.settings.value("main/showUndoRedo", True, type=bool))
-        self.coordCopyStyle.setCurrentText(self.settings.value("personalisation/coordCopyStyle", "(x, y)", type=str))
+        self.coordCopyStyle.setText(self.settings.value("personalisation/coordCopyStyle", r"(%X, %Y)", type=str))
         self.coordCopyAuto.setChecked(self.settings.value("personalisation/coordCopyAuto", True, type=bool))
         self.textEditorCommand.setText(self.settings.value("programs/textEditorCommand", ""))
         # self.imageEditorCommand.setText(self.settings.value("programs/imageEditorCommand", ""))
@@ -489,7 +490,7 @@ class SettingsDialog(QDialog):
         
         self.settings.setValue("personalisation/applicationTheme", self.applicationTheme.currentText())
         self.settings.setValue("personalisation/smoothGoto", self.smoothGoto.currentText())
-        self.settings.setValue("personalisation/coordCopyStyle", self.coordCopyStyle.currentText())
+        self.settings.setValue("personalisation/coordCopyStyle", self.coordCopyStyle.text() if self.coordCopyStyle.text() != "" else r"(%X, %Y)")
         self.settings.setValue("personalisation/coordCopyAuto", self.coordCopyAuto.isChecked())
         
         self.settings.setValue("programs/textEditorCommand", self.textEditorCommand.text())
@@ -1607,3 +1608,112 @@ class ImportUserdataDialog(QDialog):
         except Exception as e:
             logging.warning(f"Error importing userdata: {str(e)}")
             return False
+
+class TileChangeEditDialog(QDialog):
+    def __init__(self, parent, projectData: ProjectData, tileset: int, change: TileChange):
+        super().__init__(parent)
+        self.setWindowTitle("Editing Tile Change")
+        self.projectData = projectData # we just need this to render it
+        self.paletteGroups = self.projectData.getTileset(tileset).paletteGroups
+        self.tilechange = change
+        
+        self.selectedBefore = change.before
+        self.selectedAfter = change.after
+        
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        
+        paletteGroupBox = QGroupBox("Preview display")
+        paletteGroupBoxLayout = QFormLayout()
+        paletteGroupBox.setLayout(paletteGroupBoxLayout)
+        self.paletteGroupSelect = QComboBox()
+        self.paletteSelect = QComboBox()
+        
+        for i in self.paletteGroups:
+            self.paletteGroupSelect.addItem(str(i.groupID))
+        for i in self.paletteGroups[0].palettes:
+            self.paletteSelect.addItem(str(i.paletteID))
+            
+        self.paletteGroupSelect.currentIndexChanged.connect(self.onPaletteGroupChange)
+        self.paletteSelect.currentIndexChanged.connect(self.onPaletteChange)
+        
+        paletteGroupBoxLayout.addRow("Palette Group", self.paletteGroupSelect)
+        paletteGroupBoxLayout.addRow("Palette", self.paletteSelect)
+        
+        self.tilesetBeforeDisplay = TilesetDisplayGraphicsScene(projectData, horizontal=True, forcedTileIDs=True)
+        self.tilesetBeforeDisplay.currentTileset = tileset
+        self.tilesetBeforeDisplay.currentPaletteGroup = self.projectData.getTileset(tileset).paletteGroups[0].groupID
+        self.tilesetBeforeDisplay.currentPalette = self.projectData.getTileset(tileset).paletteGroups[0].palettes[0].paletteID
+        self.tilesetBeforeDisplayView = HorizontalGraphicsView(self.tilesetBeforeDisplay)
+        self.tilesetBeforeDisplayView.setFixedHeight(self.tilesetBeforeDisplay.rowSize*32 + self.tilesetBeforeDisplayView.horizontalScrollBar().sizeHint().height())
+        self.tilesetBeforeDisplayView.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+        self.tilesetBeforeDisplayView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.tilesetBeforeDisplay.moveCursorToTile(change.before)
+        self.tilesetBeforeDisplayView.centerOn(*[i*32 for i in self.tilesetBeforeDisplay.tileIndexToPos(change.before)])
+        self.tilesetBeforeDisplay.tileSelected.connect(self.onSelectBeforeTile)
+        
+        self.tilesetAfterDisplay = TilesetDisplayGraphicsScene(projectData, horizontal=True, forcedTileIDs=True)
+        self.tilesetAfterDisplay.currentTileset = tileset
+        self.tilesetAfterDisplay.currentPaletteGroup = self.projectData.getTileset(tileset).paletteGroups[0].groupID
+        self.tilesetAfterDisplay.currentPalette = self.projectData.getTileset(tileset).paletteGroups[0].palettes[0].paletteID
+        self.tilesetAfterDisplayView = HorizontalGraphicsView(self.tilesetAfterDisplay)
+        self.tilesetAfterDisplayView.setFixedHeight(self.tilesetAfterDisplay.rowSize*32 + self.tilesetAfterDisplayView.horizontalScrollBar().sizeHint().height())
+        self.tilesetAfterDisplayView.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+        self.tilesetAfterDisplayView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.tilesetAfterDisplay.moveCursorToTile(change.after)
+        self.tilesetAfterDisplayView.centerOn(*[i*32 for i in self.tilesetBeforeDisplay.tileIndexToPos(change.after)])
+        self.tilesetAfterDisplay.tileSelected.connect(self.onSelectAfterTile)
+        
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        
+        layout.addWidget(paletteGroupBox)
+        layout.addWidget(QLabel("Before"))
+        layout.addWidget(self.tilesetBeforeDisplayView)
+        layout.addWidget(QLabel("After"))
+        layout.addWidget(self.tilesetAfterDisplayView)
+        layout.addWidget(self.buttons)
+        
+        # Make it look a little nicer
+        self.resize(500, 300)
+    
+    def onSelectBeforeTile(self, tile: int):
+        self.selectedBefore = tile
+        
+    def onSelectAfterTile(self, tile: int):
+        self.selectedAfter = tile
+    
+    def onPaletteGroupChange(self, new: int):
+        self.paletteSelect.blockSignals(True)
+        self.paletteSelect.clear()
+        for i in self.paletteGroups[new].palettes:
+            self.paletteSelect.addItem(str(i.paletteID))
+        self.paletteSelect.setCurrentIndex(0)
+        self.paletteSelect.blockSignals(False)
+        self.onPaletteChange(self.paletteSelect.currentIndex())
+
+    def onPaletteChange(self, new: int):
+        group = self.paletteGroups[self.paletteGroupSelect.currentIndex()].groupID
+        palette = self.paletteGroups[self.paletteGroupSelect.currentIndex()].palettes[new].paletteID
+        self.tilesetBeforeDisplay.currentPalette = self.tilesetAfterDisplay.currentPalette = palette
+        self.tilesetBeforeDisplay.currentPaletteGroup = self.tilesetAfterDisplay.currentPaletteGroup = group
+        self.tilesetBeforeDisplay.update()
+        self.tilesetAfterDisplay.update()
+        
+    @staticmethod
+    def configureTileChange(parent, projectData: ProjectData, tileset: int, change: TileChange, event: MapChangeEvent) -> ActionChangeTileChange|None:
+        dialog = TileChangeEditDialog(parent, projectData, tileset, change)
+        result = dialog.exec()
+        if result == QDialog.DialogCode.Accepted:
+            return ActionChangeTileChange(change, event, dialog.selectedBefore, dialog.selectedAfter)
+    
+    @staticmethod
+    def newTileChange(parent, projectData: ProjectData, tileset: int, event: MapChangeEvent, index: int) -> ActionAddTileChange|None:
+        change = TileChange(0, 0)
+        dialog = TileChangeEditDialog(parent, projectData, tileset, change)
+        result = dialog.exec()
+        if result == QDialog.DialogCode.Accepted:
+            change.before = dialog.selectedBefore
+            change.after = dialog.selectedAfter
+            return ActionAddTileChange(event, index, change)

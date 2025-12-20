@@ -34,6 +34,10 @@ class TilesetModule(DataModule):
             
             fts_file.write("\n")
 
+            # TODO
+            # Ensure that the sorting of this is
+            # correct (PG, P) before saving.
+            # This can cause issues on the next load.
             for p in i.palettes:
                 fts_file.write(p.toRaw())
                 fts_file.write("\n")

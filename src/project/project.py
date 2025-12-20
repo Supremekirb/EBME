@@ -4,11 +4,11 @@ import traceback
 from typing import TYPE_CHECKING
 
 import requests
-from PySide6.QtCore import QSettings, Qt, QThread, QTimer
-from PySide6.QtGui import QAction, QKeySequence, QPixmap
-from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
-                               QHBoxLayout, QLabel, QLineEdit, QListWidget,
-                               QMenu, QMessageBox, QPlainTextEdit,
+from PySide6.QtCore import QPoint, QSettings, Qt, QThread, QTimer
+from PySide6.QtGui import QAction, QDesktopServices, QKeySequence, QPixmap
+from PySide6.QtWidgets import (QApplication, QFileDialog, QFormLayout,
+                               QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+                               QListWidget, QMenu, QMessageBox, QPlainTextEdit,
                                QProgressBar, QPushButton, QSizePolicy,
                                QVBoxLayout, QWidget)
 
@@ -345,7 +345,15 @@ class Project(QWidget):
                 self.recentsList.takeItem(10)
 
         # either way, take this opportunity to save the recents to settings
+        self.saveRecents()
+
+    def saveRecents(self):
         settings = QSettings()
+        # Clear all recorded recents
+        for i in range(0, common.MAXRECENTS):
+            settings.remove(f"main/recents/{i}Path")
+            settings.remove(f"main/recents/{i}Name")
+        # Populate it again with our list
         for i, recent in enumerate(self.recents):
             settings.setValue(f"main/recents/{i}Path", recent["path"])
             settings.setValue(f"main/recents/{i}Name", recent["name"])
@@ -353,6 +361,29 @@ class Project(QWidget):
     def openFromRecents(self, path):
         if self.openAction.isEnabled():
             self.openDirectory(path)
+
+    def onRecentsContextMenu(self, point: QPoint):
+        if self.recentsList.itemAt(point) is not None:
+            globalPoint = self.recentsList.mapToGlobal(point)
+            contextMenu = QMenu()
+            contextMenu.addAction(icons.ICON_LOAD, "&Open in file browser", self.openSelectedRecentPath)
+            contextMenu.addAction(icons.ICON_COPY, "&Copy path", self.copySelectedRecentPath)
+            contextMenu.addAction(icons.ICON_DELETE, "&Remove from recents list", self.deleteSelectedRecent)
+            contextMenu.exec(globalPoint)
+    
+    def deleteSelectedRecent(self):
+        index = self.recentsList.currentIndex().row()
+        self.recentsList.takeItem(index)
+        self.recents.pop(index)
+        self.saveRecents()
+    
+    def copySelectedRecentPath(self):
+        index = self.recentsList.currentIndex().row()
+        QApplication.clipboard().setText(self.recents[index]["path"])
+    
+    def openSelectedRecentPath(self):
+        index = self.recentsList.currentIndex().row()
+        QDesktopServices.openUrl("file://" + self.recents[index]["path"])
 
     def loadProjectInfo(self):
         self.projectTitleInput.setText(self.projectData.getProjectName())
@@ -440,6 +471,8 @@ class Project(QWidget):
         self.recentsLayout.addWidget(self.recentsList)
         self.recentsBox.setLayout(self.recentsLayout)
         self.populateRecents()
+        self.recentsList.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.recentsList.customContextMenuRequested.connect(self.onRecentsContextMenu)
         self.recentsList.itemDoubleClicked.connect(lambda: self.openFromRecents(self.recents[self.recentsList.currentIndex().row()]["path"]))
 
         self.projectInfo = QGroupBox("Project Info")

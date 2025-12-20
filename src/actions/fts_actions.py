@@ -279,7 +279,7 @@ class ActionAddPalette(QUndoCommand):
     def redo(self):
         tileset = self.projectData.getTilesetFromPaletteGroup(self.palette.groupID)
         tileset.palettes.append(self.palette)
-        tileset.palettes.sort(key=lambda p: p.paletteID)
+        tileset.palettes.sort(key=lambda p: (p.groupID, p.paletteID))
         paletteGroup = tileset.getPaletteGroup(self.palette.groupID)
         paletteGroup.palettes.append(self.palette)
         paletteGroup.palettes.sort(key=lambda p: p.paletteID)
