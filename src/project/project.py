@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 
 import requests
 from PySide6.QtCore import QPoint, QSettings, Qt, QThread, QTimer
-from PySide6.QtGui import QAction, QKeySequence, QPixmap
-from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
-                               QHBoxLayout, QLabel, QLineEdit, QListWidget,
-                               QMenu, QMessageBox, QPlainTextEdit,
+from PySide6.QtGui import QAction, QDesktopServices, QKeySequence, QPixmap
+from PySide6.QtWidgets import (QApplication, QFileDialog, QFormLayout,
+                               QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+                               QListWidget, QMenu, QMessageBox, QPlainTextEdit,
                                QProgressBar, QPushButton, QSizePolicy,
                                QVBoxLayout, QWidget)
 
@@ -365,10 +365,10 @@ class Project(QWidget):
     def onRecentsContextMenu(self, point: QPoint):
         if self.recentsList.itemAt(point) is not None:
             globalPoint = self.recentsList.mapToGlobal(point)
-            action = QAction(icons.ICON_DELETE, "&Remove from recents list")
-            action.triggered.connect(self.deleteSelectedRecent)
             contextMenu = QMenu()
-            contextMenu.addAction(action)
+            contextMenu.addAction(icons.ICON_LOAD, "&Open in file browser", self.openSelectedRecentPath)
+            contextMenu.addAction(icons.ICON_COPY, "&Copy path", self.copySelectedRecentPath)
+            contextMenu.addAction(icons.ICON_DELETE, "&Remove from recents list", self.deleteSelectedRecent)
             contextMenu.exec(globalPoint)
     
     def deleteSelectedRecent(self):
@@ -376,6 +376,14 @@ class Project(QWidget):
         self.recentsList.takeItem(index)
         self.recents.pop(index)
         self.saveRecents()
+    
+    def copySelectedRecentPath(self):
+        index = self.recentsList.currentIndex().row()
+        QApplication.clipboard().setText(self.recents[index]["path"])
+    
+    def openSelectedRecentPath(self):
+        index = self.recentsList.currentIndex().row()
+        QDesktopServices.openUrl("file://" + self.recents[index]["path"])
 
     def loadProjectInfo(self):
         self.projectTitleInput.setText(self.projectData.getProjectName())
