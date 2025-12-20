@@ -1087,7 +1087,11 @@ class MapEditorScene(QGraphicsScene):
     def pickMapChanges(self, coords: EBCoords):
         coords.restrictToMap()
         tileset = self.projectData.getTile(coords).tileset
-        self.parent().sidebarChanges.fromTileset(tileset)
+        # Pick the tileset if we are not currently on it
+        if tileset != self.parent().sidebarChanges.tilesetSelect.currentIndex():
+            self.parent().sidebarChanges.fromTileset(tileset)
+        # Otherwise/then, try to pick the tile in question
+        self.parent().sidebarChanges.selectFromTileID(self.projectData.getTile(coords).tile)
             
     def pickEnemyTile(self, coords: EBCoords):
         """Pick an enemy tile at this location and load it into the sidebar
@@ -1550,6 +1554,8 @@ class MapEditorScene(QGraphicsScene):
         start = EBCoords(*rect.topLeft().toTuple())
         end = EBCoords(*rect.bottomRight().toTuple())
         
+        tint = False # Tinting for tile changes
+        
         start.restrictToMap()
         end.restrictToMap()
         x0, y0 = start.coordsTile()
@@ -1576,6 +1582,7 @@ class MapEditorScene(QGraphicsScene):
                                     # not sure how i feel about doing it this way
                                     # doesnt seem to impact performance
                                     tile = MapTile(j.after, tile.coords, tile.tileset, tile.palettegroup, tile.palette)
+                                    tint = QSettings().value("mapeditor/TileChangesTint", type=bool, defaultValue=False)
                                     
                     if not previewing:
                         graphic = self.projectData.getTileGraphic(tile.tileset,
@@ -1597,6 +1604,17 @@ class MapEditorScene(QGraphicsScene):
                         
                     painter.drawPixmap(QPoint(x*32, y*32), graphic.rendered)
                     
+                    # Draw tint for map changes if enabled
+                    if tint:
+                        painter.setOpacity(0.5)
+                        painter.setPen(Qt.PenStyle.NoPen)
+                        painter.setBrush(Qt.GlobalColor.red)
+                        painter.drawRect(x*32, y*32, 32, 32)
+                        # reset in preparation for the next tile
+                        painter.setOpacity(1)
+                        tint = False 
+                    
+                    # Draw collision
                     if self.state.mode == common.MODEINDEX.COLLISION or (self.state.mode == common.MODEINDEX.ALL and self.state.allModeShowsCollision):
                         painter.setOpacity(0.7)
                         painter.setPen(Qt.PenStyle.NoPen)

@@ -346,6 +346,13 @@ class MapEditor(QWidget):
             MapEditorWarp.showWarpIDs()
         self.warpIDAction.changed.connect(self.scene.toggleWarpIDs)
         
+        self.changesTintAction = QAction("Tint previewed tile changes &red")
+        self.changesTintAction.setCheckable(True)
+        if settings.value("TileChangesTint", type=bool, defaultValue=False):
+            self.changesTintAction.setChecked(True)
+        # it's necessary to include the prefix in this line as the lambda is, of course, executed after endGroup, even though the code is "within" it.
+        self.changesTintAction.changed.connect(lambda: QSettings().setValue("mapeditor/TileChangesTint", self.changesTintAction.isChecked()))
+        
         settings.endGroup()
 
         self.menuView.addActions([self.zoomInAction, self.zoomOutAction])
@@ -361,6 +368,8 @@ class MapEditor(QWidget):
                                   self.npcCollisionBoundsAction, self.npcForegroundMaskAction])
         self.menuView.addSeparator()
         self.menuView.addActions([self.warpIDAction])
+        self.menuView.addSeparator()
+        self.menuView.addActions([self.changesTintAction])
         
         self.menuMode = QMenu("&Mode")
         self.modeTileAction = QAction(icons.EBICON_TILE, "&Tile", shortcut=QKeySequence("F1"))

@@ -68,6 +68,30 @@ class SidebarChanges(QWidget):
                                 self.eventsTree.setCurrentItem(child)
                                 break
     
+    def selectFromTileID(self, tile: int):
+        # This is a bit complicated:
+        # Provided a tile ID, we need to work backwards to find what to pick.
+        # However, several events can actually provide changes!
+        # We're not provided with a TileChange object, so we are a bit limited in our effectiveness.
+        # First: Try to find an entry where the "before" tile matches
+        # (it's more likely to have many different "befores" leading into the same "afters" than visa-versa, so "before" is better)
+        # Then we can improve our approximation a little bit extra:
+        # If anything is being previewed, see if it's part of that preview. If so, select it.
+        # The only weakness here is several events being previewed and having the same "befores" - the first one found will be selected.
+        # If nothing is being previewed, then just choose the first one out of all of them.
+        # BUG is what I'll mark it as for now, but it's not a big deal.
+        
+        for i in range(self.eventsTree.topLevelItemCount()):
+            item: MapChangeEventListItem = self.eventsTree.topLevelItem(i)
+            if len(self.mapeditor.scene.enabledMapEvents) == 0 or item.event in self.mapeditor.scene.enabledMapEvents:
+                for j in range(item.childCount()):
+                    tileChange: TileChangeListItem = item.child(j)
+                    if tileChange.change.before == tile:
+                        self.eventsTree.setCurrentItem(tileChange)
+                        self.eventsTree.scrollToItem(tileChange)
+                        return
+        # Fail silently if not found; this is called from any tile pick and may not correspond to a valid option
+        
     def selectTileChange(self, event: MapChangeEvent, change: TileChange):           
         # Search until we find it
         for i in range(self.eventsTree.topLevelItemCount()):
@@ -140,10 +164,12 @@ class SidebarChanges(QWidget):
                 self.selectEvent(*lastThing)
             else: # both event and tile change
                 self.selectTileChange(*lastThing)
+        else:
+            self.fromEvent(None) # Fixes a small issue that occurs when going from TileChangeListItem -> None. No clue why, but it doesn't get called right.
 
         self.mapeditor.scene.update()
         
-    def fromEvent(self, item: MapChangeEventListItem|TileChangeListItem):
+    def fromEvent(self, item: MapChangeEventListItem|TileChangeListItem|None):
         self.eventFlag.blockSignals(True)
         self.eventComment.blockSignals(True)
         
@@ -155,6 +181,7 @@ class SidebarChanges(QWidget):
             
         if isinstance(item, TileChangeListItem):
             item = item.parent()
+            self.addTileChangeButton.setDisabled(False) # Extra needed in case we go from None to this
             self.removeTileChangeButton.setDisabled(False)
             self.moveTileChangeUpButton.setDisabled(False)
             self.moveTileChangeDownButton.setDisabled(False)
@@ -168,10 +195,13 @@ class SidebarChanges(QWidget):
             self.eventGroupBox.setDisabled(True)
             self.eventComment.setPlaceholderText("Select an event.")
             self.eventComment.setPlainText("")
-            self.addTileChangeButton.setDisabled(True)
             self.removeEventButton.setDisabled(True)
             self.moveEventUpButton.setDisabled(True)
             self.moveEventDownButton.setDisabled(True)
+            self.addTileChangeButton.setDisabled(True) 
+            self.removeTileChangeButton.setDisabled(True)
+            self.moveTileChangeUpButton.setDisabled(True)
+            self.moveTileChangeDownButton.setDisabled(True)
         else:
             # re-enable things
             self.eventGroupBox.setDisabled(False)
