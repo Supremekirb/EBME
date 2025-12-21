@@ -4,11 +4,12 @@ import glob
 import logging
 import os
 import platform
+import re
 import shlex
 from enum import IntEnum, IntFlag
 
 from PySide6.QtCore import QProcess, QSettings, QStandardPaths
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QValidator
 from PySide6.QtWidgets import QMessageBox
 
 from ebme import ROOT_DIR
@@ -555,3 +556,15 @@ def getDefaultEditorWindows(suffix: str):
 
     except Exception:
         return # caller should handle None as a failure
+
+
+class CCScriptNameValidator(QValidator):        
+    """QValidator that checks if the input is a valid CCScript defintion / command name"""
+    def validate(self, text: str, pos: int):
+        if len(text) == 0:
+            return QValidator.State.Intermediate
+        if text[0].isdigit():
+            return QValidator.State.Invalid
+        if re.match(r'^[A-Za-z0-9_-]+$', text):
+            return QValidator.State.Acceptable
+        return QValidator.State.Invalid

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, OrderedDict
 
 from PIL import ImageQt
 from PySide6.QtCore import QFile, QRectF, QSettings, Qt, Signal
-from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
+from PySide6.QtGui import QColor, QImage, QPainter, QPixmap, QValidator
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                                QDialogButtonBox, QFileDialog, QFormLayout,
                                QGraphicsScene, QGroupBox, QHBoxLayout,
@@ -1408,6 +1408,7 @@ class NewUserdataDialog(QDialog):
         form = QFormLayout(self)
         
         self.newName = QLineEdit()
+        self.newName.setValidator(common.CCScriptNameValidator(self))
         self.newType = QComboBox()
         for i in USERDATA_TYPES:
             self.newType.addItem(str(i), i)
@@ -1448,15 +1449,21 @@ class NewUserdataDialog(QDialog):
 
 class ImportUserdataDialog(QDialog):
     class DatatypeDelegate(QItemDelegate):
-        def __init__(self, parent):
-            super().__init__(parent)
-        
         def createEditor(self, parent, option, index):
             editor = QComboBox(parent)
             editor.addItem(str(Int8), Int8)
             editor.addItem(str(Int16), Int16)
             
+            return editor                
+            
+    class ItemNameDelegate(QItemDelegate):           
+        def createEditor(self, parent, option, index):
+            editor = QLineEdit(parent)
+            editor.setFrame(False)
+            editor.setValidator(common.CCScriptNameValidator(self))
+            
             return editor
+    
     
     def __init__(self, parent, projectData: ProjectData):
         super().__init__(parent)
@@ -1489,6 +1496,7 @@ class ImportUserdataDialog(QDialog):
         
         self.structureTable = QTableWidget(0, 2)
         self.structureTable.setHorizontalHeaderLabels(("Name", "Data type"))
+        self.structureTable.setItemDelegateForColumn(0, ImportUserdataDialog.ItemNameDelegate(self))
         self.structureTable.setItemDelegateForColumn(1, ImportUserdataDialog.DatatypeDelegate(self))
         
         self.newType = QComboBox()
@@ -1544,7 +1552,7 @@ class ImportUserdataDialog(QDialog):
     def addField(self):
         row = self.structureTable.rowCount()
         self.structureTable.insertRow(row)
-        self.structureTable.setItem(row, 0, QTableWidgetItem("New field"))
+        self.structureTable.setItem(row, 0, QTableWidgetItem("New_Field"))
         self.structureTable.setItem(row, 1, QTableWidgetItem("Int8"))
     
     def removeField(self):

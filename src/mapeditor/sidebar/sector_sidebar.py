@@ -31,6 +31,8 @@ class SidebarSector(QWidget):
         self.mapeditor = mapeditor
         self.state = state
         self.projectData = projectData
+        
+        self.showingUserData = False
 
         self.setupUI()
         
@@ -280,6 +282,15 @@ class SidebarSector(QWidget):
             header = QTableWidgetItem()
             header.setText(k)
             self.dataTable.setVerticalHeaderItem(row, header)
+    
+    def toggleShowUserData(self):
+        self.showingUserData = not self.showingUserData
+        if self.showingUserData:
+            self.userData.show()
+            self.showHideUserdataButton.setText("Hide User Data Menu")
+        else:
+            self.userData.hide()
+            self.showHideUserdataButton.setText("Show User Data Menu")
 
     def setupUI(self):
         self.sectorLabel = QLabel("Sector 0 at (0, 0)")
@@ -414,26 +425,27 @@ class SidebarSector(QWidget):
         #####
         
         #####
+        self.showHideUserdataButton = QPushButton("Show User Data Menu")
+        self.showHideUserdataButton.clicked.connect(self.toggleShowUserData)
         self.userData = QGroupBox("User Data", self)
         userDataLayout = QFormLayout(self.userData)
         
-        controlButtonsLayout = QHBoxLayout()
-        
-        self.exportBinaryButton = QToolButton(icon=icons.ICON_EXPORT)
-        self.exportBinaryButton.setToolTip("Export .bin file")
-        self.exportBinaryButton.clicked.connect(self.exportBinary)
-        
-        self.exportCCSButton = QToolButton(icon=icons.ICON_TEXT_FILE)
-        self.exportCCSButton.setToolTip("Export .ccs definitions file")
-        self.exportCCSButton.clicked.connect(self.exportCCS)
-        
-        self.importBinaryButton = QToolButton(icon=icons.ICON_IMPORT)
-        self.importBinaryButton.setToolTip("Import .bin file")
+        self.importBinaryButton = QPushButton(icons.ICON_IMPORT, "Import data")
+        self.importBinaryButton.setToolTip("Import data from binary and optional .ccs structure definition")
         self.importBinaryButton.clicked.connect(self.importBinary)
         
-        controlButtonsLayout.addWidget(self.exportBinaryButton)
-        controlButtonsLayout.addWidget(self.exportCCSButton)
-        controlButtonsLayout.addWidget(self.importBinaryButton)
+        exportButtonsLayout = QHBoxLayout()
+        
+        self.exportBinaryButton = QPushButton(icons.ICON_EXPORT, "Export .bin")
+        self.exportBinaryButton.setToolTip("Export binary data")
+        self.exportBinaryButton.clicked.connect(self.exportBinary)
+        
+        self.exportCCSButton = QPushButton(icons.ICON_TEXT_FILE, "Export .ccs")
+        self.exportCCSButton.setToolTip("Export .ccs structure definition file")
+        self.exportCCSButton.clicked.connect(self.exportCCS)
+        
+        exportButtonsLayout.addWidget(self.exportBinaryButton)
+        exportButtonsLayout.addWidget(self.exportCCSButton)
         
         fieldButtonsLayout = QHBoxLayout()
         
@@ -452,11 +464,13 @@ class SidebarSector(QWidget):
         self.dataTable.setHorizontalHeaderLabels(["Value"])
         self.dataTable.cellChanged.connect(self.toSectors)
         
-        userDataLayout.addRow(controlButtonsLayout)
+        userDataLayout.addRow(self.importBinaryButton)
+        userDataLayout.addRow(exportButtonsLayout)
         userDataLayout.addRow(fieldButtonsLayout)
         userDataLayout.addRow(self.dataTable)
         
         self.userData.setLayout(userDataLayout)
+        self.userData.hide()
         #####
 
         self.contentLayout = QVBoxLayout(self)
@@ -466,6 +480,7 @@ class SidebarSector(QWidget):
         self.contentLayout.addWidget(self.miscData)
         self.contentLayout.addWidget(self.mapData)
         self.contentLayout.addWidget(HSeparator())
+        self.contentLayout.addWidget(self.showHideUserdataButton)
         self.contentLayout.addWidget(self.userData)
 
         self.setLayout(self.contentLayout)
