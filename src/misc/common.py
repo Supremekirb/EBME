@@ -560,11 +560,19 @@ def getDefaultEditorWindows(suffix: str):
 
 class CCScriptNameValidator(QValidator):        
     """QValidator that checks if the input is a valid CCScript defintion / command name"""
+    def __init__(self, parent, allowPeriods: bool=False):
+        super().__init__(parent)
+        self.allowPeriods = allowPeriods
+        
     def validate(self, text: str, pos: int):
         if len(text) == 0:
             return QValidator.State.Intermediate
         if text[0].isdigit():
             return QValidator.State.Invalid
-        if re.match(r'^[A-Za-z0-9_-]+$', text):
+        if self.allowPeriods:
+            matchStr = r'^[A-Za-z0-9._-]+$'
+        else:
+            matchStr = r'^[A-Za-z0-9_-]+$'
+        if re.match(matchStr, text):
             return QValidator.State.Acceptable
         return QValidator.State.Invalid

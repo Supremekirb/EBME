@@ -3,6 +3,8 @@ from PySide6.QtGui import QValidator
 from PySide6.QtWidgets import (QComboBox, QDialog, QItemDelegate, QLineEdit,
                                QListWidget, QListWidgetItem, QSizePolicy)
 
+import src.misc.common as common
+
 
 # QIntValidator apparently has an overflow error with unsigned 32-bit. Wow!
 # So we will do it ourselves.
@@ -92,6 +94,17 @@ class BitFieldDelegate(QItemDelegate):
         
     def paint(self, painter, option, index):
         return super().paint(painter, option, index)
+
+
+class CCScriptIdentifierDelegate(QItemDelegate):        
+    def createEditor(self, parent, option, index):
+        editor = QLineEdit(parent)
+        editor.setValidator(common.CCScriptNameValidator(parent, True))
+        return editor
+    
+    def setModelData(self, editor: QLineEdit, model: QAbstractItemModel, index: QModelIndex):
+        model.setData(index, editor.text())
+        model.setData(index, editor.text(), Qt.ItemDataRole.UserRole)
 
 # These are not meant to be instantiated.
 # All their methods are class methods.
@@ -342,7 +355,51 @@ class UserDataBitfield(UserDataType):
             else:
                 string += "✗"
         return string
+
+
+class UserDataIdentifier8(UserDataType):
+    """8-bit CCScript identifier type."""
+    NAME = "Identifier8"
+    @staticmethod
+    def dataSize() -> int:
+        return 1
+
+    @staticmethod
+    def serialise(data) -> str:
+        return str(data)
     
+    @staticmethod
+    def deserialise(data: str):
+        return str(data)
+    
+    @staticmethod
+    def delegate(parent):
+        return CCScriptIdentifierDelegate(parent)
+
+    @staticmethod
+    def display(data) -> str:
+        return str(data)
+
+class UserDataIdentifier16(UserDataIdentifier8):
+    """16-bit CCScript identifier type"""
+    NAME = "Identifier16"
+    @staticmethod
+    def dataSize() -> int:
+        return 2
+
+class UserDataIdentifier24(UserDataIdentifier8):
+    """24-bit CCScript identifier type"""
+    NAME = "Identifier24"
+    @staticmethod
+    def dataSize() -> int:
+        return 3
+
+class UserDataIdentifier32(UserDataIdentifier8):
+    """32-bit CCScript identifier type"""
+    NAME = "Identifier32"
+    @staticmethod
+    def dataSize() -> int:
+        return 4
     
 
 USERDATA_TYPES: tuple[UserDataType] = (
@@ -355,4 +412,8 @@ USERDATA_TYPES: tuple[UserDataType] = (
     UserDataSInt16,
     UserDataSInt24,
     UserDataSInt32,
+    UserDataIdentifier8,
+    UserDataIdentifier16,
+    UserDataIdentifier24,
+    UserDataIdentifier32,
 )
