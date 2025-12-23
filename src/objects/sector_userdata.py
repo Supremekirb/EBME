@@ -111,11 +111,11 @@ class UserDataType:
         raise NotImplementedError("Must be subclassed!")
     
     @staticmethod
-    def serialise(data) -> bytes:
+    def serialise(data) -> str:
         raise NotImplementedError("Must be subclassed!")
 
     @staticmethod
-    def deserialise(data: bytes):
+    def deserialise(data: str):
         raise NotImplementedError("Must be subclassed!")
 
     @staticmethod
@@ -135,12 +135,12 @@ class UserDataInt8(UserDataType):
         return 1
     
     @staticmethod
-    def serialise(data) -> bytes:
-        return int(data).to_bytes(1, 'little', signed=False)
+    def serialise(data) -> str:
+        return str(data)
     
     @staticmethod
-    def deserialise(data: bytes):
-        return int.from_bytes(data, 'little', signed=False)
+    def deserialise(data: str):
+        return int(data)
     
     @staticmethod
     def delegate(parent):
@@ -158,12 +158,12 @@ class UserDataInt16(UserDataType):
         return 2
 
     @staticmethod
-    def serialise(data) -> bytes:
-        return int(data).to_bytes(2, 'little', signed=False)
+    def serialise(data) -> str:
+        return str(data)
     
     @staticmethod
-    def deserialise(data: bytes):
-        return int.from_bytes(data, 'little', signed=False)
+    def deserialise(data: int):
+        return int(data)
     
     @staticmethod
     def delegate(parent):
@@ -181,12 +181,12 @@ class UserDataInt24(UserDataType):
         return 3
 
     @staticmethod
-    def serialise(data) -> bytes:
-        return int(data).to_bytes(3, 'little', signed=False)
+    def serialise(data) -> str:
+        return str(data)
     
     @staticmethod
-    def deserialise(data: bytes):
-        return int.from_bytes(data, 'little', signed=False)
+    def deserialise(data: int):
+        return int(data)
     
     @staticmethod
     def delegate(parent):
@@ -204,12 +204,12 @@ class UserDataInt32(UserDataType):
         return 4
 
     @staticmethod
-    def serialise(data) -> bytes:
-        return int(data).to_bytes(4, 'little', signed=False)
+    def serialise(data) -> str:
+        return str(data)
     
     @staticmethod
-    def deserialise(data: bytes):
-        return int.from_bytes(data, 'little', signed=False)
+    def deserialise(data: int):
+        return int(data)
     
     @staticmethod
     def delegate(parent):
@@ -229,12 +229,12 @@ class UserDataSInt8(UserDataType):
         return 1
     
     @staticmethod
-    def serialise(data) -> bytes:
-        return int(data).to_bytes(1, 'little', signed=True)
+    def serialise(data) -> str:
+        return str(data)
     
     @staticmethod
-    def deserialise(data: bytes):
-        return int.from_bytes(data, 'little', signed=True)
+    def deserialise(data: int):
+        return int(data)
     
     @staticmethod
     def delegate(parent):
@@ -252,12 +252,12 @@ class UserDataSInt16(UserDataType):
         return 2
 
     @staticmethod
-    def serialise(data) -> bytes:
-        return int(data).to_bytes(2, 'little', signed=True)
+    def serialise(data) -> str:
+        return str(data)
     
     @staticmethod
-    def deserialise(data: bytes):
-        return int.from_bytes(data, 'little', signed=True)
+    def deserialise(data: int):
+        return int(data)
     
     @staticmethod
     def delegate(parent):
@@ -275,12 +275,12 @@ class UserDataSInt24(UserDataType):
         return 3
 
     @staticmethod
-    def serialise(data) -> bytes:
-        return int(data).to_bytes(3, 'little', signed=True)
+    def serialise(data) -> str:
+        return str(data)
     
     @staticmethod
-    def deserialise(data: bytes):
-        return int.from_bytes(data, 'little', signed=True)
+    def deserialise(data: int):
+        return int(data)
     
     @staticmethod
     def delegate(parent):
@@ -298,12 +298,12 @@ class UserDataSInt32(UserDataType):
         return 4
 
     @staticmethod
-    def serialise(data) -> bytes:
-        return int(data).to_bytes(4, 'little', signed=True)
+    def serialise(data) -> str:
+        return str(data)
     
     @staticmethod
-    def deserialise(data: bytes):
-        return int.from_bytes(data, 'little', signed=True)
+    def deserialise(data: int):
+        return int(data)
     
     @staticmethod
     def delegate(parent):
@@ -322,12 +322,12 @@ class UserDataBitfield(UserDataType):
         return 1
 
     @staticmethod
-    def serialise(data) -> bytes:
-        return int(data).to_bytes(1, 'little', signed=False)
+    def serialise(data) -> str:
+        return str(data)
     
     @staticmethod
-    def deserialise(data: bytes):
-        return int.from_bytes(data, 'little', signed=False)
+    def deserialise(data: int):
+        return int(data)
 
     @staticmethod
     def delegate(parent):

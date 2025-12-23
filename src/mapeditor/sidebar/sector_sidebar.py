@@ -197,33 +197,36 @@ class SidebarSector(QWidget):
         
         self.tilesetSelect.blockSignals(False)
         self.paletteGroupSelect.blockSignals(False)
-        self.paletteSelect.blockSignals(False)
+        self.paletteSelect.blockSignals(False)          
         
-
-    def exportBinary(self):
-        dir, _ = QFileDialog.getSaveFileName(self, "Save sector userdata binary", self.projectData.dir, "Binary file (*.bin)")
-        if dir:
-            data = []
-            for i in self.projectData.sectors.flat:
-                i: Sector
-                data.append(i.serialiseUserData())
-
-            with open(dir, "wb") as file:
-                file.write(bytes().join(data))
-            
-    
-    def exportCCS(self):
-        dir, _ = QFileDialog.getSaveFileName(self, "Save sector userdata struct layout", self.projectData.dir, "CCScript file (*.ccs)")
-        if dir:
-            with open(dir, "w") as file:
-                file.write(Sector.serialiseStructLayoutToCCS())
+    def exportUserData(self):
+        if len(Sector.SECTORS_USERDATA) == 0:
+            return common.showErrorMsg("Could not export user data",
+                                       "There are no user data fields to export.")
         
-    def importBinary(self):
+        try:
+            dir, _ = QFileDialog.getSaveFileName(self, "Save sector user data", self.projectData.dir, "CCScript file (*.ccs)")
+            if dir:
+                serialised = Sector.createUserDataStructureCCS()
+                
+                for i in self.projectData.sectors.flat:
+                    i: Sector
+                    serialised += i.serialiseUserData()
+                    
+                with open(dir, "w") as file:
+                    file.write(serialised)
+        except Exception as e:
+            common.showErrorMsg("Could not export user data.",
+                                "An unhandled exception occured.",
+                                str(e))
+            raise
+        
+    def importUserData(self):
         if ImportUserdataDialog.importUserdata(self, self.projectData):
             self.fromSectors()
         
     def addUserdata(self):
-        if NewUserdataDialog.addNewUserdata(self):
+        if NewUserdataDialog.addNewUserdata(self, self.projectData):
             self.fromSectors()
     
     def removeUserdata(self):
@@ -272,6 +275,13 @@ class SidebarSector(QWidget):
             header.setText(k)
             self.dataTable.setVerticalHeaderItem(row, header)
         self.dataTable.resizeColumnsToContents()
+        
+        # Calculate size
+        size = 0
+        for v in Sector.SECTORS_USERDATA.values():
+            size += v.dataSize()
+        size *= len(self.projectData.sectors.flat)
+        self.userDataSizePredict.setText(f"Total size: {size} bytes")
     
     def toggleShowUserData(self):
         self.showingUserData = not self.showingUserData
@@ -420,22 +430,18 @@ class SidebarSector(QWidget):
         self.userData = QGroupBox("User Data", self)
         userDataLayout = QFormLayout(self.userData)
         
-        self.importBinaryButton = QPushButton(icons.ICON_IMPORT, "Import data")
-        self.importBinaryButton.setToolTip("Import data from binary and optional .ccs structure definition")
-        self.importBinaryButton.clicked.connect(self.importBinary)
+        importExportButtonsLayout = QHBoxLayout()
         
-        exportButtonsLayout = QHBoxLayout()
+        self.importUserDataButton = QPushButton(icons.ICON_IMPORT, "Import data")
+        self.importUserDataButton.setToolTip("Import user data from an exported .ccs file")
+        self.importUserDataButton.clicked.connect(self.importUserData)
         
-        self.exportBinaryButton = QPushButton(icons.ICON_EXPORT, "Export .bin")
-        self.exportBinaryButton.setToolTip("Export binary data")
-        self.exportBinaryButton.clicked.connect(self.exportBinary)
+        self.exportUserDataButton = QPushButton(icons.ICON_EXPORT, "Export data")
+        self.exportUserDataButton.setToolTip("Export user data to a .ccs file")
+        self.exportUserDataButton.clicked.connect(self.exportUserData)
         
-        self.exportCCSButton = QPushButton(icons.ICON_TEXT_FILE, "Export .ccs")
-        self.exportCCSButton.setToolTip("Export .ccs structure definition file")
-        self.exportCCSButton.clicked.connect(self.exportCCS)
-        
-        exportButtonsLayout.addWidget(self.exportBinaryButton)
-        exportButtonsLayout.addWidget(self.exportCCSButton)
+        importExportButtonsLayout.addWidget(self.importUserDataButton)
+        importExportButtonsLayout.addWidget(self.exportUserDataButton)
         
         fieldButtonsLayout = QHBoxLayout()
         
@@ -447,16 +453,19 @@ class SidebarSector(QWidget):
         self.removeUserdataButton.setToolTip("Remove user data field")
         self.removeUserdataButton.clicked.connect(self.removeUserdata)
         
+        self.userDataSizePredict = QLabel("Total size: 0 bytes")
+        self.userDataSizePredict.setToolTip("Total size of the userdata blob for all sectors. Must not exceed 65536 bytes.")
+        
         fieldButtonsLayout.addWidget(self.addUserdataButton)
         fieldButtonsLayout.addWidget(self.removeUserdataButton)
+        fieldButtonsLayout.addWidget(self.userDataSizePredict)
         
         self.dataTable = QTableWidget(0, 2)
         self.dataTable.setHorizontalHeaderLabels(["Data", "Type"])
         self.dataTable.setSizeAdjustPolicy(QTableWidget.SizeAdjustPolicy.AdjustToContents)
         self.dataTable.cellChanged.connect(self.toSectors)
         
-        userDataLayout.addRow(self.importBinaryButton)
-        userDataLayout.addRow(exportButtonsLayout)
+        userDataLayout.addRow(importExportButtonsLayout)
         userDataLayout.addRow(fieldButtonsLayout)
         userDataLayout.addRow(self.dataTable)
         
@@ -475,28 +484,3 @@ class SidebarSector(QWidget):
         self.contentLayout.addWidget(self.userData)
 
         self.setLayout(self.contentLayout)
-        
-
-# item delegate which allows only integers and limits the input to 2^8
-class SidebarSectorInt8Delegate(QItemDelegate):
-    def __init__(self, parent):
-        super().__init__(parent)
-        
-    def createEditor(self, parent, option, index):
-        editor = QLineEdit(parent)
-        sizeLimit = 2**8
-        
-        editor.setValidator(QIntValidator(0, sizeLimit-1, editor))
-        return editor
-
-# item delegate which allows only integers and limits the input to 2^16
-class SidebarSectorInt16Delegate(QItemDelegate):
-    def __init__(self, parent):
-        super().__init__(parent)
-        
-    def createEditor(self, parent, option, index):
-        editor = QLineEdit(parent)
-        sizeLimit = 2**16
-        
-        editor.setValidator(QIntValidator(0, sizeLimit-1, editor))
-        return editor
