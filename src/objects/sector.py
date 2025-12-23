@@ -3,17 +3,14 @@ from collections import OrderedDict
 
 import src.misc.common as common
 from src.misc.coords import EBCoords
+from src.objects.sector_userdata import UserDataType
 
-type Int8 = int
-type Int16 = int
-
-USERDATA_TYPES = (Int8, Int16)
 
 class Sector:
     """Instance of a sector on the map."""
     
     # Key: name, Value: datatype
-    SECTORS_USERDATA = OrderedDict()
+    SECTORS_USERDATA: OrderedDict[str, type[UserDataType]] = OrderedDict()
     
     def __init__(self, id: int, item: int, music: int, palette: int, palettegroup: int, tileset: int, setting: str, teleport: str,
                  townmap: str, townmaparrow: str, townmapimage: str, townmapx: int, townmapy: int):
@@ -63,8 +60,8 @@ class Sector:
     def serialiseUserData(self) -> bytes:
         serialised: list[bytes] = []
         structData = Sector.getUserDataStructLayout()
-        for k, v in structData.items():
-            serialised.append(self.userdata.get(k, 0).to_bytes(v[0], "little"))
+        for k in structData.keys():
+            serialised.append(Sector.SECTORS_USERDATA[k].serialise(self.userdata.get(k, 0)))
         return bytes().join(serialised)
 
     @classmethod
@@ -89,10 +86,5 @@ class Sector:
     def getUserDataStructLayout(cls) -> OrderedDict[str, int]:
         structLayout: OrderedDict[str, tuple[int, str]] = {}
         for k, v in cls.SECTORS_USERDATA.items():
-            match v:
-                # i love python
-                case a if a is Int8:
-                    structLayout[k] = (1, str(Int8))
-                case b if b is Int16:
-                    structLayout[k] = (2, str(Int16))
+            structLayout[k] = (v.dataSize(), v.name())
         return structLayout

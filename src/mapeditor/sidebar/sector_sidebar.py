@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QFile, QIODevice, QTextStream
+from PySide6.QtCore import QFile, QIODevice, Qt, QTextStream
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (QComboBox, QFileDialog, QFormLayout, QGroupBox,
-                               QHBoxLayout, QItemDelegate, QLabel, QLineEdit,
-                               QPushButton, QSizePolicy, QTableWidget,
-                               QTableWidgetItem, QToolButton, QVBoxLayout,
-                               QWidget)
+                               QHBoxLayout, QHeaderView, QItemDelegate, QLabel,
+                               QLineEdit, QPushButton, QSizePolicy,
+                               QTableWidget, QTableWidgetItem, QToolButton,
+                               QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.icons as icons
@@ -14,7 +14,7 @@ from src.actions.sector_actions import ActionChangeSectorAttributes
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import ImportUserdataDialog, NewUserdataDialog
 from src.misc.map_music_editor import MapMusicEditor
-from src.objects.sector import Int8, Int16, Sector
+from src.objects.sector import Sector
 from src.widgets.input import BaseChangerSpinbox, CoordsInput
 from src.widgets.layout import HSeparator
 
@@ -125,9 +125,9 @@ class SidebarSector(QWidget):
         self.dataTable.setRowCount(0)
         # can't hash this type
         if len(sectors) == 1:
-            self.populateUserDataOne(sectors[0])
+            self.populateUserData(sectors[0])
         else:
-            self.populateUserDataMany()
+            self.populateUserData(None)
             
         # unblock signals
         self.tilesetSelect.blockSignals(False)
@@ -246,42 +246,32 @@ class SidebarSector(QWidget):
         for i in range(0, self.dataTable.rowCount()):
             item = self.dataTable.item(i, 0)
             if item.text() == "": continue # this is OR'd onto the dict later, so blank keys are ignored.
-            data[self.dataTable.verticalHeaderItem(i).text()] = int(item.text())
+            itemData = item.data(Qt.ItemDataRole.UserRole)
+            if itemData is None: itemData = int(item.text())
+            data[self.dataTable.verticalHeaderItem(i).text()] = itemData
         return data
 
-    def populateUserDataOne(self, sector: Sector):
+    def populateUserData(self, sector: Sector|None):
         for k, v in Sector.SECTORS_USERDATA.items():
             row = self.dataTable.rowCount()
             self.dataTable.insertRow(row)
-            match v:
-                case a if a is Int8:
-                    delegate = SidebarSectorInt8Delegate
-                case b if b is Int16:
-                    delegate = SidebarSectorInt16Delegate
-                case _:
-                    raise ValueError(f"Unknown user data type {str(v)}")
-            self.dataTable.setItem(row, 0, QTableWidgetItem(str(sector.userdata.get(k, 0))))
-            self.dataTable.setItemDelegateForRow(row, delegate(self))
+            
+            if sector is not None:
+                valueItem = QTableWidgetItem(v.display(sector.userdata.get(k, 0)))
+                valueItem.setData(Qt.ItemDataRole.UserRole, sector.userdata.get(k, 0))
+            else:
+                valueItem = QTableWidgetItem("")
+                valueItem.setData(Qt.ItemDataRole.UserRole, None)
+                
+            self.dataTable.setItem(row, 0, valueItem)
+            typeItem = QTableWidgetItem(v.name())
+            typeItem.setFlags(Qt.ItemFlag.NoItemFlags) # Can't be edited, etc
+            self.dataTable.setItem(row, 1, typeItem)
+            self.dataTable.setItemDelegateForRow(row, v.delegate(self))
             header = QTableWidgetItem()
             header.setText(k)
             self.dataTable.setVerticalHeaderItem(row, header)
-        
-    def populateUserDataMany(self):
-        for k, v in Sector.SECTORS_USERDATA.items():
-            row = self.dataTable.rowCount()
-            self.dataTable.insertRow(row)
-            match v:
-                case a if a is Int8:
-                    delegate = SidebarSectorInt8Delegate
-                case b if b is Int16:
-                    delegate = SidebarSectorInt16Delegate
-                case _:
-                    raise ValueError(f"Unknown user data type {str(k)}")
-            self.dataTable.setItem(row, 0, QTableWidgetItem(""))
-            self.dataTable.setItemDelegateForRow(row, delegate(self))
-            header = QTableWidgetItem()
-            header.setText(k)
-            self.dataTable.setVerticalHeaderItem(row, header)
+        self.dataTable.resizeColumnsToContents()
     
     def toggleShowUserData(self):
         self.showingUserData = not self.showingUserData
@@ -460,8 +450,9 @@ class SidebarSector(QWidget):
         fieldButtonsLayout.addWidget(self.addUserdataButton)
         fieldButtonsLayout.addWidget(self.removeUserdataButton)
         
-        self.dataTable = QTableWidget(0, 1)
-        self.dataTable.setHorizontalHeaderLabels(["Value"])
+        self.dataTable = QTableWidget(0, 2)
+        self.dataTable.setHorizontalHeaderLabels(["Data", "Type"])
+        self.dataTable.setSizeAdjustPolicy(QTableWidget.SizeAdjustPolicy.AdjustToContents)
         self.dataTable.cellChanged.connect(self.toSectors)
         
         userDataLayout.addRow(self.importBinaryButton)

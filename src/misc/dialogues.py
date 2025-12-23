@@ -29,7 +29,8 @@ from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.objects.changes import MapChangeEvent, TileChange
-from src.objects.sector import USERDATA_TYPES, Int8, Int16, Sector
+from src.objects.sector import Sector
+from src.objects.sector_userdata import USERDATA_TYPES
 from src.widgets.input import ColourButton, CoordsInput
 from src.widgets.layout import HorizontalGraphicsView, HSeparator
 from src.widgets.misc import IconLabel
@@ -1411,7 +1412,7 @@ class NewUserdataDialog(QDialog):
         self.newName.setValidator(common.CCScriptNameValidator(self))
         self.newType = QComboBox()
         for i in USERDATA_TYPES:
-            self.newType.addItem(str(i), i)
+            self.newType.addItem(i.name(), i)
             
         confirmCancelLayout = QHBoxLayout()
         self.confirmButton = QPushButton("Add")
@@ -1451,9 +1452,8 @@ class ImportUserdataDialog(QDialog):
     class DatatypeDelegate(QItemDelegate):
         def createEditor(self, parent, option, index):
             editor = QComboBox(parent)
-            editor.addItem(str(Int8), Int8)
-            editor.addItem(str(Int16), Int16)
-            
+            for i in USERDATA_TYPES:
+                editor.addItem(i.name(), i)
             return editor                
             
     class ItemNameDelegate(QItemDelegate):           
@@ -1501,7 +1501,7 @@ class ImportUserdataDialog(QDialog):
         
         self.newType = QComboBox()
         for i in USERDATA_TYPES:
-            self.newType.addItem(str(i), i)
+            self.newType.addItem(i.name(), i)
 
         confirmCancelLayout = QHBoxLayout()
         self.confirmButton = QPushButton("Import")
@@ -1584,7 +1584,7 @@ class ImportUserdataDialog(QDialog):
         Sector.SECTORS_USERDATA = OrderedDict()
         for n, t in zip(names, types):
             # we can assume that there won't be more than 1 match
-            typeIdx = [i for i,typename in enumerate(USERDATA_TYPES) if str(typename) == t][0]
+            typeIdx = [i for i,typename in enumerate(USERDATA_TYPES) if typename.name() == t][0]
             
             Sector.SECTORS_USERDATA[n] = USERDATA_TYPES[typeIdx]
         
@@ -1599,11 +1599,7 @@ class ImportUserdataDialog(QDialog):
             sectorID = 0
             while file.peek(1) != bytes():
                 for k, v in Sector.SECTORS_USERDATA.items():
-                    match v:
-                        case a if a is Int8:
-                            self.projectData.sectorFromID(sectorID).userdata[k] = int.from_bytes(file.read(1), "little")
-                        case b if b is Int16:
-                            self.projectData.sectorFromID(sectorID).userdata[k] = int.from_bytes(file.read(2), "little")
+                    self.projectData.sectorFromID(sectorID).userdata[k] = v.deserialise(file.read(v.dataSize()))
                 sectorID += 1
         
         self.accept()
