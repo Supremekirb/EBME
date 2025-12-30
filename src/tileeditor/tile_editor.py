@@ -450,7 +450,7 @@ class TileEditor(QWidget):
         self.minitileScene = MinitileScene(self, self.projectData)
         self.minitileView = MinitileView(self.minitileScene)
         
-        self.tileScene = TilesetDisplayGraphicsScene(self.projectData, True, 5)
+        self.tileScene = TilesetDisplayGraphicsScene(self.projectData, True, 6)
         self.tileScene.tileSelected.connect(self.onTileSelect)
         self.tileView = HorizontalGraphicsView(self.tileScene)
         self.tileView.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
