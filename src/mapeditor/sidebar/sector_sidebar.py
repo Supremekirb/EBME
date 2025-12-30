@@ -6,11 +6,11 @@ from PySide6.QtWidgets import (QComboBox, QFileDialog, QFormLayout, QGroupBox,
                                QHBoxLayout, QHeaderView, QItemDelegate, QLabel,
                                QLineEdit, QPushButton, QSizePolicy,
                                QTableWidget, QTableWidgetItem, QToolButton,
-                               QVBoxLayout, QWidget)
+                               QVBoxLayout, QWidget, QMessageBox)
 
 import src.misc.common as common
 import src.misc.icons as icons
-from src.actions.sector_actions import ActionChangeSectorAttributes
+from src.actions.sector_actions import ActionChangeSectorAttributes, ActionRemoveSectorUserDataField
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import ImportUserdataDialog, NewUserdataDialog
 from src.misc.map_music_editor import MapMusicEditor
@@ -164,12 +164,11 @@ class SidebarSector(QWidget):
                 self.townMapArrowSelect.currentText().lower() if self.townMapArrowSelect.currentText() != "" else i.townmaparrow,
                 self.townMapImageSelect.currentText().lower() if self.townMapImageSelect.currentText() != "" else i.townmapimage,
                 self.townMapPos.x.value() if not self.townMapPos.isBlankX() else i.townmapx,
-                self.townMapPos.y.value() if not self.townMapPos.isBlankY() else i.townmapy)
+                self.townMapPos.y.value() if not self.townMapPos.isBlankY() else i.townmapy,
+                i.userdata | self.userDataToDict())
             
             self.mapeditor.scene.undoStack.push(action)
             self.mapeditor.scene.refreshSector(i.coords)
-            
-            i.userdata = i.userdata | self.userDataToDict()
             
         self.mapeditor.scene.undoStack.endMacro()
     
@@ -222,27 +221,30 @@ class SidebarSector(QWidget):
             raise
         
     def importUserData(self):
-        if ImportUserdataDialog.importUserdata(self, self.projectData):
-            self.fromSectors()
+        if action := ImportUserdataDialog.importUserdata(self, self.projectData):
+            self.mapeditor.scene.undoStack.push(action)
         
     def addUserdata(self):
-        if NewUserdataDialog.addNewUserdata(self, self.projectData):
-            self.fromSectors()
+        if action := NewUserdataDialog.addNewUserdata(self, self.projectData):
+            self.mapeditor.scene.undoStack.push(action)
     
     def removeUserdata(self):
         selected = self.dataTable.selectedItems()
-        if len(selected) == 0: return
+        if len(selected) == 0:
+            return common.showErrorMsg("Could not remove user data field",
+                                       "Please select one or more fields to delete.",
+                                       icon = QMessageBox.Icon.Warning)
+        
+        if inMacro := len(selected) > 1:
+            self.mapeditor.scene.undoStack.beginMacro("Remove user data fields")
         
         for i in selected:
-            key = self.dataTable.verticalHeaderItem(i.row()).text()
-            self.dataTable.removeRow(i.row())
-            
-            Sector.SECTORS_USERDATA.pop(key)
-            for s in self.projectData.sectors.flat:
-                s: Sector
-                s.userdata.pop(key, 0)
+            name = self.dataTable.verticalHeaderItem(i.row()).text()
+            action = ActionRemoveSectorUserDataField(self.projectData, name)
+            self.mapeditor.scene.undoStack.push(action)
         
-        self.fromSectors()
+        if inMacro:
+            self.mapeditor.scene.undoStack.endMacro()
     
     def userDataToDict(self):
         data = {}
@@ -285,6 +287,15 @@ class SidebarSector(QWidget):
     
     def toggleShowUserData(self):
         self.showingUserData = not self.showingUserData
+        if self.showingUserData:
+            self.userData.show()
+            self.showHideUserdataButton.setText("Hide User Data Menu")
+        else:
+            self.userData.hide()
+            self.showHideUserdataButton.setText("Show User Data Menu")
+    
+    def setShowUserData(self, shown: bool):
+        self.showingUserData = shown
         if self.showingUserData:
             self.userData.show()
             self.showHideUserdataButton.setText("Hide User Data Menu")

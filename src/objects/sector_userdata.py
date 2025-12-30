@@ -57,7 +57,10 @@ class SizedIntDelegate(QItemDelegate):
         return editor
     
     def setModelData(self, editor: QLineEdit, model: QAbstractItemModel, index: QModelIndex):
+        # Janky, but we only want one signal to be emitted. Otherwise we get two actions sent.
+        model.blockSignals(True)
         model.setData(index, editor.text())
+        model.blockSignals(False)
         model.setData(index, int(editor.text()), Qt.ItemDataRole.UserRole)
 
 
@@ -75,7 +78,10 @@ class BitFieldDelegate(QItemDelegate):
         for i in range(8):
             item = editor.item(i)
             data |= (item.checkState() == Qt.CheckState.Checked) << i
+        # Janky, but we only want one signal to be emitted. Otherwise we get two actions sent.
+        model.blockSignals(True)
         model.setData(index, data)
+        model.blockSignals(False)
         model.setData(index, data, Qt.ItemDataRole.UserRole)
     
     def setEditorData(self, editor: QListWidget, index: QModelIndex):

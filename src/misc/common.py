@@ -189,6 +189,9 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "ADDTILECHANGE", # cannot merge with itself
                                       "REMOVETILECHANGE", # cannot merge with itself
                                       "MOVETILECHANGE", # cannot merge with itself
+                                      "USERDATAADDFIELD", # cannot merge with itself
+                                      "USERDATAREMOVEFIELD", # cannot merge with itself
+                                      "USERDATAIMPORT", # cannot merge with itself
                                       ])
 
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18

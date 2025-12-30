@@ -39,7 +39,7 @@ from src.actions.npc_actions import (ActionAddNPCInstance,
                                      ActionChangeNPCInstance,
                                      ActionDeleteNPCInstance,
                                      ActionMoveNPCInstance, ActionUpdateNPC)
-from src.actions.sector_actions import ActionChangeSectorAttributes
+from src.actions.sector_actions import ActionAddSectorUserDataField, ActionChangeSectorAttributes, ActionImportSectorUserData, ActionRemoveSectorUserDataField
 from src.actions.tile_actions import ActionPlaceTile
 from src.actions.trigger_actions import (ActionAddTrigger, ActionDeleteTrigger,
                                          ActionMoveTrigger,
@@ -532,6 +532,10 @@ class MapEditorScene(QGraphicsScene):
                 or isinstance(c, ActionMoveMapChangeEvent):
                 actionType = "mapchange"
                 self.parent().sidebarChanges.fromTileset(c.event.tileset)
+            
+            if isinstance(c, ActionAddSectorUserDataField) or isinstance(c, ActionRemoveSectorUserDataField) or isinstance(c, ActionImportSectorUserData):
+                actionType = "userdata"
+                self.parent().sidebarSector.fromSectors()
 
         match actionType:
             case "tile":
@@ -574,6 +578,10 @@ class MapEditorScene(QGraphicsScene):
                 if not self.dontUpdateModeNextAction:
                     self.parent().sidebar.setCurrentIndex(common.MODEINDEX.CHANGES)
                 # self.parent().sidebarChanges.refreshCurrent()
+            case "userdata":
+                if not self.dontUpdateModeNextAction:
+                    self.parent().sidebar.setCurrentIndex(common.MODEINDEX.SECTOR)
+                    self.parent().sidebarSector.setShowUserData(True)
     
         self.update()
         self.dontUpdateModeNextAction = False # unset after action is pushed
@@ -618,7 +626,7 @@ class MapEditorScene(QGraphicsScene):
                             palette = i["Palette"]
                             action = ActionChangeSectorAttributes(sector, palette["tileset"], palette["palettegroup"], palette["palette"],
                                                                   sector.item, sector.music, sector.setting, sector.teleport, sector.townmap,
-                                                                  sector.townmaparrow, sector.townmapimage, sector.townmapx, sector.townmapy)
+                                                                  sector.townmaparrow, sector.townmapimage, sector.townmapx, sector.townmapy, sector.userdata)
                             self.undoStack.push(action)
                         except KeyError: pass
                         
@@ -634,7 +642,7 @@ class MapEditorScene(QGraphicsScene):
                             action = ActionChangeSectorAttributes(sector, sector.tileset, sector.palettegroup, sector.palette,
                                                                     attributes["item"], attributes["music"], attributes["setting"], attributes["teleport"],
                                                                     attributes["townmap"], attributes["townmaparrow"], attributes["townmapimage"],
-                                                                    attributes["townmapx"], attributes["townmapy"])
+                                                                    attributes["townmapx"], attributes["townmapy"], attributes["userdata"])
                             self.undoStack.push(action)
                         except KeyError: pass
                         
@@ -1914,7 +1922,7 @@ class MapEditorScene(QGraphicsScene):
                                                       self.projectData.getTileset(self.importedTileset).palettes[0].paletteID,
                                                       sector.item, sector.music, sector.setting, sector.townmapimage,
                                                       sector.townmap, sector.townmaparrow, sector.townmapimage,
-                                                      sector.townmapx, sector.townmapy)
+                                                      sector.townmapx, sector.townmapy, sector.userdata)
                 self.undoStack.push(action)
 
                 progressDialog.setValue(progressDialog.value()+1)
@@ -2029,7 +2037,7 @@ class MapEditorScene(QGraphicsScene):
                 action = ActionChangeSectorAttributes(sector, 0, 0, 0,
                                                       0, 0, "none", "disabled",
                                                       "none", "none", "none",
-                                                      0, 0)
+                                                      0, 0, {})
                 self.undoStack.push(action)
                 self.refreshSector(EBCoords.fromSector(r, c))
                 progressDialog.setValue(progressDialog.value()+1)

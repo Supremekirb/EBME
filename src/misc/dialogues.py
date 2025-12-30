@@ -24,13 +24,15 @@ from src.actions.changes_actions import (ActionAddTileChange,
 from src.actions.fts_actions import (ActionChangeSubpaletteColour,
                                      ActionReplacePalette, ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
+from src.actions.sector_actions import (ActionAddSectorUserDataField,
+                                        ActionImportSectorUserData)
 from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
                                            PaletteGroup, Subpalette)
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.objects.changes import MapChangeEvent, TileChange
 from src.objects.sector import Sector
-from src.objects.sector_userdata import USERDATA_TYPES
+from src.objects.sector_userdata import USERDATA_TYPES, UserDataType
 from src.widgets.input import ColourButton, CoordsInput
 from src.widgets.layout import HorizontalGraphicsView, HSeparator
 from src.widgets.misc import IconLabel
@@ -1429,6 +1431,8 @@ class NewUserdataDialog(QDialog):
         form.addRow("Data type", self.newType)
         form.addRow(confirmCancelLayout)
         
+        self.action: ActionAddSectorUserDataField|None = None
+        
     def validateAndAdd(self):
         size = 0
         for v in Sector.SECTORS_USERDATA.values():
@@ -1447,14 +1451,15 @@ class NewUserdataDialog(QDialog):
             common.showErrorMsg("Error adding user data field",
                                 "Field name cannot be blank.")
         else:
-            Sector.SECTORS_USERDATA[self.newName.text()] = self.newType.currentData(Qt.ItemDataRole.UserRole)    
+            self.action = ActionAddSectorUserDataField(self.newName.text(), self.newType.currentData(Qt.ItemDataRole.UserRole))
             self.accept()
     
     @staticmethod
-    def addNewUserdata(parent, projectData: ProjectData):
+    def addNewUserdata(parent, projectData: ProjectData) -> ActionAddSectorUserDataField|None:
         try:
             dialog = NewUserdataDialog(parent, projectData)
-            return dialog.exec()
+            dialog.exec()
+            return dialog.action
         except Exception as e:
             common.showErrorMsg("Error adding user data field",
                                 "An unhandled exception occured.",
@@ -1496,6 +1501,8 @@ class ImportUserdataDialog(QDialog):
         form.addRow(loadCCSLayout)
         form.addRow(self.structureTable)
         form.addRow(confirmCancelLayout)
+        
+        self.action: ActionImportSectorUserData|None = None
     
     def openCCSClicked(self):
         path, _ = QFileDialog.getOpenFileName(self, "Open User Data CCS", self.projectData.dir, "CCScript files (*.ccs)")
@@ -1544,21 +1551,16 @@ class ImportUserdataDialog(QDialog):
                                 "No fields can have blank names.")
         
         # set user data names/types
-        Sector.SECTORS_USERDATA = OrderedDict()
+        newUserdataFields: OrderedDict[str, type[UserDataType]] = OrderedDict()
         for n, t in zip(names, types):
             # we can assume that there won't be more than 1 match
             typeIdx = [i for i,typename in enumerate(USERDATA_TYPES) if typename.name() == t][0]
             
-            Sector.SECTORS_USERDATA[n] = USERDATA_TYPES[typeIdx]
-        
-        # clear existing user data
-        for i in self.projectData.sectors.flat:
-            i: Sector
-            i.userdata = {}
+            newUserdataFields[n] = USERDATA_TYPES[typeIdx]
         
         # check size limit
         size = 0
-        for v in Sector.SECTORS_USERDATA.values():
+        for v in newUserdataFields.values():
             size += v.dataSize()
         size *= len(self.projectData.sectors.flat)
         if size > 65536:
@@ -1568,16 +1570,18 @@ class ImportUserdataDialog(QDialog):
         
         # read the data itself
         try:
+            sectorsData = []
             with open(self.loadCCSPath.text()) as file:
                 sectorID = 0
                 for line in file.readlines():
                     if line.startswith("    ENTRY_SECTORUSERDATA("):
+                        sectorsData.append({})
                         line = line.removeprefix("    ENTRY_SECTORUSERDATA(")
                         line = line.removesuffix(")\n")
                         values = line.split(", ")
                         for k, v in enumerate(values):
-                            dataTypeName, dataTypeClass = list(Sector.SECTORS_USERDATA.items())[k]
-                            self.projectData.sectorFromID(sectorID).userdata[dataTypeName] = dataTypeClass.deserialise(v)
+                            dataTypeName, dataTypeClass = list(newUserdataFields.items())[k]
+                            sectorsData[sectorID][dataTypeName] = dataTypeClass.deserialise(v)
                         sectorID += 1
                 
                 expectedLength = len(self.projectData.sectors.flat)
@@ -1588,20 +1592,18 @@ class ImportUserdataDialog(QDialog):
             common.showErrorMsg("Failed to import user data",
                                 "Could not parse the data.",
                                 str(e))
-            # clear userdata again
-            Sector.SECTORS_USERDATA = OrderedDict()
-            for i in self.projectData.sectors.flat:
-                i: Sector
-                i.userdata = {}
             raise
         
+        # Create the action and accept the dialog
+        self.action = ActionImportSectorUserData(self.projectData, newUserdataFields, sectorsData)
         self.accept()
     
     @staticmethod
-    def importUserdata(parent, projectData: ProjectData):
+    def importUserdata(parent, projectData: ProjectData) -> ActionImportSectorUserData|None:
         try:
             dialog = ImportUserdataDialog(parent, projectData)
-            return dialog.exec()
+            dialog.exec()
+            return dialog.action
         except Exception as e:
             logging.warning(f"Error importing userdata: {str(e)}")
             return False

@@ -92,7 +92,7 @@ class SidebarTile(QWidget):
             action = ActionChangeSectorAttributes(i, tileset, palettegroup, palette,
                                                   i.item, i.music, i.setting, i.teleport,
                                                   i.townmap, i.townmaparrow, i.townmapimage,
-                                                  i.townmapx, i.townmapy)
+                                                  i.townmapx, i.townmapy, i.userdata)
             self.mapeditor.scene.dontUpdateModeNextAction = True
             self.mapeditor.scene.undoStack.push(action)
             self.mapeditor.scene.refreshSector(i.coords)

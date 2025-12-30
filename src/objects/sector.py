@@ -29,7 +29,9 @@ class Sector:
         self.townmapy = townmapy
         
         # Key: name (as defined in SECTORS_USERDATA), Value: data
-        self.userdata = {}
+        # If userdata has not yet been assigned, the key may not exist!
+        # Therefore, please always use .get() or .pop() to access data and provide a default value of 0.
+        self.userdata: dict[str, ] = {}
 
         self.coords = EBCoords.fromSector(int(id%32), int(id/32)) # (x, y) of sector location (in sector array)
         
@@ -47,7 +49,8 @@ class Sector:
             "townmaparrow": self.townmaparrow,
             "townmapimage": self.townmapimage,
             "townmapx": self.townmapx,
-            "townmapy": self.townmapy
+            "townmapy": self.townmapy,
+            "userdata": self.userdata
         }
     
     def paletteToDataDict(self) -> dict:
@@ -57,7 +60,7 @@ class Sector:
             "tileset": self.tileset
         }
         
-    def serialiseUserData(self) -> bytes:
+    def serialiseUserData(self) -> str:
         serialised = "    ENTRY_SECTORUSERDATA("
         structData = Sector.getUserDataStructLayout()
         for k in structData.keys():
