@@ -1,12 +1,18 @@
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHBoxLayout,
-                               QLabel, QPushButton, QSizePolicy, QVBoxLayout,
-                               QWidget)
+from PySide6.QtCore import QFile, QIODevice, Qt, QTextStream
+from PySide6.QtGui import QIntValidator
+from PySide6.QtWidgets import (QComboBox, QFileDialog, QFormLayout, QGroupBox,
+                               QHBoxLayout, QHeaderView, QItemDelegate, QLabel,
+                               QLineEdit, QPushButton, QSizePolicy,
+                               QTableWidget, QTableWidgetItem, QToolButton,
+                               QVBoxLayout, QWidget, QMessageBox)
 
 import src.misc.common as common
-from src.actions.sector_actions import ActionChangeSectorAttributes
+import src.misc.icons as icons
+from src.actions.sector_actions import ActionChangeSectorAttributes, ActionRemoveSectorUserDataField
 from src.coilsnake.project_data import ProjectData
+from src.misc.dialogues import ImportUserdataDialog, NewUserdataDialog
 from src.misc.map_music_editor import MapMusicEditor
 from src.objects.sector import Sector
 from src.widgets.input import BaseChangerSpinbox, CoordsInput
@@ -25,6 +31,8 @@ class SidebarSector(QWidget):
         self.mapeditor = mapeditor
         self.state = state
         self.projectData = projectData
+        
+        self.showingUserData = False
 
         self.setupUI()
         
@@ -42,6 +50,7 @@ class SidebarSector(QWidget):
         self.townMapImageSelect.blockSignals(True)
         self.townMapPos.x.blockSignals(True)
         self.townMapPos.y.blockSignals(True)
+        self.dataTable.blockSignals(True)
         
         sectors = self.state.currentSectors
         # if all sectors are the same, show their data
@@ -111,6 +120,15 @@ class SidebarSector(QWidget):
         else:
             self.townMapPos.y.clear()
             
+        
+        self.dataTable.clearContents()
+        self.dataTable.setRowCount(0)
+        # can't hash this type
+        if len(sectors) == 1:
+            self.populateUserData(sectors[0])
+        else:
+            self.populateUserData(None)
+            
         # unblock signals
         self.tilesetSelect.blockSignals(False)
         self.paletteGroupSelect.blockSignals(False)
@@ -124,6 +142,7 @@ class SidebarSector(QWidget):
         self.townMapImageSelect.blockSignals(False)
         self.townMapPos.x.blockSignals(False)
         self.townMapPos.y.blockSignals(False)
+        self.dataTable.blockSignals(False)
         
             
     def toSectors(self):
@@ -145,7 +164,8 @@ class SidebarSector(QWidget):
                 self.townMapArrowSelect.currentText().lower() if self.townMapArrowSelect.currentText() != "" else i.townmaparrow,
                 self.townMapImageSelect.currentText().lower() if self.townMapImageSelect.currentText() != "" else i.townmapimage,
                 self.townMapPos.x.value() if not self.townMapPos.isBlankX() else i.townmapx,
-                self.townMapPos.y.value() if not self.townMapPos.isBlankY() else i.townmapy)
+                self.townMapPos.y.value() if not self.townMapPos.isBlankY() else i.townmapy,
+                i.userdata | self.userDataToDict())
             
             self.mapeditor.scene.undoStack.push(action)
             self.mapeditor.scene.refreshSector(i.coords)
@@ -176,8 +196,112 @@ class SidebarSector(QWidget):
         
         self.tilesetSelect.blockSignals(False)
         self.paletteGroupSelect.blockSignals(False)
-        self.paletteSelect.blockSignals(False)
+        self.paletteSelect.blockSignals(False)          
+        
+    def exportUserData(self):
+        if len(Sector.SECTORS_USERDATA) == 0:
+            return common.showErrorMsg("Could not export user data",
+                                       "There are no user data fields to export.")
+        
+        try:
+            dir, _ = QFileDialog.getSaveFileName(self, "Save sector user data", self.projectData.dir, "CCScript file (*.ccs)")
+            if dir:
+                serialised = Sector.createUserDataStructureCCS()
+                
+                for i in self.projectData.sectors.flat:
+                    i: Sector
+                    serialised += i.serialiseUserData()
+                    
+                with open(dir, "w") as file:
+                    file.write(serialised)
+        except Exception as e:
+            common.showErrorMsg("Could not export user data.",
+                                "An unhandled exception occured.",
+                                str(e))
+            raise
+        
+    def importUserData(self):
+        if action := ImportUserdataDialog.importUserdata(self, self.projectData):
+            self.mapeditor.scene.undoStack.push(action)
+        
+    def addUserdata(self):
+        if action := NewUserdataDialog.addNewUserdata(self, self.projectData):
+            self.mapeditor.scene.undoStack.push(action)
+    
+    def removeUserdata(self):
+        selected = self.dataTable.selectedItems()
+        if len(selected) == 0:
+            return common.showErrorMsg("Could not remove user data field",
+                                       "Please select one or more fields to delete.",
+                                       icon = QMessageBox.Icon.Warning)
+        
+        if inMacro := len(selected) > 1:
+            self.mapeditor.scene.undoStack.beginMacro("Remove user data fields")
+        
+        for i in selected:
+            name = self.dataTable.verticalHeaderItem(i.row()).text()
+            action = ActionRemoveSectorUserDataField(self.projectData, name)
+            self.mapeditor.scene.undoStack.push(action)
+        
+        if inMacro:
+            self.mapeditor.scene.undoStack.endMacro()
+    
+    def userDataToDict(self):
+        data = {}
+        for i in range(0, self.dataTable.rowCount()):
+            item = self.dataTable.item(i, 0)
+            if item.text() == "": continue # this is OR'd onto the dict later, so blank keys are ignored.
+            itemData = item.data(Qt.ItemDataRole.UserRole)
+            if itemData is None: itemData = int(item.text())
+            data[self.dataTable.verticalHeaderItem(i).text()] = itemData
+        return data
+
+    def populateUserData(self, sector: Sector|None):
+        for k, v in Sector.SECTORS_USERDATA.items():
+            row = self.dataTable.rowCount()
+            self.dataTable.insertRow(row)
             
+            if sector is not None:
+                valueItem = QTableWidgetItem(v.display(sector.userdata.get(k, 0)))
+                valueItem.setData(Qt.ItemDataRole.UserRole, sector.userdata.get(k, 0))
+            else:
+                valueItem = QTableWidgetItem("")
+                valueItem.setData(Qt.ItemDataRole.UserRole, None)
+                
+            self.dataTable.setItem(row, 0, valueItem)
+            typeItem = QTableWidgetItem(v.name())
+            typeItem.setFlags(Qt.ItemFlag.NoItemFlags) # Can't be edited, etc
+            self.dataTable.setItem(row, 1, typeItem)
+            self.dataTable.setItemDelegateForRow(row, v.delegate(self))
+            header = QTableWidgetItem()
+            header.setText(k)
+            self.dataTable.setVerticalHeaderItem(row, header)
+        self.dataTable.resizeColumnsToContents()
+        
+        # Calculate size
+        size = 0
+        for v in Sector.SECTORS_USERDATA.values():
+            size += v.dataSize()
+        size *= len(self.projectData.sectors.flat)
+        self.userDataSizePredict.setText(f"Total size: {size} bytes")
+    
+    def toggleShowUserData(self):
+        self.showingUserData = not self.showingUserData
+        if self.showingUserData:
+            self.userData.show()
+            self.showHideUserdataButton.setText("Hide User Data Menu")
+        else:
+            self.userData.hide()
+            self.showHideUserdataButton.setText("Show User Data Menu")
+    
+    def setShowUserData(self, shown: bool):
+        self.showingUserData = shown
+        if self.showingUserData:
+            self.userData.show()
+            self.showHideUserdataButton.setText("Hide User Data Menu")
+        else:
+            self.userData.hide()
+            self.showHideUserdataButton.setText("Show User Data Menu")
 
     def setupUI(self):
         self.sectorLabel = QLabel("Sector 0 at (0, 0)")
@@ -310,6 +434,55 @@ class SidebarSector(QWidget):
 
         self.mapData.setLayout(self.mapDataLayout)
         #####
+        
+        #####
+        self.showHideUserdataButton = QPushButton("Show User Data Menu")
+        self.showHideUserdataButton.clicked.connect(self.toggleShowUserData)
+        self.userData = QGroupBox("User Data", self)
+        userDataLayout = QFormLayout(self.userData)
+        
+        importExportButtonsLayout = QHBoxLayout()
+        
+        self.importUserDataButton = QPushButton(icons.ICON_IMPORT, "Import data")
+        self.importUserDataButton.setToolTip("Import user data from an exported .ccs file")
+        self.importUserDataButton.clicked.connect(self.importUserData)
+        
+        self.exportUserDataButton = QPushButton(icons.ICON_EXPORT, "Export data")
+        self.exportUserDataButton.setToolTip("Export user data to a .ccs file")
+        self.exportUserDataButton.clicked.connect(self.exportUserData)
+        
+        importExportButtonsLayout.addWidget(self.importUserDataButton)
+        importExportButtonsLayout.addWidget(self.exportUserDataButton)
+        
+        fieldButtonsLayout = QHBoxLayout()
+        
+        self.addUserdataButton = QToolButton(icon=icons.ICON_NEW)
+        self.addUserdataButton.setToolTip("Add user data field")
+        self.addUserdataButton.clicked.connect(self.addUserdata)
+        
+        self.removeUserdataButton = QToolButton(icon=icons.ICON_DELETE)
+        self.removeUserdataButton.setToolTip("Remove user data field")
+        self.removeUserdataButton.clicked.connect(self.removeUserdata)
+        
+        self.userDataSizePredict = QLabel("Total size: 0 bytes")
+        self.userDataSizePredict.setToolTip("Total size of the userdata blob for all sectors. Must not exceed 65536 bytes.")
+        
+        fieldButtonsLayout.addWidget(self.addUserdataButton)
+        fieldButtonsLayout.addWidget(self.removeUserdataButton)
+        fieldButtonsLayout.addWidget(self.userDataSizePredict)
+        
+        self.dataTable = QTableWidget(0, 2)
+        self.dataTable.setHorizontalHeaderLabels(["Data", "Type"])
+        self.dataTable.setSizeAdjustPolicy(QTableWidget.SizeAdjustPolicy.AdjustToContents)
+        self.dataTable.cellChanged.connect(self.toSectors)
+        
+        userDataLayout.addRow(importExportButtonsLayout)
+        userDataLayout.addRow(fieldButtonsLayout)
+        userDataLayout.addRow(self.dataTable)
+        
+        self.userData.setLayout(userDataLayout)
+        self.userData.hide()
+        #####
 
         self.contentLayout = QVBoxLayout(self)
         self.contentLayout.addWidget(self.sectorLabel)
@@ -317,5 +490,8 @@ class SidebarSector(QWidget):
         self.contentLayout.addWidget(self.paletteData)
         self.contentLayout.addWidget(self.miscData)
         self.contentLayout.addWidget(self.mapData)
+        self.contentLayout.addWidget(HSeparator())
+        self.contentLayout.addWidget(self.showHideUserdataButton)
+        self.contentLayout.addWidget(self.userData)
 
         self.setLayout(self.contentLayout)

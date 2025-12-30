@@ -1,18 +1,20 @@
 import logging
 import traceback
 from math import ceil
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, OrderedDict
 
 from PIL import ImageQt
 from PySide6.QtCore import QFile, QRectF, QSettings, Qt, Signal
-from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
+from PySide6.QtGui import QColor, QImage, QPainter, QPixmap, QValidator
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                                QDialogButtonBox, QFileDialog, QFormLayout,
-                               QGraphicsScene, QGroupBox, QHBoxLayout, QLabel,
-                               QLineEdit, QListWidget, QListWidgetItem,
-                               QMessageBox, QPushButton, QScrollArea,
-                               QSizePolicy, QSpinBox, QStyleFactory, QTextEdit,
-                               QUndoView, QVBoxLayout, QWidget)
+                               QGraphicsScene, QGroupBox, QHBoxLayout,
+                               QItemDelegate, QLabel, QLineEdit, QListWidget,
+                               QListWidgetItem, QMessageBox, QPushButton,
+                               QScrollArea, QSizePolicy, QSpinBox,
+                               QStyleFactory, QTableWidget, QTableWidgetItem,
+                               QTextEdit, QToolButton, QUndoView, QVBoxLayout,
+                               QWidget)
 
 import src.misc.common as common
 import src.misc.icons as icons
@@ -22,11 +24,15 @@ from src.actions.changes_actions import (ActionAddTileChange,
 from src.actions.fts_actions import (ActionChangeSubpaletteColour,
                                      ActionReplacePalette, ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
+from src.actions.sector_actions import (ActionAddSectorUserDataField,
+                                        ActionImportSectorUserData)
 from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
                                            PaletteGroup, Subpalette)
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.objects.changes import MapChangeEvent, TileChange
+from src.objects.sector import Sector
+from src.objects.sector_userdata import USERDATA_TYPES, UserDataType
 from src.widgets.input import ColourButton, CoordsInput
 from src.widgets.layout import HorizontalGraphicsView, HSeparator
 from src.widgets.misc import IconLabel
@@ -1395,6 +1401,212 @@ class MapAdvancedPalettePreviewDialog(QDialog):
         palette = int(new)
         group = int(self.paletteGroupSelect.currentText())
         self.palettechanged.emit(group, palette)
+
+
+class NewUserdataDialog(QDialog):
+    def __init__(self, parent, projectData: ProjectData):
+        super().__init__(parent)
+        
+        self.projectData = projectData
+        
+        self.setWindowTitle("New User Data Field")
+        form = QFormLayout(self)
+        
+        self.newName = QLineEdit()
+        self.newName.setValidator(common.CCScriptNameValidator(self))
+        self.newType = QComboBox()
+        for i in USERDATA_TYPES:
+            self.newType.addItem(i.name(), i)
+            
+        confirmCancelLayout = QHBoxLayout()
+        self.confirmButton = QPushButton("Add")
+        self.cancelButton = QPushButton("Cancel")
+        confirmCancelLayout.addWidget(self.confirmButton)
+        confirmCancelLayout.addWidget(self.cancelButton)
+        
+        self.confirmButton.pressed.connect(self.validateAndAdd)
+        self.cancelButton.pressed.connect(self.reject)
+        
+        form.addRow("Name", self.newName)
+        form.addRow("Data type", self.newType)
+        form.addRow(confirmCancelLayout)
+        
+        self.action: ActionAddSectorUserDataField|None = None
+        
+    def validateAndAdd(self):
+        size = 0
+        for v in Sector.SECTORS_USERDATA.values():
+            size += v.dataSize()
+        size += self.newType.currentData(Qt.ItemDataRole.UserRole).dataSize()
+        size *= len(self.projectData.sectors.flat)
+        if size > 65536:
+            common.showErrorMsg("Error adding user data field",
+                                "Total user data size must not exceed 65536 bytes.",
+                                f"Adding this field would bring the total to {size} bytes.")
+        
+        elif self.newName.text() in Sector.SECTORS_USERDATA.keys():
+            common.showErrorMsg("Error adding user data field",
+                                "This name is already in use.")
+        elif self.newName.text() == "":
+            common.showErrorMsg("Error adding user data field",
+                                "Field name cannot be blank.")
+        else:
+            self.action = ActionAddSectorUserDataField(self.newName.text(), self.newType.currentData(Qt.ItemDataRole.UserRole))
+            self.accept()
+    
+    @staticmethod
+    def addNewUserdata(parent, projectData: ProjectData) -> ActionAddSectorUserDataField|None:
+        try:
+            dialog = NewUserdataDialog(parent, projectData)
+            dialog.exec()
+            return dialog.action
+        except Exception as e:
+            common.showErrorMsg("Error adding user data field",
+                                "An unhandled exception occured.",
+                                str(e))
+            logging.warning(f"Error adding user data field: {traceback.format_exc()}")
+            return False
+
+
+class ImportUserdataDialog(QDialog):  
+    def __init__(self, parent, projectData: ProjectData):
+        super().__init__(parent)
+        
+        self.projectData = projectData
+
+        self.setWindowTitle("Importing Sector User Data")
+        form = QFormLayout(self)
+        
+        loadCCSLayout = QHBoxLayout()
+        self.loadCCSPath = QLineEdit()
+        self.loadCCSPath.setPlaceholderText("Enter user data CCScript file path")
+        self.loadCCSBrowse = QPushButton("Browse...")
+        self.loadCCSBrowse.clicked.connect(self.openCCSClicked)
+        
+        loadCCSLayout.addWidget(self.loadCCSPath)
+        loadCCSLayout.addWidget(self.loadCCSBrowse)
+        
+        self.structureTable = QTableWidget(0, 2)
+        self.structureTable.setHorizontalHeaderLabels(("Name", "Data type"))
+
+        confirmCancelLayout = QHBoxLayout()
+        self.confirmButton = QPushButton("Import")
+        self.cancelButton = QPushButton("Cancel")
+        confirmCancelLayout.addWidget(self.confirmButton)
+        confirmCancelLayout.addWidget(self.cancelButton)
+
+        self.confirmButton.pressed.connect(self.validateAndImport)
+        self.cancelButton.pressed.connect(self.reject)
+
+        form.addRow(loadCCSLayout)
+        form.addRow(self.structureTable)
+        form.addRow(confirmCancelLayout)
+        
+        self.action: ActionImportSectorUserData|None = None
+    
+    def openCCSClicked(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Open User Data CCS", self.projectData.dir, "CCScript files (*.ccs)")
+        if path:
+            try:
+                structure = {}
+                with open(path) as file:
+                    for line in file.readlines():
+                        if line.startswith("define SECTORUSERDATA_"):
+                            structure[line.split("define SECTORUSERDATA_")[-1].split(" =")[0]] = line.split(
+                                " // Type: ")[-1].strip()
+                
+                self.structureTable.clearContents()
+                self.structureTable.setRowCount(0)
+                
+                for k, v in structure.items():
+                    row = self.structureTable.rowCount()
+                    self.structureTable.insertRow(row)
+                    itemName = QTableWidgetItem(k)
+                    itemName.setFlags(Qt.ItemFlag.NoItemFlags)
+                    itemType = QTableWidgetItem(v)
+                    itemType.setFlags(Qt.ItemFlag.NoItemFlags)
+                    self.structureTable.setItem(row, 0, itemName)
+                    self.structureTable.setItem(row, 1, itemType)
+                
+                self.loadCCSPath.setText(path)
+                            
+            except Exception as e:
+                common.showErrorMsg("Failed to autofill user data structure",
+                                    "Couldn't read user data structure from CCScript file.",
+                                    str(e))
+                raise
+
+    def validateAndImport(self):   
+        if self.structureTable.rowCount() == 0:
+            return common.showErrorMsg("Failed to import data",
+                                       "Structure cannot be empty.")
+        
+        names = [self.structureTable.item(i, 0).text() for i in range(0, self.structureTable.rowCount())]
+        types = [self.structureTable.item(i, 1).text() for i in range(0, self.structureTable.rowCount())]
+        if len(set(names)) != len(names):
+            return common.showErrorMsg("Failed to import user data",
+                                "Two fields have the same name.")
+        if any(i == "" for i in names):
+            return common.showErrorMsg("Failed to import user data",
+                                "No fields can have blank names.")
+        
+        # set user data names/types
+        newUserdataFields: OrderedDict[str, type[UserDataType]] = OrderedDict()
+        for n, t in zip(names, types):
+            # we can assume that there won't be more than 1 match
+            typeIdx = [i for i,typename in enumerate(USERDATA_TYPES) if typename.name() == t][0]
+            
+            newUserdataFields[n] = USERDATA_TYPES[typeIdx]
+        
+        # check size limit
+        size = 0
+        for v in newUserdataFields.values():
+            size += v.dataSize()
+        size *= len(self.projectData.sectors.flat)
+        if size > 65536:
+            return common.showErrorMsg("Failed to import user data",
+                                       "There is more than 65536 bytes of user data in this file.",
+                                       "The maximum amount of user data is 65536 bytes.")
+        
+        # read the data itself
+        try:
+            sectorsData = []
+            with open(self.loadCCSPath.text()) as file:
+                sectorID = 0
+                for line in file.readlines():
+                    if line.startswith("    ENTRY_SECTORUSERDATA("):
+                        sectorsData.append({})
+                        line = line.removeprefix("    ENTRY_SECTORUSERDATA(")
+                        line = line.removesuffix(")\n")
+                        values = line.split(", ")
+                        for k, v in enumerate(values):
+                            dataTypeName, dataTypeClass = list(newUserdataFields.items())[k]
+                            sectorsData[sectorID][dataTypeName] = dataTypeClass.deserialise(v)
+                        sectorID += 1
+                
+                expectedLength = len(self.projectData.sectors.flat)
+                if sectorID != expectedLength:
+                    raise ValueError(f"Mismatch in sector user data: Expected {expectedLength} entries, found {sectorID-1}")
+                
+        except Exception as e:
+            common.showErrorMsg("Failed to import user data",
+                                "Could not parse the data.",
+                                str(e))
+            raise
+        
+        # Create the action and accept the dialog
+        self.action = ActionImportSectorUserData(self.projectData, newUserdataFields, sectorsData)
+        self.accept()
+    
+    @staticmethod
+    def importUserdata(parent, projectData: ProjectData) -> ActionImportSectorUserData|None:
+        try:
+            dialog = ImportUserdataDialog(parent, projectData)
+            dialog.exec()
+            return dialog.action
+        except Exception as e:
+            logging.warning(f"Error importing userdata: {str(e)}")
+            return False
 
 class TileChangeEditDialog(QDialog):
     def __init__(self, parent, projectData: ProjectData, tileset: int, change: TileChange):

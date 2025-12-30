@@ -2,8 +2,7 @@ name: build EBME on push to main
 run-name: build (triggered by ${{ github.actor }})
 
 on: 
-  push:
-    branches: [main]
+  push
     
 jobs:
   build-win:

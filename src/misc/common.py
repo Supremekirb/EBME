@@ -4,11 +4,12 @@ import glob
 import logging
 import os
 import platform
+import re
 import shlex
 from enum import IntEnum, IntFlag
 
 from PySide6.QtCore import QProcess, QSettings, QStandardPaths
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QValidator
 from PySide6.QtWidgets import QMessageBox
 
 from ebme import ROOT_DIR
@@ -188,6 +189,9 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "ADDTILECHANGE", # cannot merge with itself
                                       "REMOVETILECHANGE", # cannot merge with itself
                                       "MOVETILECHANGE", # cannot merge with itself
+                                      "USERDATAADDFIELD", # cannot merge with itself
+                                      "USERDATAREMOVEFIELD", # cannot merge with itself
+                                      "USERDATAIMPORT", # cannot merge with itself
                                       ])
 
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18
@@ -555,3 +559,23 @@ def getDefaultEditorWindows(suffix: str):
 
     except Exception:
         return # caller should handle None as a failure
+
+
+class CCScriptNameValidator(QValidator):        
+    """QValidator that checks if the input is a valid CCScript defintion / command name"""
+    def __init__(self, parent, allowPeriods: bool=False):
+        super().__init__(parent)
+        self.allowPeriods = allowPeriods
+        
+    def validate(self, text: str, pos: int):
+        if len(text) == 0:
+            return QValidator.State.Intermediate
+        if text[0].isdigit():
+            return QValidator.State.Invalid
+        if self.allowPeriods:
+            matchStr = r'^[A-Za-z0-9._-]+$'
+        else:
+            matchStr = r'^[A-Za-z0-9_-]+$'
+        if re.match(matchStr, text):
+            return QValidator.State.Acceptable
+        return QValidator.State.Invalid

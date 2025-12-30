@@ -348,7 +348,7 @@ class ActionRemovePalette(QUndoCommand):
                     i.palettegroup).palettes[0].paletteID,
                     i.item, i.music, i.setting, i.teleport,
                     i.townmap, i.townmaparrow, i.townmapimage,
-                    i.townmapx, i.townmapy))
+                    i.townmapx, i.townmapy, i.userdata))
                 
         # change things using palettes past this ID to use ID -1
         # (don't actually apply the change here, only create actions)
@@ -364,7 +364,7 @@ class ActionRemovePalette(QUndoCommand):
                             j, j.tileset, j.palettegroup, j.palette-1, # <-- the important bit
                             j.item, j.music, j.setting, j.teleport,
                             j.townmap, j.townmaparrow, j.townmapimage,
-                            j.townmapx, j.townmapy))
+                            j.townmapx, j.townmapy, i.userdata))
                         
                 
         # for palette settings
