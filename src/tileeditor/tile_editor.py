@@ -263,6 +263,62 @@ class TileEditor(QWidget):
         self.undoStack.push(action)
         self.undoStack.endMacro()
     
+    FLIPHORDER = [
+        0x3, 0x2, 0x1, 0x0,
+        0x7, 0x6, 0x5, 0x4,
+        0xB, 0xA, 0x9, 0x8,
+        0xF, 0xE, 0xD, 0xC
+    ]
+    def flipArrangementH(self):
+        tile = self.arrangementScene.currentTile
+        metadatas = []
+        for i in range(16):
+            metadatas.append(tile.getMetadata(i))
+        
+        self.undoStack.beginMacro("Flip arrangement horizontally")
+        for base, inverted in enumerate(TileEditor.FLIPHORDER):
+            self.undoStack.push(ActionChangeArrangement(tile, metadatas[base] ^ 0x4000, inverted))
+        self.undoStack.endMacro()
+        
+    def flipCollisionH(self):
+        tile = self.collisionScene.currentTile
+        collisions = []
+        for i in range(16):
+            collisions.append(tile.getMinitileCollision(i))
+            
+        self.undoStack.beginMacro("Flip collision horizontally")
+        for base, inverted in enumerate(TileEditor.FLIPHORDER):
+            self.undoStack.push(ActionChangeCollision(tile, collisions[base], inverted))
+        self.undoStack.endMacro()
+    
+    FLIPVORDER = [
+        0xC, 0xD, 0xE, 0xF,
+        0x8, 0x9, 0xA, 0xB,
+        0x4, 0x5, 0x6, 0x7,
+        0x0, 0x1, 0x2, 0x3
+    ]
+    def flipArrangementV(self):
+        tile = self.arrangementScene.currentTile
+        metadatas = []
+        for i in range(16):
+            metadatas.append(tile.getMetadata(i))
+
+        self.undoStack.beginMacro("Flip arrangement vertically")
+        for base, inverted in enumerate(TileEditor.FLIPVORDER):
+            self.undoStack.push(ActionChangeArrangement(tile, metadatas[base] ^ 0x8000, inverted))
+        self.undoStack.endMacro()
+        
+    def flipCollisionV(self):
+        tile = self.collisionScene.currentTile
+        collisions = []
+        for i in range(16):
+            collisions.append(tile.getMinitileCollision(i))
+
+        self.undoStack.beginMacro("Flip collision vertically")
+        for base, inverted in enumerate(TileEditor.FLIPVORDER):
+            self.undoStack.push(ActionChangeCollision(tile, collisions[base], inverted))
+        self.undoStack.endMacro()
+    
     def onAutoRearrange(self):
         action = AutoMinitileRearrangerDialog.rearrangeMinitiles(self, self.projectData, self.state.currentTileset)
         
@@ -459,11 +515,44 @@ class TileEditor(QWidget):
         self.tileView.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.tileView.centerOn(0, 0)
         
+        arrangementLayout = QVBoxLayout()
         self.arrangementScene = TileArrangementWidget(self.state)
         self.arrangementAspectRatioContainer = AspectRatioWidget(self.arrangementScene)
         
+        arrangementToolsLayout = QHBoxLayout()
+        self.arrangementFlipHButton = QToolButton()
+        self.arrangementFlipHButton.setIcon(icons.ICON_MIRROR_H)
+        self.arrangementFlipHButton.setToolTip("Flip horizontally")
+        self.arrangementFlipHButton.clicked.connect(self.flipArrangementH)
+        self.arrangementFlipVButton = QToolButton()
+        self.arrangementFlipVButton.setIcon(icons.ICON_MIRROR_V)
+        self.arrangementFlipVButton.setToolTip("Flip vertically")
+        self.arrangementFlipVButton.clicked.connect(self.flipArrangementV)
+        arrangementToolsLayout.addWidget(self.arrangementFlipHButton)
+        arrangementToolsLayout.addWidget(self.arrangementFlipVButton)
+        
+        arrangementLayout.addWidget(self.arrangementScene)
+        arrangementLayout.addLayout(arrangementToolsLayout)
+        
+
+        collisionDispLayout = QVBoxLayout() 
         self.collisionScene = TileEditorCollisionWidget(self.state)
         self.collisionAspectRatioContainer = AspectRatioWidget(self.collisionScene)
+        
+        collisionToolsLayout = QHBoxLayout()
+        self.collisionFlipHButton = QToolButton()
+        self.collisionFlipHButton.setIcon(icons.ICON_MIRROR_H)
+        self.collisionFlipHButton.setToolTip("Flip horizontally")
+        self.collisionFlipHButton.clicked.connect(self.flipCollisionH)
+        self.collisionFlipVButton = QToolButton()
+        self.collisionFlipVButton.setIcon(icons.ICON_MIRROR_V)
+        self.collisionFlipVButton.setToolTip("Flip vertically")
+        self.collisionFlipVButton.clicked.connect(self.flipCollisionV)
+        collisionToolsLayout.addWidget(self.collisionFlipHButton)
+        collisionToolsLayout.addWidget(self.collisionFlipVButton)
+        
+        collisionDispLayout.addWidget(self.collisionScene)
+        collisionDispLayout.addLayout(collisionToolsLayout)
         
         self.presetList = TileEditorCollisionPresetList(self.state)
         
@@ -508,6 +597,7 @@ class TileEditor(QWidget):
         
         minitileLayout.addLayout(tilesetSelectLayout)
         minitileLayout.addWidget(self.minitileView)
+        minitileLayout.addStretch()
         
         drawingLayout.addWidget(self.minitileFgWarning)
         drawingLayout.addWidget(self.fgAspectRatioContainer)
@@ -542,10 +632,10 @@ class TileEditor(QWidget):
         graphicsLayout.addLayout(paletteLayout)
         
         tileLayout.addWidget(self.tileView)
-        tileLayout.addWidget(self.arrangementScene)  
+        tileLayout.addLayout(arrangementLayout)  
         
         collisionLayout.addLayout(self.presetList)
-        collisionLayout.addWidget(self.collisionScene)
+        collisionLayout.addLayout(collisionDispLayout)
         
         topLayout.addWidget(minitileBox)
         topLayout.addWidget(graphicsBox)

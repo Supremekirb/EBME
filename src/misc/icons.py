@@ -204,3 +204,9 @@ def init_icons():
     
     global ICON_TILE_CHANGE
     ICON_TILE_CHANGE = icon("ph.swap")
+    
+    global ICON_MIRROR_H
+    ICON_MIRROR_H = icon("ph.arrows-left-right")
+    
+    global ICON_MIRROR_V
+    ICON_MIRROR_V = icon("ph.arrows-down-up")
