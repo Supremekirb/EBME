@@ -472,6 +472,7 @@ class MapEditorState():
         self.previewCollides = True
         
         self.allModeShowsCollision = True
+        self.allModeShowsEnemyTiles = True
         
         self.previewingPaletteGroup: int|None = None
         self.previewingPalette: int|None = None

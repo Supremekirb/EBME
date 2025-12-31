@@ -13,7 +13,6 @@ from src.widgets import input
 
 def flush():
     npc.MapEditorNPC.instances = []
-    enemy.MapEditorEnemyTile.instances = []
     trigger.MapEditorTrigger.instances = []
     warp.MapEditorWarp.instances = []
     input.BaseChangerSpinbox.instances = []

@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import numpy
-from PIL import ImageQt
 from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, Qt, QTimer
 from PySide6.QtGui import (QBrush, QColor, QKeySequence, QPainter,
                            QPainterPath, QPen, QPixmap, QPolygon, QUndoCommand)
@@ -56,7 +55,6 @@ from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.dialogues import ClearDialog
 from src.objects.changes import MapChangeEvent
-from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import NPC, MapEditorNPC, NPCInstance
 from src.objects.sector import Sector
@@ -131,7 +129,6 @@ class MapEditorScene(QGraphicsScene):
         self.placedNPCsByID: dict[int, list[MapEditorNPC]] = {}
         self.placedNPCsByUUID: dict[UUID, MapEditorNPC] = {}
         self.placedTriggersByUUID: dict[UUID, trigger.MapEditorTrigger] = {} 
-        self.placedEnemyTilesByGroup: dict[int, list[MapEditorEnemyTile]] = {}
         self.placedHotspots: list[MapEditorHotspot] = []
         self.placedWarps: list[MapEditorWarp] = []
         self.placedTeleports: list[MapEditorWarp] = []
@@ -817,9 +814,9 @@ class MapEditorScene(QGraphicsScene):
             self.parent().sidebarTrigger.deselectTrigger()
 
         if index == common.MODEINDEX.ENEMY:
-            MapEditorEnemyTile.showEnemyTiles()
+            ...
         else:
-            MapEditorEnemyTile.hideEnemyTiles()
+            ...
             
         if index == common.MODEINDEX.HOTSPOT:
             MapEditorHotspot.showHotspots()
@@ -838,9 +835,6 @@ class MapEditorScene(QGraphicsScene):
             if self.parent().sidebarAll.showTriggers.isChecked():
                 trigger.MapEditorTrigger.showTriggers()
             else: trigger.MapEditorTrigger.hideTriggers()
-            if self.parent().sidebarAll.showEnemyTiles.isChecked():
-                MapEditorEnemyTile.showEnemyTiles()
-            else: MapEditorEnemyTile.hideEnemyTiles()
             if self.parent().sidebarAll.showHotspots.isChecked():
                 MapEditorHotspot.showHotspots()
             else: MapEditorHotspot.hideHotspots()
@@ -885,34 +879,6 @@ class MapEditorScene(QGraphicsScene):
         self.setGrid(self._currentGrid, index)
         
         self.update()
-
-    def renderEnemies(self, coords: EBCoords, w: int, h: int):
-        """Render a rectangular region of enemy tiles
-
-        Args:
-            coords (EBCoords): top-left corner
-            w (int): width of box (enemy tiles)
-            h (int): height of box (enemy tiles)
-        """
-        x = coords.coordsEnemy()[0]
-        y = coords.coordsEnemy()[1]
-        for r in range(x-2, x+w+2):
-            for c in range(y-2, y+h+2):
-                try:
-                    coords = EBCoords.fromEnemy(r, c)
-                    tile = self.projectData.getEnemyTile(coords)
-                    if not tile.isPlaced:
-                        tile.isPlaced = True
-                        placement = MapEditorEnemyTile(tile.coords)
-                        self.addItem(placement)
-                        self.refreshEnemyTile(coords)
-                        try:
-                            self.placedEnemyTilesByGroup[placement.enemyGroup].append(placement)
-                        except KeyError or AttributeError:
-                            self.placedEnemyTilesByGroup[placement.enemyGroup] = [placement,]
-                            
-                except IndexError:
-                    pass
                 
     def collisionAt(self, coords: EBCoords) -> int:
         tile = self.projectData.getTile(coords)
@@ -931,20 +897,6 @@ class MapEditorScene(QGraphicsScene):
             for y in range(topleft.coordsWarp()[1], bottomright.coordsWarp()[1]+1):
                 collision |= self.collisionAt(EBCoords.fromWarp(x, y))
         return collision
-            
-    def enemyTileAt(self, coords: EBCoords) -> MapEditorEnemyTile | None:
-        """Get a MapEditorEnemyTile at coords
-
-        Args:
-            coords (EBCoords): location of the tile
-
-        Returns:
-            MapEditorEnemyTile|None: the tile. None if no tile found.
-        """
-        items = self.items(QPoint(coords.roundToEnemy()[0], coords.roundToEnemy()[1]))
-        for item in items:
-            if isinstance(item, MapEditorEnemyTile):
-                return item
 
     def placeTile(self, coords: EBCoords):
         """Place a tile (id determined by tile selector active tile).
@@ -1035,20 +987,18 @@ class MapEditorScene(QGraphicsScene):
         self.update(*tile.coords.coords(), 32, 32)
             
     def placeEnemyTile(self, coords: EBCoords):
-        item = self.enemyTileAt(coords)
-        if item:
-            toPlace = self.state.currentEnemyTile
-            tile = self.projectData.getEnemyTile(coords)
-            if tile.groupID != toPlace:
-                if not self.state.placingEnemyTiles:
-                    self.state.placingEnemyTiles = True
-                    self.undoStack.beginMacro("Place enemy tiles")
-                    
-                action = ActionPlaceEnemyTile(tile, toPlace)
-                self.undoStack.push(action)  
+        coords.restrictToMap()
+        toPlace = self.state.currentEnemyTile
+        tile = self.projectData.getEnemyTile(coords)
+        if tile.groupID != toPlace:
+            if not self.state.placingEnemyTiles:
+                self.state.placingEnemyTiles = True
+                self.undoStack.beginMacro("Place enemy tiles")
                 
-                self.refreshEnemyTile(tile.coords)
-                self.update(*tile.coords.coords(), 64, 64)         
+            action = ActionPlaceEnemyTile(tile, toPlace)
+            self.undoStack.push(action)  
+
+            self.update(*tile.coords.coords(), 64, 64)         
                 
     def endPlacingEnemyTiles(self):
         if self.state.placingEnemyTiles:
@@ -1120,58 +1070,19 @@ class MapEditorScene(QGraphicsScene):
             y (int): y pos (tiles)
         """
         coords.restrictToMap()
-
-        placement = self.enemyTileAt(coords)
-        if placement:
-            tile = self.projectData.getEnemyTile(coords)
-            self.state.currentEnemyTile = tile.groupID
-            self.parent().sidebarEnemy.selectEnemyTile(tile.groupID)
+        tile = self.projectData.getEnemyTile(coords)
+        self.state.currentEnemyTile = tile.groupID
+        self.parent().sidebarEnemy.selectEnemyTile(tile.groupID)
                 
     def refreshEnemyTile(self, coords: EBCoords):
-        item = self.enemyTileAt(coords)
-        if item:
-            tile = self.projectData.getEnemyTile(coords)
-            group = self.projectData.enemyMapGroups[tile.groupID]
-            
-            enemySprites = []
-            for i in group.subGroup1.items():
-                for e in self.projectData.enemyGroups[i[1]["Enemy Group"]].enemies:
-                    spr = self.projectData.getSprite(self.projectData.enemySprites[e["Enemy"]])
-                    enemySprites.append(QPixmap.fromImage(ImageQt.ImageQt(spr.renderFacingImg(4))))
-            item.setSprites1(enemySprites)
-
-            enemySprites = []
-            for i in group.subGroup2.items():
-                for e in self.projectData.enemyGroups[i[1]["Enemy Group"]].enemies:
-                    spr = self.projectData.getSprite(self.projectData.enemySprites[e["Enemy"]])
-                    enemySprites.append(QPixmap.fromImage(ImageQt.ImageQt(spr.renderFacingImg(4))))
-            item.setSprites2(enemySprites)
-            
-            item.setGroup(group.groupID)
-            item.setFlag(group.flag)
-            item.setProbability1(group.subGroup1Rate)
-            item.setProbability2(group.subGroup2Rate)
-            
-            # now fix placedEnemyTilesByGroup   
-            if not tile.groupID in self.placedEnemyTilesByGroup:
-                self.placedEnemyTilesByGroup[tile.groupID] = [item,]
-            else:
-                if not item in self.placedEnemyTilesByGroup[tile.groupID]:
-                    self.placedEnemyTilesByGroup[tile.groupID].append(item)
-                            
-            for group, tiles in self.placedEnemyTilesByGroup.items():
-                if tile in tiles and group != tile.groupID:
-                    tiles.remove(tile)
-                    break
+        coords.restrictToMap()
+        tile = self.projectData.getEnemyTile(coords)
+        self.refreshEnemyMapGroup(tile.groupID)
             
     def refreshEnemyMapGroup(self, group: int):
         self.parent().sidebarEnemy.view.ensureCorrectColour(group)
-        try:
-            for i in self.placedEnemyTilesByGroup[group]:
-                coords = EBCoords(i.x(), i.y())
-                self.refreshEnemyTile(coords)
-        except KeyError:
-            pass # haven't been placed (rendered) yet, or there are none
+        self.projectData.enemyMapGroups[group].render(self.projectData)
+        self.update()
 
     def changeSectorBrush(self):
         current = self.sectorSelect.brush().color().toTuple()
@@ -1705,8 +1616,23 @@ class MapEditorScene(QGraphicsScene):
                     except Exception:
                         logging.warning(traceback.format_exc())
         
-        if self.state.mode in (common.MODEINDEX.ENEMY, common.MODEINDEX.ALL):
-            self.renderEnemies(start, *(end-start).coordsEnemy())
+        # Draw enemies
+        if self.state.mode == common.MODEINDEX.ENEMY or (self.state.mode == common.MODEINDEX.ALL and self.state.allModeShowsEnemyTiles):
+            x = start.coordsEnemy()[0]
+            y = start.coordsEnemy()[1]
+            for r in range(x, end.coordsEnemy()[0]+1):
+                for c in range(y, end.coordsEnemy()[1]+1):
+                    try:
+                        coords = EBCoords.fromEnemy(r, c)
+                        tile = self.projectData.getEnemyTile(coords)
+                        group = self.projectData.enemyMapGroups[tile.groupID]
+                        if group.groupID == 0:
+                            continue
+                        if group.rendered is None:
+                            group.render(self.projectData)
+                        painter.drawPixmap(r*64, c*64, group.rendered)
+                    except Exception as e:
+                        raise
             
     def drawForeground(self, painter: QPainter, rect: QRectF):
         if self.state.mode == common.MODEINDEX.GAME:

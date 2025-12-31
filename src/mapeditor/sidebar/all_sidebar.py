@@ -4,7 +4,6 @@ from PySide6.QtWidgets import (QCheckBox, QFormLayout, QGroupBox, QLabel,
                                QVBoxLayout, QWidget)
 
 from src.coilsnake.project_data import ProjectData
-from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import MapEditorNPC
 from src.objects.trigger import MapEditorTrigger
@@ -27,6 +26,10 @@ class SidebarAll(QWidget):
     def onToggleCollision(self): # lambdas have failed me.
         self.state.allModeShowsCollision = self.showCollision.isChecked()
         self.mapeditor.scene.update()
+    
+    def onToggleEnemyTiles(self): # I agree, me from a year ago
+        self.state.allModeShowsEnemyTiles = self.showEnemyTiles.isChecked()
+        self.mapeditor.scene.update()
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -47,7 +50,7 @@ class SidebarAll(QWidget):
         
         self.showEnemyTiles = QCheckBox("Show enemy tiles")
         self.showEnemyTiles.setChecked(True)
-        self.showEnemyTiles.toggled.connect(lambda: MapEditorEnemyTile.showEnemyTiles() if self.showEnemyTiles.isChecked() else MapEditorEnemyTile.hideEnemyTiles())
+        self.showEnemyTiles.toggled.connect(self.onToggleEnemyTiles)
         
         self.showWarps = QCheckBox("Show warps")
         self.showWarps.setChecked(True)
