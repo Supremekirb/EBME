@@ -138,6 +138,7 @@ class ActionRemoveSectorUserDataField(QUndoCommand):
         self.projectData = projectData
         self.name = name
         self.datatype = Sector.SECTORS_USERDATA[self.name]
+        self.index = tuple(Sector.SECTORS_USERDATA.keys()).index(self.name)
         
         # We need to also back up the data the sectors are holding onto.
         # It's a little more complex than adding userdata, where we don't need to
@@ -161,7 +162,10 @@ class ActionRemoveSectorUserDataField(QUndoCommand):
             i.userdata.pop(self.name, 0)
     
     def undo(self):
-        Sector.SECTORS_USERDATA[self.name] = self.datatype
+        # Preserve insertion order by rebuilding the dict
+        data = list(Sector.SECTORS_USERDATA.items())
+        data.insert(self.index, (self.name, self.datatype))
+        Sector.SECTORS_USERDATA = OrderedDict(data)
         # And reinstate the data that we backed up earlier.
         for n, i in enumerate(self.projectData.sectors.flat):
             i: Sector
