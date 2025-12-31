@@ -135,8 +135,8 @@ class ProjectData():
         return self._ripple_small
                             
     # project getters
-    def getProjectVersion(self) -> str:
-        return self.projectSnake['version']
+    def getProjectVersion(self) -> int:
+        return int(self.projectSnake['version'])
     
     def getProjectName(self) -> str:
         try:
@@ -285,3 +285,7 @@ class ProjectData():
         return self.sprites[id]
     def getEnemyTile(self, coords: EBCoords) -> EnemyTile:
         return self.enemyPlacements[coords.coordsEnemy()[1], coords.coordsEnemy()[0]]
+
+    def isFeatureAvailable(self, feature: common.COILSNAKEFEATUREIDS) -> bool:
+        """Test if a CoilSnake feature is available to this project based on its CoilSnake version ID."""
+        return common.COILSNAKEFEATURES[feature]["available"](self.getProjectVersion())

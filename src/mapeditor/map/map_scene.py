@@ -23,10 +23,13 @@ from PySide6.QtWidgets import (QApplication, QGraphicsLineItem,
 import src.misc.common as common
 import src.misc.icons as icons
 import src.objects.trigger as trigger
-from src.actions.changes_actions import (ActionAddMapChangeEvent, ActionAddTileChange,
+from src.actions.changes_actions import (ActionAddMapChangeEvent,
+                                         ActionAddTileChange,
                                          ActionChangeMapChangeEvent,
-                                         ActionChangeTileChange, ActionMoveMapChangeEvent,
-                                         ActionMoveTileChange, ActionRemoveMapChangeEvent,
+                                         ActionChangeTileChange,
+                                         ActionMoveMapChangeEvent,
+                                         ActionMoveTileChange,
+                                         ActionRemoveMapChangeEvent,
                                          ActionRemoveTileChange)
 from src.actions.enemy_actions import (ActionPlaceEnemyTile,
                                        ActionUpdateEnemyMapGroup)
@@ -36,10 +39,13 @@ from src.actions.hotspot_actions import (ActionChangeHotspotColour,
                                          ActionChangeHotspotComment,
                                          ActionChangeHotspotLocation)
 from src.actions.npc_actions import (ActionAddNPCInstance,
-                                     ActionChangeNPCInstance,
+                                     ActionChangeNPCInstance, ActionCreateNPC,
                                      ActionDeleteNPCInstance,
                                      ActionMoveNPCInstance, ActionUpdateNPC)
-from src.actions.sector_actions import ActionAddSectorUserDataField, ActionChangeSectorAttributes, ActionImportSectorUserData, ActionRemoveSectorUserDataField
+from src.actions.sector_actions import (ActionAddSectorUserDataField,
+                                        ActionChangeSectorAttributes,
+                                        ActionImportSectorUserData,
+                                        ActionRemoveSectorUserDataField)
 from src.actions.tile_actions import ActionPlaceTile
 from src.actions.trigger_actions import (ActionAddTrigger, ActionDeleteTrigger,
                                          ActionMoveTrigger,
@@ -52,7 +58,7 @@ from src.misc.dialogues import ClearDialog
 from src.objects.changes import MapChangeEvent
 from src.objects.enemy import MapEditorEnemyTile
 from src.objects.hotspot import MapEditorHotspot
-from src.objects.npc import MapEditorNPC, NPCInstance
+from src.objects.npc import NPC, MapEditorNPC, NPCInstance
 from src.objects.sector import Sector
 from src.objects.sprite import Sprite
 from src.objects.tile import MapTile
@@ -405,7 +411,9 @@ class MapEditorScene(QGraphicsScene):
                     menu.addSeparator()
                     menu.addAction(icons.ICON_PASTE, "Paste", self.onPaste)
                 case common.MODEINDEX.NPC:
-                    menu.addAction(icons.ICON_NEW, "New NPC", lambda: self.newNPC(EBCoords(x, y)))
+                    menu.addAction(icons.ICON_NEW, "New NPC instance", lambda: self.newNPCInstance(EBCoords(x, y)))
+                    if self.projectData.isFeatureAvailable(common.COILSNAKEFEATUREIDS.CREATENPCS):
+                        menu.addAction(icons.ICON_NEW_NPC, "Create new NPC && add instance", lambda: self.createNPCAndInstance(EBCoords(x, y)))
                     menu.addAction(icons.ICON_PASTE, "Paste", self.onPaste)
                 case common.MODEINDEX.TRIGGER:
                     menu.addAction(icons.ICON_NEW, "New &trigger", lambda: self.newTrigger(EBCoords(x, y)))
@@ -457,12 +465,12 @@ class MapEditorScene(QGraphicsScene):
 
             if isinstance(c, ActionMoveNPCInstance) or isinstance(c, ActionChangeNPCInstance):
                 actionType = "npc"
-                self.refreshInstance(c.instance.uuid)
+                self.refreshNPCInstance(c.instance.uuid)
             
             if isinstance(c, ActionAddNPCInstance):
                 actionType = "npc"
                 try:
-                    self.refreshInstance(c.instance.uuid)
+                    self.refreshNPCInstance(c.instance.uuid)
                 except KeyError:
                     pass # happens on undo due to NPC being not present
             
@@ -593,15 +601,15 @@ class MapEditorScene(QGraphicsScene):
             case common.MODEINDEX.SECTOR:
                 self.copySelectedSectors()
             case common.MODEINDEX.NPC:
-                self.copySelectedNPCs()
+                self.copySelectedNPCInstancess()
             case common.MODEINDEX.TRIGGER:
                 self.copySelectedTriggers()
                 
     def onCut(self):
         match self.state.mode:
             case common.MODEINDEX.NPC:
-                self.copySelectedNPCs()
-                self.deleteSelectedNPCs()
+                self.copySelectedNPCInstancess()
+                self.deleteSelectedNPCInstances()
             case common.MODEINDEX.TRIGGER:
                 self.copySelectedTriggers()
                 self.deleteSelectedTriggers()
@@ -672,12 +680,15 @@ class MapEditorScene(QGraphicsScene):
                     for i in text["Data"]:
                         inst = NPCInstance(i["id"], EBCoords(i["coords"][0], i["coords"][1]))
                         
+                        if inst.npcID >= len(self.projectData.npcs):
+                            raise ValueError(f"NPC ID for instance to paste is out of range. Got {inst.npcID}, max is {len(self.projectData.npcs)-1}.")
+                        
                         if not absolute: # then add the mouse pos
                             inst.coords += EBCoords(*self.parent().view.mapToScene(
                                 self.parent().view._lastMousePos).toTuple())
                             inst.coords.restrictToMap()
                             
-                        self.addNPC(inst)
+                        self.addNPCInstance(inst)
                     self.undoStack.endMacro()
                     inMacro = False
                     self.parent().sidebar.setCurrentIndex(common.MODEINDEX.NPC)
@@ -753,7 +764,7 @@ class MapEditorScene(QGraphicsScene):
     def onDelete(self):
         match self.state.mode:
             case common.MODEINDEX.NPC:
-                self.deleteSelectedNPCs()
+                self.deleteSelectedNPCInstances()
             case common.MODEINDEX.TRIGGER:
                 self.deleteSelectedTriggers()       
                 
@@ -1330,18 +1341,18 @@ class MapEditorScene(QGraphicsScene):
             for c in range(coords.coordsTile()[1], coords.coordsTile()[1]+4):
                 self.refreshTile(EBCoords.fromTile(r, c))
 
-    def newNPC(self, coords: EBCoords = EBCoords(0, 0)):
+    def newNPCInstance(self, coords: EBCoords = EBCoords(0, 0), id: int = 0):
         """Create a new NPC instance and add it to the map
 
         Args:
             coords (EBCoords, optional): Location to add it at. Defaults to EBCoords(0, 0).
         """
         coords.restrictToMap()
-        inst = NPCInstance(0, coords)
+        inst = NPCInstance(id, coords)
         self.clearSelection()
-        self.addNPC(inst)
+        self.addNPCInstance(inst)
     
-    def deleteNPC(self, instance: NPCInstance):
+    def deleteNPCInstance(self, instance: NPCInstance):
         """Remove an NPC instance from the map (and project data)
 
         Args:
@@ -1350,17 +1361,17 @@ class MapEditorScene(QGraphicsScene):
         action = ActionDeleteNPCInstance(instance, self)
         self.undoStack.push(action)
         
-    def deleteSelectedNPCs(self):
+    def deleteSelectedNPCInstances(self):
         """Remove NPC instances based on selection"""
         if any(isinstance(x, MapEditorNPC) for x in self.selectedItems()):
             self.undoStack.beginMacro("Delete NPCs")
             for i in self.selectedItems():
                 if isinstance(i, MapEditorNPC):
                     instance = self.projectData.npcInstanceFromUUID(i.uuid)
-                    self.deleteNPC(instance)
+                    self.deleteNPCInstance(instance)
             self.undoStack.endMacro()
                     
-    def addNPC(self, instance: NPCInstance):
+    def addNPCInstance(self, instance: NPCInstance):
         """Add an NPC instance to the map (and project data)
 
         Args:
@@ -1369,7 +1380,7 @@ class MapEditorScene(QGraphicsScene):
         action = ActionAddNPCInstance(instance, self)
         self.undoStack.push(action)
         
-    def copySelectedNPCs(self):
+    def copySelectedNPCInstancess(self):
         copied = []
         for i in self.selectedItems():
             if isinstance(i, MapEditorNPC):
@@ -1392,7 +1403,7 @@ class MapEditorScene(QGraphicsScene):
         for i in self.placedNPCsByID[id]:
             i.setSprite(spr, common.DIRECTION8[npc.direction], 0)
 
-    def refreshInstance(self, uuid: UUID):
+    def refreshNPCInstance(self, uuid: UUID):
         """Refresh an NPC instance on the map
 
         Args:
@@ -1416,6 +1427,13 @@ class MapEditorScene(QGraphicsScene):
                 else:
                     self.placedNPCsByID[inst.npcID].append(placement)
                 break
+            
+    def createNPCAndInstance(self, coords: EBCoords):
+        """Create a new NPC and add an instance of it to the map at the given location."""
+        npc = NPC(len(self.projectData.npcs), "down", 0, 0, "always", 1, "$0", "$0", "person")
+        action = ActionCreateNPC(self.projectData, npc)
+        self.undoStack.push(action)
+        self.newNPCInstance(coords, npc.id)
             
     def newTrigger(self, coords: EBCoords = EBCoords(0, 0)):
         """Create a new trigger at coords
@@ -2054,7 +2072,7 @@ class MapEditorScene(QGraphicsScene):
         progressDialog.setMinimumDuration(0)
         npcinstances = copy.copy(self.projectData.npcinstances) # local copy as it changes size during iteration
         for i in npcinstances:
-            self.deleteNPC(i)
+            self.deleteNPCInstance(i)
             progressDialog.setValue(progressDialog.value()+1)
     
         progressDialog.setValue(progressDialog.maximum())

@@ -424,9 +424,12 @@ class MapEditorNPC(QGraphicsPixmapItem):
         if (not self.isDummy) and self.scene().state.mode == common.MODEINDEX.NPC:
             self.setSelected(True)
             menu = QMenu()
-            menu.addAction(icons.ICON_NEW, "New NPC",
-                        lambda: self.scene().newNPC(EBCoords(event.scenePos().x(), event.scenePos().y())))
-            menu.addAction(icons.ICON_DELETE, "Delete", self.scene().deleteSelectedNPCs, shortcut=QKeySequence(Qt.Key.Key_Delete))
+            menu.addAction(icons.ICON_NEW, "New NPC instance",
+                        lambda: self.scene().newNPCInstance(EBCoords(event.scenePos().x(), event.scenePos().y())))
+            if self.scene().projectData.isFeatureAvailable(common.COILSNAKEFEATUREIDS.CREATENPCS):
+                menu.addAction(icons.ICON_NEW_NPC, "Create new NPC && add instance",
+                            lambda: self.scene().createNPCAndInstance(EBCoords(event.scenePos().x(), event.scenePos().y())))
+            menu.addAction(icons.ICON_DELETE, "Delete", self.scene().deleteSelectedNPCInstances, shortcut=QKeySequence(Qt.Key.Key_Delete))
             menu.addSeparator()
             menu.addAction(icons.ICON_CUT, "Cut", self.scene().onCut)
             menu.addAction(icons.ICON_COPY, "Copy", self.scene().onCopy)

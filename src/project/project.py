@@ -7,10 +7,10 @@ import requests
 from PySide6.QtCore import QPoint, QSettings, Qt, QThread, QTimer
 from PySide6.QtGui import QAction, QDesktopServices, QKeySequence, QPixmap
 from PySide6.QtWidgets import (QApplication, QFileDialog, QFormLayout,
-                               QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-                               QListWidget, QMenu, QMessageBox, QPlainTextEdit,
-                               QProgressBar, QPushButton, QSizePolicy,
-                               QVBoxLayout, QWidget)
+                               QGridLayout, QGroupBox, QHBoxLayout, QLabel,
+                               QLineEdit, QListWidget, QMenu, QMessageBox,
+                               QPlainTextEdit, QProgressBar, QPushButton,
+                               QSizePolicy, QVBoxLayout, QWidget)
 
 import src.coilsnake.load as load
 import src.coilsnake.save as save
@@ -26,6 +26,7 @@ from src.misc.dialogues import AboutDialog, SettingsDialog
 from src.misc.scratch import TileScratchSpace
 from src.misc.worker import Worker
 from src.paletteeditor.palette_editor import PaletteEditor
+from src.widgets.misc import IconLabel
 
 if TYPE_CHECKING:
     from src.main.main import MainApplication
@@ -391,6 +392,32 @@ class Project(QWidget):
         self.projectDescInput.setPlainText(self.projectData.getProjectDescription())
         self.projectVersionLabel.setText(f"CoilSnake version: {common.getCoilsnakeVersion(self.projectData.getProjectVersion())}")
         
+        # rebuild the list of available features
+        # start by clearing the layout
+        while self.projectFeaturesLayout.count():
+            widget = self.projectFeaturesLayout.itemAt(0).widget()
+            if widget:
+                self.projectFeaturesLayout.removeWidget(widget)
+                widget.deleteLater()
+        # then add new things
+        r = c = 0
+        for i in common.COILSNAKEFEATUREIDS:
+            available = self.projectData.isFeatureAvailable(i)
+            icon = icons.ICON_OK if available else icons.ICON_NO
+            label = IconLabel(common.COILSNAKEFEATURES[i]["name"], icon)
+            tooltip = common.COILSNAKEFEATURES[i]["desc"]
+            if available:
+                tooltip += "\nThis feature is available with this CoilSnake version."
+            else:
+                tooltip += "\nThis feature is not available with this CoilSnake version."
+                label.setEnabled(False)
+            label.setToolTip(tooltip)
+            self.projectFeaturesLayout.addWidget(label, r, c)
+            c += 1
+            if c == 3:
+                c = 0
+                r += 1
+        
         # paths have a tendency to be REALLY long,
         # so we can sprinkle zwsps thoughout to trick
         # qt into wrapping the text (there's no support for per-char wrap here)
@@ -488,12 +515,16 @@ class Project(QWidget):
         self.projectVersionLabel = QLabel("CoilSnake version: (Load a project first)")
         self.projectPathLabel = QLabel("Path: (Load a project first)")
         self.projectPathLabel.setWordWrap(True)
+        self.projectFeaturesLayout = QGridLayout()
+        self.projectFeaturesLayout.addWidget(QLabel("(Load a project first)"), 0, 0)
+        
         self.projectInfoLayout = QFormLayout()
         self.projectInfoLayout.addRow(self.projectTitleLabel, self.projectTitleInput)
         self.projectInfoLayout.addRow(self.projectAuthorLabel, self.projectAuthorInput)
         self.projectInfoLayout.addRow(self.projectDescLabel, self.projectDescInput)
         self.projectInfoLayout.addWidget(self.projectVersionLabel)
         self.projectInfoLayout.addWidget(self.projectPathLabel)
+        self.projectInfoLayout.addRow("Features", self.projectFeaturesLayout)
 
         self.projectInfo.setLayout(self.projectInfoLayout)
         self.projectInfo.setDisabled(True)

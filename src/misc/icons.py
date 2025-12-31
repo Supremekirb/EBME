@@ -109,6 +109,9 @@ def init_icons():
     global ICON_NEW
     ICON_NEW = icon("ph.plus")
     
+    global ICON_NEW_NPC
+    ICON_NEW_NPC = icon("ph.user-plus")
+    
     global ICON_EDIT
     ICON_EDIT = icon("ph.pencil-line")
     
@@ -138,6 +141,9 @@ def init_icons():
     
     global ICON_OK
     ICON_OK = icon("ph.check")
+    
+    global ICON_NO
+    ICON_NO = icon("ph.x")
     
     global ICON_GRID
     ICON_GRID = icon("ph.grid-four")

@@ -1,15 +1,16 @@
 import os
 from typing import TYPE_CHECKING
 
-from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QLabel,
-                               QLineEdit, QPlainTextEdit, QPushButton,
-                               QSizePolicy, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHBoxLayout,
+                               QLabel, QLineEdit, QPlainTextEdit, QPushButton,
+                               QSizePolicy, QToolButton, QVBoxLayout, QWidget)
 
 import src.misc.common as common
 from src.actions.misc_actions import MultiActionWrapper
-from src.actions.npc_actions import (ActionChangeNPCInstance,
+from src.actions.npc_actions import (ActionChangeNPCInstance, ActionCreateNPC,
                                      ActionMoveNPCInstance, ActionUpdateNPC)
 from src.coilsnake.project_data import ProjectData
+from src.misc import icons
 from src.misc.coords import EBCoords
 from src.objects.npc import NPC
 from src.widgets.input import BaseChangerSpinbox, CoordsInput, FlagInput
@@ -36,6 +37,8 @@ class SidebarNPC(QWidget):
         self.instancePos.x.blockSignals(True)
         self.instancePos.y.blockSignals(True)
         self.instanceNPC.blockSignals(True)
+        
+        self.instanceNPC.setMaximum(len(self.projectData.npcs)-1)
         
         instances = self.state.currentNPCInstances
         
@@ -122,7 +125,7 @@ class SidebarNPC(QWidget):
                 self.mapeditor.scene.undoStack.push(action)
          
         for i in self.state.currentNPCInstances:
-            self.mapeditor.scene.refreshInstance(i.uuid)
+            self.mapeditor.scene.refreshNPCInstance(i.uuid)
 
     def fromNPCs(self):
         """Load NPC data into sidebar"""
@@ -235,6 +238,14 @@ class SidebarNPC(QWidget):
         self.instanceData.setEnabled(False)
         self.NPCData.setEnabled(False)
         self.instanceLabel.setText("Select an NPC to edit.")
+    
+    def onAddNewNPC(self):
+        self.mapeditor.scene.undoStack.beginMacro("Create new NPC")
+        self.mapeditor.scene.undoStack.push(ActionCreateNPC(self.projectData,
+                                            NPC(len(self.projectData.npcs), "down", 0, 0, "always", 1, "$0", "$0", "person")))
+        self.fromNPCInstances() # Refreshes the maximum value
+        self.instanceNPC.setValue(len(self.projectData.npcs)-1) # -1 as it's now been added to
+        self.mapeditor.scene.undoStack.endMacro()
 
     def setupUI(self):
         self.instanceLabel = QLabel("Select an NPC to edit.")
@@ -249,11 +260,22 @@ class SidebarNPC(QWidget):
         self.instancePos.x.setMaximum(common.EBMAPWIDTH-1)
         self.instancePos.y.setMaximum(common.EBMAPHEIGHT-1)
 
+        instanceNPCLayout = QHBoxLayout()
         self.instanceNPC = BaseChangerSpinbox(self.instanceData)
         self.instanceNPC.setMaximum(len(self.projectData.npcs)-1)
+        self.addNewNPCButton = QToolButton()
+        self.addNewNPCButton.setIcon(icons.ICON_NEW_NPC)
+        self.addNewNPCButton.setToolTip("Create a new NPC entry (not a new instance)")
+        
+        instanceNPCLayout.addWidget(self.instanceNPC)
+        
+        if self.projectData.isFeatureAvailable(common.COILSNAKEFEATUREIDS.CREATENPCS):
+            self.addNewNPCButton.clicked.connect(self.onAddNewNPC)
+            instanceNPCLayout.addWidget(self.addNewNPCButton)
+            
 
         self.instanceDataLayout.addRow("Position", self.instancePos)
-        self.instanceDataLayout.addRow("NPC ID", self.instanceNPC)
+        self.instanceDataLayout.addRow("NPC ID", instanceNPCLayout)
         self.instanceData.setLayout(self.instanceDataLayout)
 
         self.instancePos.x.valueChanged.connect(self.toNPCInstances)

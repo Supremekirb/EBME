@@ -8,6 +8,7 @@ import src.misc.common as common
 from src.misc.coords import EBCoords
 
 if TYPE_CHECKING:
+    from src.coilsnake.project_data import ProjectData
     from src.mapeditor.map.map_scene import MapEditorScene
     from src.objects.npc import NPC, NPCInstance
 
@@ -225,3 +226,24 @@ class ActionUpdateNPC(QUndoCommand):
     
     def id(self):
         return common.ACTIONINDEX.NPCUPDATE
+    
+
+class ActionCreateNPC(QUndoCommand):
+    def __init__(self, projectData: "ProjectData", npc: "NPC"):
+        super().__init__()
+        self.setText("Create new NPC")
+        
+        self.projectData = projectData
+        self.npc = npc
+    
+    def redo(self):
+        self.projectData.npcs.append(self.npc)
+    
+    def undo(self):
+        self.projectData.npcs.pop()
+    
+    def mergeWith(self, other):
+        return False
+
+    def id(self):
+        return common.ACTIONINDEX.NPCCREATE

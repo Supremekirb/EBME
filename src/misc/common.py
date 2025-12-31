@@ -147,6 +147,7 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "NPCUPDATE", # can merge with itself
                                       "NPCADD", # cannot merge with itself
                                       "NPCDELETE", # cannot merge with itself
+                                      "NPCCREATE", # cannot merge with itself
                                       "TRIGGERMOVE", # drag on the map, cannot merge with itself
                                       "TRIGGERMOVESIDEBAR", # coords change in sidebar, can merge with itself
                                       "TRIGGERUPDATE", # can merge with itself
@@ -194,6 +195,7 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "USERDATAIMPORT", # cannot merge with itself
                                       ])
 
+
 # https://github.com/pk-hack/CoilSnake/blob/be5261bf53bf6b1656f693658c45dc321f8565c3/coilsnake/util/common/project.py#L18
 COILSNAKEVERSIONNAMES = {
     1:  "1.0",
@@ -208,6 +210,15 @@ COILSNAKEVERSIONNAMES = {
     10: "4.0",
     11: "4.1",
     12: "4.2",
+}
+
+COILSNAKEFEATUREIDS = IntEnum("COILSNAKEFEATUREIDS", ["CREATENPCS"])
+COILSNAKEFEATURES = {
+    COILSNAKEFEATUREIDS.CREATENPCS: {
+        "name": "Create new NPCs",
+        "desc": "Add new entries to the NPC configuration table.",
+        "available": lambda version: version > 12
+    }
 }
 
 DIRECTION8 = IntEnum("DIRECTION8", ["up",
