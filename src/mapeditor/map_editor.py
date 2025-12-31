@@ -338,6 +338,12 @@ class MapEditor(QWidget):
         if settings.value("MaskNPCsWithForeground", type=bool, defaultValue=True):
             self.npcForegroundMaskAction.setChecked(True)
         self.npcForegroundMaskAction.changed.connect(self.scene.toggleNPCForegroundMask)
+        
+        self.enemyLinesAction = QAction("Show &enemy spawn lines in Enemy mode")
+        self.enemyLinesAction.setCheckable(True)
+        if settings.value("ShowEnemyLines", type=bool, defaultValue=False):
+            self.enemyLinesAction.setChecked(True)
+        self.enemyLinesAction.changed.connect(self.scene.toggleEnemySpawnLines)
 
         self.warpIDAction = QAction("Show &warp && teleport IDs")
         self.warpIDAction.setCheckable(True)
@@ -366,6 +372,8 @@ class MapEditor(QWidget):
         self.menuView.addSeparator()
         self.menuView.addActions([self.npcIDAction, self.npcVisualBoundsAction,
                                   self.npcCollisionBoundsAction, self.npcForegroundMaskAction])
+        self.menuView.addSeparator()
+        self.menuView.addActions([self.enemyLinesAction])
         self.menuView.addSeparator()
         self.menuView.addActions([self.warpIDAction])
         self.menuView.addSeparator()

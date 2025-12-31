@@ -55,6 +55,7 @@ from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
 from src.misc.dialogues import ClearDialog
 from src.objects.changes import MapChangeEvent
+from src.objects.enemy import EnemySpawnLines
 from src.objects.hotspot import MapEditorHotspot
 from src.objects.npc import NPC, MapEditorNPC, NPCInstance
 from src.objects.sector import Sector
@@ -118,6 +119,10 @@ class MapEditorScene(QGraphicsScene):
         # self.previewNPC.collisionBounds.setY(4)
         self.previewNPC.hide()
         self.addItem(self.previewNPC)
+        
+        self.enemySpawnLines = EnemySpawnLines()
+        self.addItem(self.enemySpawnLines)
+        self.enemySpawnLines.hide()
         
         self.selectionChanged.connect(self.updateSelected)
 
@@ -209,6 +214,7 @@ class MapEditorScene(QGraphicsScene):
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
         coords = EBCoords(event.scenePos().x(), event.scenePos().y())
         self.parent().status.updateCoords(coords)
+        self.enemySpawnLines.setPos(*coords.roundToEnemy())
         if self.state.tempMode == common.TEMPMODEINDEX.NONE:
             match self.state.mode:
                 case common.MODEINDEX.TILE:
@@ -814,9 +820,12 @@ class MapEditorScene(QGraphicsScene):
             self.parent().sidebarTrigger.deselectTrigger()
 
         if index == common.MODEINDEX.ENEMY:
-            ...
+            if self.parent().enemyLinesAction.isChecked():
+                self.enemySpawnLines.show()
+            else:
+                self.enemySpawnLines.hide()
         else:
-            ...
+            self.enemySpawnLines.hide()
             
         if index == common.MODEINDEX.HOTSPOT:
             MapEditorHotspot.showHotspots()
@@ -835,6 +844,10 @@ class MapEditorScene(QGraphicsScene):
             if self.parent().sidebarAll.showTriggers.isChecked():
                 trigger.MapEditorTrigger.showTriggers()
             else: trigger.MapEditorTrigger.hideTriggers()
+            if self.parent().sidebarAll.showEnemyLines.isChecked():
+                    self.enemySpawnLines.show()
+            else:
+                self.enemySpawnLines.hide()
             if self.parent().sidebarAll.showHotspots.isChecked():
                 MapEditorHotspot.showHotspots()
             else: MapEditorHotspot.hideHotspots()
@@ -2089,6 +2102,18 @@ class MapEditorScene(QGraphicsScene):
             settings.setValue("mapeditor/MaskNPCsWithForeground", False)
             
         self.update()
+    
+    def toggleEnemySpawnLines(self):
+        settings = QSettings()
+        if checked := self.parent().enemyLinesAction.isChecked():
+            settings.setValue("mapeditor/ShowEnemyLines", True)
+        else:
+            settings.setValue("mapeditor/ShowEnemyLines", False)
+        if self.state.mode == common.MODEINDEX.ENEMY:
+            if checked:
+                self.enemySpawnLines.show()
+            else:
+                self.enemySpawnLines.hide()
     
     def toggleWarpIDs(self):
         settings = QSettings()

@@ -5,8 +5,8 @@ from PIL import ImageQt
 # Qt subclasses for better organisation and control
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen, QPixmap
-from PySide6.QtWidgets import (QGraphicsLineItem, QGraphicsPixmapItem,
-                               QGraphicsRectItem, QGraphicsSimpleTextItem)
+from PySide6.QtWidgets import (QGraphicsItem, QGraphicsLineItem,
+                               QGraphicsRectItem)
 
 import src.misc.common as common
 from src.misc.coords import EBCoords
@@ -179,3 +179,36 @@ class EnemyGroup:
         self.fearFlag = fearFlag
         self.fearMode = fearMode
         self.letterboxSize = letterboxSize
+
+
+class EnemySpawnLines(QGraphicsRectItem):
+    def __init__(self, parent: QGraphicsItem|None = None):
+        super().__init__(parent)
+        self.setZValue(common.MAPZVALUES.ENEMY)
+        pen = QPen(Qt.GlobalColor.yellow, 4)
+        bgPen = QPen(Qt.GlobalColor.black, 6)
+        
+        self.setRect(0, 0, 64, 64)
+        self.setPen(bgPen)
+        
+        self.FGRect = QGraphicsRectItem(0, 0, 64, 64, self)
+        self.FGRect.setPen(pen)
+        
+        self.BGTopLine = QGraphicsLineItem(-64, -192, 256, -192, self)
+        self.BGTopLine.setPen(bgPen)
+        self.BGRightLine = QGraphicsLineItem(192, -64, 192, 256, self)
+        self.BGRightLine.setPen(bgPen)
+        self.BGBottomLine = QGraphicsLineItem(-64, 192, 256, 192, self)
+        self.BGBottomLine.setPen(bgPen)
+        self.BGLeftLine = QGraphicsLineItem(-192, -64, -192, 256, self)
+        self.BGLeftLine.setPen(bgPen)
+        
+        self.topLine = QGraphicsLineItem(-64, -192, 256, -192, self)
+        self.topLine.setPen(pen)
+        self.rightLine = QGraphicsLineItem(192, -64, 192, 256, self)
+        self.rightLine.setPen(pen)
+        self.bottomLine = QGraphicsLineItem(-64, 192, 256, 192, self)
+        self.bottomLine.setPen(pen)
+        self.leftLine = QGraphicsLineItem(-192, -64, -192, 256, self)
+        self.leftLine.setPen(pen)
+        

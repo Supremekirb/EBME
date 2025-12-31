@@ -30,6 +30,12 @@ class SidebarAll(QWidget):
     def onToggleEnemyTiles(self): # I agree, me from a year ago
         self.state.allModeShowsEnemyTiles = self.showEnemyTiles.isChecked()
         self.mapeditor.scene.update()
+    
+    def onToggleEnemyLines(self):
+        if self.showEnemyLines.isChecked():
+            self.mapeditor.scene.enemySpawnLines.show()
+        else:
+            self.mapeditor.scene.enemySpawnLines.hide()
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -44,13 +50,17 @@ class SidebarAll(QWidget):
         self.showTriggers.setChecked(True)
         self.showTriggers.toggled.connect(lambda: MapEditorTrigger.showTriggers() if self.showTriggers.isChecked() else MapEditorTrigger.hideTriggers())
         
-        self.showHotspots = QCheckBox("Show hotspots")
-        self.showHotspots.setChecked(True)
-        self.showHotspots.toggled.connect(lambda: MapEditorHotspot.showHotspots() if self.showHotspots.isChecked() else MapEditorHotspot.hideHotspots())
-        
         self.showEnemyTiles = QCheckBox("Show enemy tiles")
         self.showEnemyTiles.setChecked(True)
         self.showEnemyTiles.toggled.connect(self.onToggleEnemyTiles)
+        
+        self.showEnemyLines = QCheckBox("Show enemy spawn lines")
+        self.showEnemyLines.setChecked(False)
+        self.showEnemyLines.toggled.connect(self.onToggleEnemyLines)
+        
+        self.showHotspots = QCheckBox("Show hotspots")
+        self.showHotspots.setChecked(True)
+        self.showHotspots.toggled.connect(lambda: MapEditorHotspot.showHotspots() if self.showHotspots.isChecked() else MapEditorHotspot.hideHotspots())
         
         self.showWarps = QCheckBox("Show warps")
         self.showWarps.setChecked(True)
@@ -67,6 +77,7 @@ class SidebarAll(QWidget):
         layout.addWidget(self.showNPCs)
         layout.addWidget(self.showTriggers)
         layout.addWidget(self.showEnemyTiles)
+        layout.addWidget(self.showEnemyLines)
         layout.addWidget(self.showHotspots)
         layout.addWidget(self.showWarps)
         layout.addWidget(self.showCollision)
