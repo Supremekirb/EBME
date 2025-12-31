@@ -210,3 +210,6 @@ def init_icons():
     
     global ICON_MIRROR_V
     ICON_MIRROR_V = icon("ph.arrows-down-up")
+    
+    global ICON_FORCE_ENABLED
+    ICON_FORCE_ENABLED = icon("ph.shield-check")

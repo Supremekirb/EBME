@@ -221,6 +221,13 @@ COILSNAKEFEATURES = {
     }
 }
 
+def getForcedFeature(feature: COILSNAKEFEATUREIDS) -> bool:
+    """Check if a feature is forcefully enabled (in settings)"""
+    return QSettings().value(f"forcedfeatures/{feature.name}", defaultValue=False, type=bool)
+def setForcedFeature(feature: COILSNAKEFEATUREIDS, forced: bool):
+    """Set if a feature should be forcefully enabled. Project reload required to take effect."""
+    QSettings().setValue(f"forcedfeatures/{feature.name}", forced)
+
 DIRECTION8 = IntEnum("DIRECTION8", ["up",
                                     "up-right",
                                     "right",

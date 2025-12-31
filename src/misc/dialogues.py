@@ -13,8 +13,8 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
                                QListWidgetItem, QMessageBox, QPushButton,
                                QScrollArea, QSizePolicy, QSpinBox,
                                QStyleFactory, QTableWidget, QTableWidgetItem,
-                               QTextEdit, QToolButton, QUndoView, QVBoxLayout,
-                               QWidget)
+                               QTabWidget, QTextEdit, QToolButton, QUndoView,
+                               QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.icons as icons
@@ -353,11 +353,38 @@ class SettingsDialog(QDialog):
         
         self.setWindowTitle("Settings")
         
+        self.needsToShowProjReloadDisclaimer = False
+        self.needsToShowEBMEReloadDisclaimer = False
+        
         self.settings = QSettings()
         self.setupUI()
         self.fromSettings()
+    
+    def prepareShowProjReloadDisclaimer(self):
+        self.needsToShowProjReloadDisclaimer = True
+    
+    def prepareShowEBMEReloadDisclaimer(self):
+        self.needsToShowEBMEReloadDisclaimer = True
+    
+    def showProjReloadDisclaimer(self):
+        common.showErrorMsg(
+            "Settings",
+            "Some of the settings that you changed require a project reload in order to take effect properly.",
+            "Please load a project, or reload your current one.",
+            icon = QMessageBox.Icon.Information
+        )
+    
+    def showEBMEReloadDisclaimer(self):
+        common.showErrorMsg(
+            "Settings",
+            "Some of the settings that you changed require EBME to be restarted in order to take effect properly.",
+            "Please make sure unsaved changes are saved, and then close the program.",
+            icon = QMessageBox.Icon.Information
+        )
 
     def setupUI(self):
+        self.settingsTabs = QTabWidget()
+        
         self.generalBox = QGroupBox("General")
         self.generalLayout = QFormLayout()
         self.generalBox.setLayout(self.generalLayout)
@@ -366,16 +393,19 @@ class SettingsDialog(QDialog):
         self.noCtrlZoom = QCheckBox("")
         self.absolutePaste = QCheckBox("")
         self.alternateMinitilePick = QCheckBox("")
-        self.eol = QComboBox()
-        self.eol.addItems(["Auto (Recommended)",
-                           "LF (Unix, macOS, EBProjEd compatibility)",
-                           "CR LF (Windows)",
-                           "CR (macOS < 10.0 compatibility)"])
+        self.coordCopyStyle = QLineEdit()
+        self.coordCopyStyle.setPlaceholderText(r"Default: (%X, %Y)")
+        self.coordCopyAuto = QCheckBox("")
+        
         self.generalLayout.addRow("Load most recent project on startup:", self.loadLastProject)
         self.generalLayout.addRow("Zoom without holding Ctrl:", self.noCtrlZoom)
         self.generalLayout.addRow("Paste NPCs and triggers at original locations:", self.absolutePaste)
         self.generalLayout.addRow("Pick minitiles without subpalettes by default (otherwise hold Alt):", self.alternateMinitilePick)
-        self.generalLayout.addRow("Line endings when saving:", self.eol)
+        self.generalLayout.addRow("Alt+Right-click coordinate copy pattern:", self.coordCopyStyle)
+        self.generalLayout.addWidget(QLabel(r"Use %X and %Y to represent the X and Y coordinates."))
+        self.generalLayout.addRow("Adapt coordinate copying to mode:", self.coordCopyAuto)
+        self.generalLayout.addWidget((QLabel("When disabled, copied coordinates will be in pixel scale.")))
+        
         
         self.personalisationBox = QGroupBox("Personalisation")
         self.personalisationLayout = QFormLayout()
@@ -385,28 +415,19 @@ class SettingsDialog(QDialog):
         for i in QStyleFactory.keys():
             self.applicationTheme.addItem(i)
         self.applicationTheme.addItem("EarthBound")
-        self.personalisationLayout.addRow("Application theme:", self.applicationTheme)
-        self.personalisationLayout.addWidget(QLabel("Restart to apply themes."))
-
         self.smoothGoto = QComboBox()
         self.smoothGoto.addItems(["Enabled",
                                  "Enabled for short distances",
                                  "Disabled"])
+        self.showUndoRedo = QCheckBox("")
+        
+        self.personalisationLayout.addRow("Application theme:", self.applicationTheme)
+        self.personalisationLayout.addWidget(QLabel("Restart to apply themes."))
         self.personalisationLayout.addRow("Smooth go to:", self.smoothGoto)
         self.personalisationLayout.addWidget(QLabel("Change this if you experience performance issues when using go-to features."))
-        
-        self.showUndoRedo = QCheckBox("")
         self.personalisationLayout.addRow("Show undo/redo timeline:", self.showUndoRedo)
         self.personalisationLayout.addWidget(QLabel("Restart to show/hide timeline."))
         
-        self.coordCopyStyle = QLineEdit()
-        self.coordCopyStyle.setPlaceholderText(r"Default: (%X, %Y)")
-        self.personalisationLayout.addRow("Alt+Right-click coordinate copy pattern:", self.coordCopyStyle)
-        self.personalisationLayout.addWidget(QLabel(r"Use %X and %Y to represent the X and Y coordinates."))
-        
-        self.coordCopyAuto = QCheckBox("")
-        self.personalisationLayout.addRow("Adapt coordinate copying to mode:", self.coordCopyAuto)
-        self.personalisationLayout.addWidget((QLabel("When disabled, copied coordinates will be in pixel scale.")))
 
         self.defaultProgramsBox = QGroupBox("Default programs")
         self.defaultProgramsLayout = QFormLayout()
@@ -440,7 +461,40 @@ class SettingsDialog(QDialog):
         self.png2ftsSetterLayout.addWidget(self.png2ftsLabel)
         self.png2ftsSetterLayout.addWidget(self.png2ftsPath)
         self.png2ftsSetterLayout.addWidget(self.png2ftsClear)
+        
+        self.defaultProgramsLayout.addRow("CCScript editor command:", self.textEditorSetterLayout)
+        self.defaultProgramsLayout.addWidget(self.textEditorHint)
+        # self.defaultProgramsLayout.addRow(HSeparator())
+        # self.defaultProgramsLayout.addRow("Image editor command:", self.imageEditorSetterLayout)
+        # self.defaultProgramsLayout.addWidget(self.imageEditorHint)
+        # self.defaultProgramsLayout.addRow(HSeparator())
+        self.defaultProgramsLayout.addRow("png2fts path:", self.png2ftsSetterLayout)
+        self.defaultProgramsLayout.addWidget(QLabel("You must use a version of png2fts that supports map output (-m)."))
 
+
+        self.advancedBox = QGroupBox("Advanced")
+        self.advancedLayout = QFormLayout()
+        self.advancedBox.setLayout(self.advancedLayout)
+        
+        self.eol = QComboBox()
+        self.eol.addItems(["Auto (Recommended)",
+                           "LF (Unix, macOS, EBProjEd compatibility)",
+                           "CR LF (Windows)",
+                           "CR (macOS < 10.0 compatibility)"])
+        
+        self.forcedFeatures = QListWidget()
+        
+        self.advancedLayout.addRow("Line endings when saving:", self.eol)
+        self.advancedLayout.addRow("Force-enable features:", self.forcedFeatures)
+        forcedFeaturesLabel = QLabel("""\
+        Features that depend on CoilSnake version to be usable can be forced to be enabled.<br>
+        <b>Recommended to leave everything unchecked!</b><br>
+        <b>CoilSnake may not compile if you use an unsupported feature!</b><br>
+        Please load or reload your project after changing this.""")
+        forcedFeaturesLabel.setTextFormat(Qt.TextFormat.RichText)
+        self.advancedLayout.addWidget(forcedFeaturesLabel)
+        
+        
         self.saveCancelLayout = QHBoxLayout()
         self.saveButton = QPushButton("Save")
         self.saveButton.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -452,20 +506,14 @@ class SettingsDialog(QDialog):
         self.saveCancelLayout.addWidget(self.cancelButton)
         self.saveCancelLayout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.defaultProgramsLayout.addRow("CCScript editor command:", self.textEditorSetterLayout)
-        self.defaultProgramsLayout.addWidget(self.textEditorHint)
-        # self.defaultProgramsLayout.addRow(HSeparator())
-        # self.defaultProgramsLayout.addRow("Image editor command:", self.imageEditorSetterLayout)
-        # self.defaultProgramsLayout.addWidget(self.imageEditorHint)
-        # self.defaultProgramsLayout.addRow(HSeparator())
-        self.defaultProgramsLayout.addRow("png2fts path:", self.png2ftsSetterLayout)
-        self.defaultProgramsLayout.addWidget(QLabel("You must use a version of png2fts that supports map output (-m)."))
 
         self.mainLayout = QVBoxLayout()
-        self.mainLayout.addWidget(self.generalBox)
-        self.mainLayout.addWidget(self.personalisationBox)
-        self.mainLayout.addWidget(self.defaultProgramsBox)
+        self.mainLayout.addWidget(self.settingsTabs)
         self.mainLayout.addLayout(self.saveCancelLayout)
+        self.settingsTabs.addTab(self.generalBox, "General")
+        self.settingsTabs.addTab(self.personalisationBox, "Personalisation")
+        self.settingsTabs.addTab(self.defaultProgramsBox, "Default programs")
+        self.settingsTabs.addTab(self.advancedBox, "Advanced")
         self.setLayout(self.mainLayout)
 
     def fromSettings(self):
@@ -475,13 +523,25 @@ class SettingsDialog(QDialog):
         self.alternateMinitilePick.setChecked(self.settings.value("main/alternateMinitilePick", False, type=bool))
         self.eol.setCurrentIndex(self.settings.value("main/lineEnding", 0, type=int))
         self.applicationTheme.setCurrentText(self.settings.value("personalisation/applicationTheme", QApplication.style().objectName(), type=str))
+        self.applicationTheme.currentIndexChanged.connect(self.prepareShowEBMEReloadDisclaimer)
         self.smoothGoto.setCurrentText(self.settings.value("personalisation/smoothGoto", "Always enabled", type=str))
         self.showUndoRedo.setChecked(self.settings.value("main/showUndoRedo", True, type=bool))
+        self.showUndoRedo.checkStateChanged.connect(self.prepareShowEBMEReloadDisclaimer)
         self.coordCopyStyle.setText(self.settings.value("personalisation/coordCopyStyle", r"(%X, %Y)", type=str))
         self.coordCopyAuto.setChecked(self.settings.value("personalisation/coordCopyAuto", True, type=bool))
         self.textEditorCommand.setText(self.settings.value("programs/textEditorCommand", ""))
         # self.imageEditorCommand.setText(self.settings.value("programs/imageEditorCommand", ""))
         self.png2ftsLabel.setText(self.settings.value("programs/png2fts", ""))
+        for i in common.COILSNAKEFEATUREIDS:
+            item = QListWidgetItem(common.COILSNAKEFEATURES[i]["name"])
+            item.setToolTip(common.COILSNAKEFEATURES[i]["desc"])
+            item.setData(Qt.ItemDataRole.UserRole, i)
+            if common.getForcedFeature(i):
+                item.setCheckState(Qt.CheckState.Checked)
+            else:
+                item.setCheckState(Qt.CheckState.Unchecked)
+            self.forcedFeatures.addItem(item)
+            self.forcedFeatures.itemChanged.connect(self.prepareShowProjReloadDisclaimer)
 
     def toSettings(self):
         self.settings.setValue("main/disableLoadLast", not(self.loadLastProject.isChecked()))
@@ -505,6 +565,19 @@ class SettingsDialog(QDialog):
         if path != "":
             self.settings.setValue("programs/png2fts", path)
         else: self.settings.setValue("programs/png2fts", "")
+        
+        for i in range(self.forcedFeatures.count()):
+            item = self.forcedFeatures.item(i)
+            feature = item.data(Qt.ItemDataRole.UserRole)
+            common.setForcedFeature(feature, item.checkState() == Qt.CheckState.Checked)
+        
+        if self.needsToShowProjReloadDisclaimer:
+            self.showProjReloadDisclaimer()
+            self.needsToShowProjReloadDisclaimer = False
+        
+        if self.needsToShowEBMEReloadDisclaimer:
+            self.showEBMEReloadDisclaimer()
+            self.needsToShowEBMEReloadDisclaimer = False
 
 
     def browsepng2ftsPath(self):

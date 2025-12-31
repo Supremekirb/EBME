@@ -407,7 +407,11 @@ class Project(QWidget):
             label = IconLabel(common.COILSNAKEFEATURES[i]["name"], icon)
             tooltip = common.COILSNAKEFEATURES[i]["desc"]
             if available:
-                tooltip += "\nThis feature is available with this CoilSnake version."
+                if self.projectData.isFeatureNotForced(i):
+                    tooltip += "\nThis feature is available with this CoilSnake version."
+                else:
+                    label.setIcon(icons.ICON_FORCE_ENABLED)
+                    tooltip += "\nThis feature is not available with this CoilSnake version, but has been forcefully enabled in the settings."
             else:
                 tooltip += "\nThis feature is not available with this CoilSnake version."
                 label.setEnabled(False)

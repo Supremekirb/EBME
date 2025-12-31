@@ -287,5 +287,9 @@ class ProjectData():
         return self.enemyPlacements[coords.coordsEnemy()[1], coords.coordsEnemy()[0]]
 
     def isFeatureAvailable(self, feature: common.COILSNAKEFEATUREIDS) -> bool:
-        """Test if a CoilSnake feature is available to this project based on its CoilSnake version ID."""
+        """Test if a CoilSnake feature is available to this project based on its CoilSnake version ID / if it is force-enabled."""
+        return common.getForcedFeature(feature) or common.COILSNAKEFEATURES[feature]["available"](self.getProjectVersion())
+
+    def isFeatureNotForced(self, feature: common.COILSNAKEFEATUREIDS) -> bool:
+        """Test if a CoilSnake feature is enabled because it's forced by the user. True = Natural, False = Forced (or not enabled at all)"""
         return common.COILSNAKEFEATURES[feature]["available"](self.getProjectVersion())
