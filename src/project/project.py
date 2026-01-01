@@ -45,6 +45,9 @@ class Project(QWidget):
         self.projectInfo.setDisabled(True)
         
         self.isSaving = False
+        
+        self.projectIOThread = QThread()
+        self.updateCheckerThread = QThread()
 
     def enableOpen(self):
         self.openProjectButton.setEnabled(True)
@@ -134,22 +137,20 @@ class Project(QWidget):
             self.loadingProgress.setMinimum(0)
             self.loadingProgress.setValue(0)
 
-            self.workerThread = QThread()
-
             self.worker = Worker(load.readDirectory, dir)
             self.worker.updates.connect(self.updateStatusLabel)
             self.worker.returns.connect(self.finishedProjectLoad)
             
-            self.worker.moveToThread(self.workerThread)
-            self.workerThread.started.connect(self.worker.run)
+            self.worker.moveToThread(self.projectIOThread)
+            self.projectIOThread.started.connect(self.worker.run)
 
-            self.workerThread.start()
+            self.projectIOThread.start()
 
     def updateStatusLabel(self, text: str):
         self.statusLabel.setText(text)
     
     def finishedProjectLoad(self, data):
-        self.workerThread.quit()
+        self.projectIOThread.quit()
 
         # successful load
         if isinstance(data, ProjectData):
@@ -274,20 +275,18 @@ class Project(QWidget):
         self.loadingProgress.setMaximum(0)
         self.loadingProgress.setMinimum(0) 
         self.loadingProgress.setValue(0)
-
-        self.workerThread = QThread()
         
         self.worker = Worker(save.writeDirectory, self.projectData)
         self.worker.updates.connect(self.updateStatusLabel)
         self.worker.returns.connect(self.finishedProjectSave)
         
-        self.worker.moveToThread(self.workerThread)
-        self.workerThread.started.connect(self.worker.run)
+        self.worker.moveToThread(self.projectIOThread)
+        self.projectIOThread.started.connect(self.worker.run)
 
-        self.workerThread.start()
+        self.projectIOThread.start()
 
     def finishedProjectSave(self, result):
-        self.workerThread.quit()
+        self.projectIOThread.quit()
         self.isSaving = False
 
         if isinstance(result, bool) and result == True:
@@ -446,20 +445,54 @@ class Project(QWidget):
             
             
     def checkForUpdates(self):
-        try:
-            response = requests.get(f"https://api.github.com/repos/{common.OWNER}/{common.REPOSITORY}/releases/latest")
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            self.versionStatus.setText(f"Error {e.errno} fetching update info.")
-            raise
-        except Exception as e:
-            self.versionStatus.setText("Error fetching update info.")
-            raise
-        latest = response.json()["tag_name"]
-        if latest != common.VERSION:
-            self.versionStatus.setText(f"Update available! {common.VERSION} --> {latest}. <a href='https://github.com/{common.OWNER}/{common.REPOSITORY}/releases/latest'>Download it here.</a>")
-        else:
-            self.versionStatus.setText("You are up to date!")
+        def _threaded(worker: Worker):
+            try:
+                try:
+                    URL = f"https://api.github.com/repos/{common.OWNER}/{common.REPOSITORY}/releases/latest"
+                    logging.info(f"Checking for update at {URL}...")
+                    response = requests.get(URL)
+                    response.raise_for_status()
+                except requests.HTTPError as e:
+                    worker.updates.emit(f"Error {e.response.status_code} fetching update info. Check debug output for detail.")
+                    worker.returns.emit(False)
+                    raise
+                except requests.ConnectionError as e:
+                    worker.updates.emit(f"Connection error fetching update info. Check debug output for detail.")
+                    worker.returns.emit(False)
+                    raise
+                except Exception as e:
+                    worker.updates.emit(f"Error fetching update info. Check debug output for detail.")
+                    worker.returns.emit(False)
+                    raise
+            except Exception:
+                logging.warning(traceback.format_exc())
+                raise
+            else:
+                logging.info("Update check request successful.")
+                try:
+                    latest = response.json()["tag_name"]
+                    if latest != common.VERSION:
+                        worker.updates.emit(f"Update available! {common.VERSION} --> {latest}. <a href='https://github.com/{common.OWNER}/{common.REPOSITORY}/releases/latest'>Download it here.</a>")
+                    else:
+                        worker.updates.emit("You are up to date!")
+                    worker.returns.emit(True)
+                    logging.info("Update check response decoding successful.")
+                except Exception as e:
+                    worker.updates.emit(f"Error decoding update info. Check debug output for detail.")
+                    worker.returns.emit(False)
+                    logging.warning(traceback.format_exc())
+                    raise
+        
+        if not self.updateCheckerThread.isRunning():
+            self.versionStatus.setText("Checking for updates...")
+            self.checkForUpdatesButton.setDisabled(True)
+            self.updateWorker = Worker(_threaded)
+            self.updateWorker.updates.connect(self.versionStatus.setText)
+            self.updateWorker.returns.connect(self.updateCheckerThread.quit)
+            self.updateWorker.returns.connect(lambda: self.checkForUpdatesButton.setDisabled(False))
+            self.updateWorker.moveToThread(self.updateCheckerThread)
+            self.updateCheckerThread.started.connect(self.updateWorker.run)
+            self.updateCheckerThread.start()
 
     def setupUI(self):
         self.menuFile = QMenu("&File")
