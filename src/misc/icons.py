@@ -213,3 +213,6 @@ def init_icons():
     
     global ICON_FORCE_ENABLED
     ICON_FORCE_ENABLED = icon("ph.shield-check")
+    
+    global ICON_DIRECTIONS_IN
+    ICON_DIRECTIONS_IN = icon("ph.arrows-in-cardinal")

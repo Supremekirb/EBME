@@ -120,9 +120,9 @@ class MapEditorScene(QGraphicsScene):
         self.previewNPC.hide()
         self.addItem(self.previewNPC)
         
-        self.enemySpawnLines = EnemySpawnLines()
-        self.addItem(self.enemySpawnLines)
-        self.enemySpawnLines.hide()
+        self.hoverSpawnLines = EnemySpawnLines()
+        self.addItem(self.hoverSpawnLines)
+        self.hoverSpawnLines.hide()
         
         self.selectionChanged.connect(self.updateSelected)
 
@@ -213,8 +213,10 @@ class MapEditorScene(QGraphicsScene):
         
     def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
         coords = EBCoords(event.scenePos().x(), event.scenePos().y())
+        restrictedCoords = EBCoords(*coords.coords())
+        restrictedCoords.restrictToMap()
         self.parent().status.updateCoords(coords)
-        self.enemySpawnLines.setPos(*coords.roundToEnemy())
+        self.hoverSpawnLines.setPos(*restrictedCoords.roundToEnemy())
         if self.state.tempMode == common.TEMPMODEINDEX.NONE:
             match self.state.mode:
                 case common.MODEINDEX.TILE:
@@ -315,6 +317,17 @@ class MapEditorScene(QGraphicsScene):
                                 self.placeEnemyTile(coords)
                             if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                                 self.pickEnemyTile(coords)
+                        if event.buttons() == Qt.MouseButton.RightButton:
+                            if event.modifiers() == Qt.KeyboardModifier.NoModifier:
+                                enemyCoords = coords.coordsEnemy()
+                                if enemyCoords in self.state.lockedSpawnLines:
+                                    self.state.lockedSpawnLines.discard(enemyCoords)
+                                else:
+                                    self.state.lockedSpawnLines.add(enemyCoords)
+                                self.update()
+                            if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                                self.state.lockedSpawnLines.clear()
+                                self.update()
                     
                     case common.MODEINDEX.COLLISION:
                         if event.buttons() == Qt.MouseButton.LeftButton:
@@ -821,11 +834,11 @@ class MapEditorScene(QGraphicsScene):
 
         if index == common.MODEINDEX.ENEMY:
             if self.parent().enemyLinesAction.isChecked():
-                self.enemySpawnLines.show()
+                self.hoverSpawnLines.show()
             else:
-                self.enemySpawnLines.hide()
+                self.hoverSpawnLines.hide()
         else:
-            self.enemySpawnLines.hide()
+            self.hoverSpawnLines.hide()
             
         if index == common.MODEINDEX.HOTSPOT:
             MapEditorHotspot.showHotspots()
@@ -845,9 +858,9 @@ class MapEditorScene(QGraphicsScene):
                 trigger.MapEditorTrigger.showTriggers()
             else: trigger.MapEditorTrigger.hideTriggers()
             if self.parent().sidebarAll.showEnemyLines.isChecked():
-                    self.enemySpawnLines.show()
+                    self.hoverSpawnLines.show()
             else:
-                self.enemySpawnLines.hide()
+                self.hoverSpawnLines.hide()
             if self.parent().sidebarAll.showHotspots.isChecked():
                 MapEditorHotspot.showHotspots()
             else: MapEditorHotspot.hideHotspots()
@@ -1644,8 +1657,27 @@ class MapEditorScene(QGraphicsScene):
                         if group.rendered is None:
                             group.render(self.projectData)
                         painter.drawPixmap(r*64, c*64, group.rendered)
-                    except Exception as e:
-                        raise
+                    except Exception:
+                        logging.warning(traceback.format_exc())
+
+        # draw locked spawn lines
+        if self.state.mode == common.MODEINDEX.ENEMY and self.parent().enemyLinesAction.isChecked():
+            # BG
+            painter.setOpacity(0.5)
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(Qt.GlobalColor.blue)
+            for i in self.state.lockedSpawnLines:
+                painter.drawRect(*EBCoords.fromEnemy(*i).roundToEnemy(), 64, 64)
+            painter.setOpacity(1)
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            # outline
+            painter.setPen(QPen(Qt.GlobalColor.white, 6))
+            for i in self.state.lockedSpawnLines:
+                self.drawSpawnLineSet(EBCoords.fromEnemy(*i), painter)
+            # main colour
+            painter.setPen(QPen(Qt.GlobalColor.blue, 4))
+            for i in self.state.lockedSpawnLines:
+                self.drawSpawnLineSet(EBCoords.fromEnemy(*i), painter)
             
     def drawForeground(self, painter: QPainter, rect: QRectF):
         if self.state.mode == common.MODEINDEX.GAME:
@@ -1664,6 +1696,17 @@ class MapEditorScene(QGraphicsScene):
                 x, y = self.previewNPC.pos().toTuple()
                 y += 1 # this seems to make it match the game
                 painter.drawPolygon(QPolygon(rect.toRect()).subtracted(QRect(x, y, 256, 224).adjusted(-128, -112, -128, -112)))
+    
+    def drawSpawnLineSet(self, coords: EBCoords, painter: QPainter):
+        x, y = coords.roundToEnemy()
+        if self.parent().enemyLinesTopAction.isChecked():
+            painter.drawLine(x-64,  y-192, x+256, y-192)
+        if self.parent().enemyLinesRightAction.isChecked():
+            painter.drawLine(x+192, y-64,  x+192, y+256)
+        if self.parent().enemyLinesBottomAction.isChecked():
+            painter.drawLine(x-64,  y+192, x+256, y+192)
+        if self.parent().enemyLinesLeftAction.isChecked():
+            painter.drawLine(x-192, y-64,  x-192, y+256)
                 
     def resetPreviewNPCAnim(self):
         self.previewNPCAnimTimer = self.PREVIEWNPCANIMDELAY
@@ -2111,9 +2154,9 @@ class MapEditorScene(QGraphicsScene):
             settings.setValue("mapeditor/ShowEnemyLines", False)
         if self.state.mode == common.MODEINDEX.ENEMY:
             if checked:
-                self.enemySpawnLines.show()
+                self.hoverSpawnLines.show()
             else:
-                self.enemySpawnLines.hide()
+                self.hoverSpawnLines.hide()
     
     def toggleWarpIDs(self):
         settings = QSettings()
@@ -2145,7 +2188,23 @@ class MapEditorScene(QGraphicsScene):
         self.grid.setBrush(QBrush(QPixmap(f":/grids/{type}grid{id}.png")))
         settings.setValue("mapeditor/GridStyle", id)
         self._currentGrid = id
-        
+    
+    def toggleSpawnLineDir(self, dir: common.DIRECTION4):
+        match dir:
+            case common.DIRECTION4.up:
+                self.hoverSpawnLines.topLine.setVisible(not self.hoverSpawnLines.topLine.isVisible())
+                self.hoverSpawnLines.BGTopLine.setVisible(not self.hoverSpawnLines.BGTopLine.isVisible())
+            case common.DIRECTION4.down:
+                self.hoverSpawnLines.bottomLine.setVisible(not self.hoverSpawnLines.bottomLine.isVisible())
+                self.hoverSpawnLines.BGBottomLine.setVisible(not self.hoverSpawnLines.BGBottomLine.isVisible())
+            case common.DIRECTION4.left:
+                self.hoverSpawnLines.leftLine.setVisible(not self.hoverSpawnLines.leftLine.isVisible())
+                self.hoverSpawnLines.BGLeftLine.setVisible(not self.hoverSpawnLines.BGLeftLine.isVisible())
+            case common.DIRECTION4.right:
+                self.hoverSpawnLines.rightLine.setVisible(not self.hoverSpawnLines.rightLine.isVisible())
+                self.hoverSpawnLines.BGRightLine.setVisible(not self.hoverSpawnLines.BGRightLine.isVisible())
+        self.update()
+
     def populateNPCs(self):
         for i in self.projectData.npcinstances:
             npc = self.projectData.getNPC(i.npcID)

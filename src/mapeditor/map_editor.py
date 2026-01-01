@@ -344,6 +344,26 @@ class MapEditor(QWidget):
         if settings.value("ShowEnemyLines", type=bool, defaultValue=False):
             self.enemyLinesAction.setChecked(True)
         self.enemyLinesAction.changed.connect(self.scene.toggleEnemySpawnLines)
+        
+        self.enemyLinesDirectionMenu = QMenu("Enemy spawn line sides...")
+        self.enemyLinesDirectionMenu.setIcon(icons.ICON_DIRECTIONS_IN)
+        self.enemyLinesTopAction = QAction("Top")
+        self.enemyLinesTopAction.setCheckable(True)
+        self.enemyLinesTopAction.setChecked(True)
+        self.enemyLinesTopAction.triggered.connect(lambda: self.scene.toggleSpawnLineDir(common.DIRECTION4.up))
+        self.enemyLinesBottomAction = QAction("Bottom")
+        self.enemyLinesBottomAction.setCheckable(True)
+        self.enemyLinesBottomAction.setChecked(True)
+        self.enemyLinesBottomAction.triggered.connect(lambda: self.scene.toggleSpawnLineDir(common.DIRECTION4.down))
+        self.enemyLinesLeftAction = QAction("Left")
+        self.enemyLinesLeftAction.setCheckable(True)
+        self.enemyLinesLeftAction.setChecked(True)
+        self.enemyLinesLeftAction.triggered.connect(lambda: self.scene.toggleSpawnLineDir(common.DIRECTION4.left))
+        self.enemyLinesRightAction = QAction("Right")
+        self.enemyLinesRightAction.setCheckable(True)
+        self.enemyLinesRightAction.setChecked(True)
+        self.enemyLinesRightAction.triggered.connect(lambda: self.scene.toggleSpawnLineDir(common.DIRECTION4.right))
+        self.enemyLinesDirectionMenu.addActions([self.enemyLinesTopAction, self.enemyLinesBottomAction, self.enemyLinesLeftAction, self.enemyLinesRightAction])
 
         self.warpIDAction = QAction("Show &warp && teleport IDs")
         self.warpIDAction.setCheckable(True)
@@ -374,6 +394,7 @@ class MapEditor(QWidget):
                                   self.npcCollisionBoundsAction, self.npcForegroundMaskAction])
         self.menuView.addSeparator()
         self.menuView.addActions([self.enemyLinesAction])
+        self.menuView.addMenu(self.enemyLinesDirectionMenu)
         self.menuView.addSeparator()
         self.menuView.addActions([self.warpIDAction])
         self.menuView.addSeparator()
@@ -484,6 +505,8 @@ class MapEditorState():
         
         self.previewingPaletteGroup: int|None = None
         self.previewingPalette: int|None = None
+        
+        self.lockedSpawnLines: set[tuple[int, int]] = set()
     
     # TODO these two are unused. remove
     def selectTrigger(self, trigger: Trigger, add: bool=False):

@@ -33,9 +33,9 @@ class SidebarAll(QWidget):
     
     def onToggleEnemyLines(self):
         if self.showEnemyLines.isChecked():
-            self.mapeditor.scene.enemySpawnLines.show()
+            self.mapeditor.scene.hoverSpawnLines.show()
         else:
-            self.mapeditor.scene.enemySpawnLines.hide()
+            self.mapeditor.scene.hoverSpawnLines.hide()
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
