@@ -30,10 +30,16 @@ class DebugOutputDialog(QDialog):
         
         self.setLayout(layout)
         
+        self.resize(500, 300)
+        
     def appendText(self, text):
-        self.text.append(text)
+        cursor = self.text.textCursor()
+        cursor.movePosition(cursor.MoveOperation.End)
+        self.text.setTextCursor(cursor)
+        self.text.insertPlainText(text)
         
     @staticmethod
     def openDebug(parent=None):
         dialog = DebugOutputDialog(parent)
         dialog.show()
+        dialog.text.verticalScrollBar().setValue(dialog.text.verticalScrollBar().maximum())
