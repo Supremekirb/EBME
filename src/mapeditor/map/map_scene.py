@@ -318,16 +318,17 @@ class MapEditorScene(QGraphicsScene):
                             if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                                 self.pickEnemyTile(coords)
                         if event.buttons() == Qt.MouseButton.RightButton:
-                            if event.modifiers() == Qt.KeyboardModifier.NoModifier:
-                                enemyCoords = coords.coordsEnemy()
-                                if enemyCoords in self.state.lockedSpawnLines:
-                                    self.state.lockedSpawnLines.discard(enemyCoords)
-                                else:
-                                    self.state.lockedSpawnLines.add(enemyCoords)
-                                self.update()
-                            if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
-                                self.state.lockedSpawnLines.clear()
-                                self.update()
+                            if self.parent().enemyLinesAction.isChecked():
+                                if event.modifiers() == Qt.KeyboardModifier.NoModifier:
+                                    enemyCoords = coords.coordsEnemy()
+                                    if enemyCoords in self.state.lockedSpawnLines:
+                                        self.state.lockedSpawnLines.discard(enemyCoords)
+                                    else:
+                                        self.state.lockedSpawnLines.add(enemyCoords)
+                                    self.update()
+                                if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+                                    self.state.lockedSpawnLines.clear()
+                                    self.update()
                     
                     case common.MODEINDEX.COLLISION:
                         if event.buttons() == Qt.MouseButton.LeftButton:
@@ -2157,6 +2158,7 @@ class MapEditorScene(QGraphicsScene):
                 self.hoverSpawnLines.show()
             else:
                 self.hoverSpawnLines.hide()
+        self.update()
     
     def toggleWarpIDs(self):
         settings = QSettings()
