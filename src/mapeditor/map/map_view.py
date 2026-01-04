@@ -71,6 +71,15 @@ class MapEditorView(QGraphicsView):
         else:
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
         
+        # When we're setting door destination, we don't actually want to change our selection,
+        # so we can't actually let the parent class handle it. Therefore, we need to do it ourselves.
+        # (Why the view is in control of this is beyond me. Surely this should be implemented in the scene's mousePressEvent?)
+        if self.state.tempMode == common.TEMPMODEINDEX.SETDOORDEST:
+            pos = self.mapToScene(event.pos())
+            coords = EBCoords(pos.x(), pos.y())
+            self.scene().finaliseDoorDest(coords)
+            return
+        
         super().mousePressEvent(event)
         
     def mouseMoveEvent(self, event: QMouseEvent):

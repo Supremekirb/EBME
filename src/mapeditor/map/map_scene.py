@@ -356,9 +356,10 @@ class MapEditorScene(QGraphicsScene):
                 match self.state.tempMode:
                     case common.TEMPMODEINDEX.IMPORTMAP:
                         self.finaliseImportMap(coords)
-                        
-                    case common.TEMPMODEINDEX.SETDOORDEST:
-                        self.finaliseDoorDest(coords)
+                    
+                    # Handling of SETDOORDEST is in map_view.py.
+                    # This is because the view is in control of handling selections,
+                    # and we want to change the behaviour of clicking off the object.
                     
         super().mousePressEvent(event)
     
