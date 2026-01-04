@@ -172,19 +172,11 @@ class SidebarTrigger(QWidget):
                         differentDests = True
                         
                     if not differentDests:
-                        x, y = triggers[0].typeData.destCoords.coords()
-                        self.mapeditor.scene.doorDestShowIcon.setPos(x, y)
+                        self.setDoorDestPreviewLocation(triggers[0].typeData.destCoords)
                         self.mapeditor.scene.doorDestShowIcon.show()
                         self.doorJump.setDisabled(False)
                         self.doorDestPreviewText.show()
                         self.doorDestPreview.show()
-                        
-                        # that's silly
-                        self.doorDestPreview.horizontalScrollBar().blockSignals(False)
-                        self.doorDestPreview.verticalScrollBar().blockSignals(False)
-                        self.doorDestPreview.centerOn(x, y)
-                        self.doorDestPreview.horizontalScrollBar().blockSignals(True)
-                        self.doorDestPreview.verticalScrollBar().blockSignals(True)
                     else:
                         self.mapeditor.scene.doorDestShowIcon.hide()
                         self.doorJump.setDisabled(True)
@@ -368,7 +360,16 @@ class SidebarTrigger(QWidget):
             self.mapeditor.scene.dontUpdateModeNextAction = True
             self.mapeditor.scene.undoStack.push(MultiActionWrapper(commands, "Fix trigger collision"))
             self.fromTriggers() # refresh to remove warning
-        
+    
+    def setDoorDestPreviewLocation(self, coords: EBCoords):
+        x, y = coords.coords()
+        self.mapeditor.scene.doorDestShowIcon.setPos(x, y)
+        # this is a bit silly
+        self.doorDestPreview.horizontalScrollBar().blockSignals(False)
+        self.doorDestPreview.verticalScrollBar().blockSignals(False)
+        self.doorDestPreview.centerOn(x, y)
+        self.doorDestPreview.horizontalScrollBar().blockSignals(True)
+        self.doorDestPreview.verticalScrollBar().blockSignals(True)
         
     def setupUI(self):
         self.triggerLabel = QLabel("Select a trigger to edit.")
@@ -439,6 +440,12 @@ Switch: Automatically triggers some text when walked over, if the flag is set.""
         self.doorDest.y.setMaximum((common.EBMAPHEIGHT-1)//8)
         self.doorDest.x.setToolTip("Destination of the door. Trigger coordinates are in pixels/8.")
         self.doorDest.y.setToolTip("Destination of the door. Trigger coordinates are in pixels/8.")
+        self.doorDest.x.valueChanged.connect(
+            lambda x: self.setDoorDestPreviewLocation(EBCoords.fromWarp(x, self.doorDest.y.value()))
+        )
+        self.doorDest.y.valueChanged.connect(
+            lambda y: self.setDoorDestPreviewLocation(EBCoords.fromWarp(self.doorDest.x.value(), y))
+        )
 
         self.doorJump = QPushButton("Jump to")
         self.doorSet = QPushButton("Set destination")
