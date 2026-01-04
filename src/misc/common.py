@@ -140,9 +140,7 @@ TEMPMODEINDEX = IntEnum("TEMPMODEINDEX", ["NONE",
 ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "TILEPLACE", # cannot merge with itself
                                       "NPCMOVE", # drag on the map, cannot merge with itself
-                                      "NPCSMOVE", # several NPCs, cannot merge with itself
                                       "NPCMOVESIDEBAR", # coords change in sidebar, can merge with itself
-                                      "NPCSMOVESIDEBAR", # coords change in sidebar, can merge with itself
                                       "NPCCHANGE", # can merge with itself
                                       "NPCUPDATE", # can merge with itself
                                       "NPCADD", # cannot merge with itself
@@ -153,7 +151,6 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "TRIGGERUPDATE", # can merge with itself
                                       "TRIGGERADD", # cannot merge with itself
                                       "TRIGGERDELETE", # cannot merge with itself
-                                      "SECTORGFXUPDATE", # can merge with itself
                                       "SECTORATTRUPDATE", # can merge with itself
                                       "ENEMYTILEPLACE", # cannot merge with itself
                                       "ENEMYMAPGROUPUPDATE", # can merge with itself
