@@ -18,7 +18,7 @@ from src.actions.fts_actions import (ActionAddPalette, ActionChangeArrangement,
                                      ActionChangeBitmap, ActionChangeCollision,
                                      ActionChangeSubpaletteColour,
                                      ActionRemovePalette, ActionSwapMinitiles)
-from src.actions.misc_actions import MultiActionWrapper
+from src.actions.misc_actions import ActionReplaceTileset, MultiActionWrapper
 from src.coilsnake.fts_interpreter import Minitile, Tile
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AutoMinitileRearrangerDialog,
@@ -107,6 +107,26 @@ class TileEditor(QWidget):
                 actionType = "swap"
             elif isinstance(c, ActionAddPalette) or isinstance(c, ActionRemovePalette):
                 self.onPaletteGroupSelect()
+            elif isinstance(c, ActionReplaceTileset):
+                self.tileScene.update()
+                self.minitileScene.renderTileset(self.state.currentTileset,
+                                                self.state.currentPaletteGroup,
+                                                self.state.currentPalette,
+                                                self.state.currentSubpalette)
+                self.selectMinitile(self.state.currentMinitile)
+                self.fgScene.update()
+                self.bgScene.update()
+                tileset = self.projectData.getTileset(self.state.currentTileset)
+                palette = self.projectData.getPaletteGroup(self.state.currentPaletteGroup).palettes[self.state.currentPalette]
+                self.paletteView.loadPalette(palette)
+                self.arrangementScene.loadTile(tileset.tiles[self.state.currentTile])
+                self.arrangementScene.loadTileset(tileset)
+                self.arrangementScene.loadPalette(palette)
+                self.arrangementScene.update()
+                self.collisionScene.loadTile(tileset.tiles[self.state.currentTile])
+                self.collisionScene.loadTileset(tileset)
+                self.collisionScene.loadPalette(palette)
+                self.collisionScene.update()
         
         match actionType:
             case "bitmap":

@@ -1,6 +1,8 @@
 from PySide6.QtGui import QUndoCommand
 
 import src.misc.common as common
+from src.coilsnake.fts_interpreter import FullTileset
+from src.coilsnake.project_data import ProjectData
 
 
 class MultiActionWrapper(QUndoCommand):
@@ -54,3 +56,30 @@ class MultiActionWrapper(QUndoCommand):
     
     def id(self):
         return common.ACTIONINDEX.MULTI
+
+# Effectively just for png2fts, but I'll build it
+# to be a generic "replace tileset" for the sake of future me
+# TODO -- this (or rather, ProjectData.replaceTileset) still has the "assume one palette, merge the rest" behaviour. It can be fixed, but not easily! Necessary for truly generic function.
+class ActionReplaceTileset(QUndoCommand):
+    def __init__(self, tileset: FullTileset, projectData: ProjectData):
+        super().__init__()
+        self.setText("Import tileset")
+        
+        self.projectData = projectData
+        
+        self.tileset = tileset
+        self.index = self.tileset.id
+        
+        self._tileset = self.projectData.getTileset(self.index)
+    
+    def redo(self):
+        self.projectData.replaceTileset(self.tileset)
+    
+    def undo(self):
+        self.projectData.replaceTileset(self._tileset)
+    
+    def mergeWith(self, other):
+        return False
+    
+    def id(self):
+        return common.ACTIONINDEX.REPLACETILESET

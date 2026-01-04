@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtGui import QAction, QColor, QKeySequence, QUndoCommand
-from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox,
-                               QHBoxLayout, QListWidget, QListWidgetItem,
-                               QMenu, QMessageBox, QPushButton, QSpinBox,
-                               QToolButton, QTreeWidgetItem, QVBoxLayout,
-                               QWidget, QGridLayout)
+from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGridLayout,
+                               QGroupBox, QHBoxLayout, QListWidget,
+                               QListWidgetItem, QMenu, QMessageBox,
+                               QPushButton, QSpinBox, QToolButton,
+                               QTreeWidgetItem, QVBoxLayout, QWidget)
 
 import src.misc.common as common
 import src.misc.debug as debug
@@ -17,6 +17,7 @@ from src.actions.fts_actions import (ActionAddPalette,
                                      ActionRemovePalette,
                                      ActionRemovePaletteSettingsChild,
                                      ActionReplacePalette)
+from src.actions.misc_actions import ActionReplaceTileset
 from src.coilsnake.fts_interpreter import Palette
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AdvancedPalettePreviewDialog,
@@ -110,6 +111,10 @@ class PaletteEditor(QWidget):
             if isinstance(c, ActionAddPalette) or isinstance(c, ActionRemovePalette):
                 self.paletteTree.syncPaletteGroup(c.palette.groupID)
                 self.comparePaletteTree.syncPaletteGroup(c.palette.groupID)
+                
+            if isinstance(c, ActionReplaceTileset):
+                self.refreshSubpaletteDisplay()
+                
                 
         match actionType:
             case "subpalette":

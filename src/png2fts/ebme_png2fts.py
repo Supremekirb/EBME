@@ -2,6 +2,7 @@ from PySide6.QtCore import (QObject, QProcess, QSettings, QTemporaryFile,
                             QThread, Signal)
 
 import src.misc.common as common
+from src.coilsnake.fts_interpreter import FullTileset
 from src.coilsnake.project_data import ProjectData
 
 
@@ -25,6 +26,8 @@ class EBME_png2fts(QObject):
         self.png2ftsThread = QThread()
         self.png2ftsProcess = QProcess()
         self.png2ftsProcess.setProgram("python") # TODO double-check if it's possible to use the bundled Python (it may not be?)
+        
+        self.convertedTileset: FullTileset|None = None
 
         userPath = QSettings().value("programs/png2fts", type=str)
         if userPath != "":
@@ -58,8 +61,7 @@ class EBME_png2fts(QObject):
 
         if not self.png2ftsProcess.exitCode() != 0: # only if we didnt error
             with open(self.temporaryTilesetFile.fileName()) as tileset:
-                self.projectData.replaceTileset(tileset.readlines(), self.tilesetNumber)
-                
+                self.convertedTileset = FullTileset(tileset.readlines(), self.tilesetNumber)
             self.succeeded.emit()
         else: self.failed.emit()
 

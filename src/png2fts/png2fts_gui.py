@@ -1,8 +1,10 @@
+from PySide6.QtCore import QTemporaryFile
 from PySide6.QtWidgets import (QDialog, QFileDialog, QFormLayout, QHBoxLayout,
                                QLabel, QLineEdit, QMessageBox, QPushButton,
                                QSpinBox, QTextEdit, QVBoxLayout)
 
 import src.misc.common as common
+from src.coilsnake.fts_interpreter import FullTileset
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import png2ftsLicenseDialog
 from src.png2fts.ebme_png2fts import EBME_png2fts
@@ -39,7 +41,7 @@ class png2ftsMapEditorGui(QDialog):
                                        "You must specify a PNG file to import.",
                                        QMessageBox.Icon.Warning)
         
-        if not QMessageBox.question(self, "Import PNG", "This will overwrite the selected tileset and cannot be undone. Continue?",
+        if not QMessageBox.question(self, "Import PNG", "This will overwrite the selected tileset. It may be undone. Continue?",
                                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
             return
         
@@ -131,7 +133,7 @@ class png2ftsMapEditorGui(QDialog):
             self.pngInput.setText(path)
 
     @staticmethod # this so we can return the map file if we want
-    def dopng2fts(parent, projectData: ProjectData) -> int | list:
+    def dopng2fts(parent, projectData: ProjectData) -> int | tuple[FullTileset] | tuple[FullTileset, QTemporaryFile, str]:
         """Create a modal dialog to convert a PNG to a tileset using png2fts.
 
         Args:
@@ -139,15 +141,15 @@ class png2ftsMapEditorGui(QDialog):
             projectData (ProjectData)
 
         Returns:
-            int | list: 0 if no conversion/cancel, list[int of tileset] if successful, list[int of tileset, QTemporaryFile, str of map file] if place on map
+            int | list: 0 if no conversion/cancel, tuple[FullTileset] if successful, tuple[FullTileset, QTemporaryFile, str of map file] if place on map
         """
         dialog = png2ftsMapEditorGui(parent, projectData)
         dialog.exec()
 
         if dialog.result() == 1:
-            return [dialog.tilesetNumber.value(),]
+            return (dialog.png2fts.convertedTileset,)
         if dialog.result() == 2:
-            return [dialog.tilesetNumber.value(), dialog.png2fts.getMapFile(), dialog.pngInput.text()]
+            return (dialog.png2fts.convertedTileset, dialog.png2fts.getMapFile(), dialog.pngInput.text())
         
         
         else: return dialog.result()

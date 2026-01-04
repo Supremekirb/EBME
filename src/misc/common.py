@@ -190,6 +190,7 @@ ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "USERDATAADDFIELD", # cannot merge with itself
                                       "USERDATAREMOVEFIELD", # cannot merge with itself
                                       "USERDATAIMPORT", # cannot merge with itself
+                                      "REPLACETILESET", # cannot merge with itself
                                       ])
 
 

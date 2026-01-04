@@ -81,17 +81,17 @@ class ProjectData():
         except KeyError:
             raise CoilsnakeResourceNotFoundError(f"Could not find the path to resource {module}.{resource} in Project.snake")
     
-    def replaceTileset(self, newTileset: list[str], tilesetNumber: int):
+    def replaceTileset(self, newTileset: FullTileset):
         """Reload a tileset from a file. Also deals with tiles that use it.
 
         Args:
-            newtileset (list[str]): the contents of the new tileset file
-            tilesetNumber (int): the tileset number
+            newtileset (FullTileset): The new tileset. Index to replace is this tileset's ID
         """
-
-        newTileset = FullTileset(contents=newTileset, id=tilesetNumber)
+        
+        tilesetNumber = newTileset.id
 
         # merging palettes so stuff doesnt break
+        newTileset.palettes = [newTileset.palettes[0]] # To avoid undo/redo going back and forth and exponentially increasing the amount of palettes
         for p in self.tilesets[tilesetNumber].palettes[1:]: # dont merge first
             newTileset.palettes.append(p)
         # update palette group 

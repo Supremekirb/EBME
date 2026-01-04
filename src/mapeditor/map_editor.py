@@ -26,6 +26,7 @@ import src.mapeditor.status_bar as status_bar
 import src.misc.common as common
 import src.misc.debug as debug
 import src.misc.icons as icons
+from src.actions.misc_actions import ActionReplaceTileset
 from src.coilsnake.fts_interpreter import Tile
 from src.coilsnake.project_data import ProjectData
 from src.misc.coords import EBCoords
@@ -94,6 +95,9 @@ class MapEditor(QWidget):
             progressDialog.setWindowFlag(Qt.WindowCloseButtonHint, False) # no system close button, either
             progressDialog.setWindowModality(Qt.WindowModal)
             progressDialog.setMinimumDuration(0)
+            
+            action = ActionReplaceTileset(result[0], self.projectData)
+            self.scene.undoStack.push(action)
 
             self.sidebarTile.tilesetSelect.setCurrentText(str(result[0]))
             self.sidebarTile.onTilesetSelect()
@@ -114,7 +118,7 @@ class MapEditor(QWidget):
                 png = QGraphicsPixmapItem(QPixmap.fromImage(QImage(result[2])))
                 progressDialog.setValue(3)
 
-                self.scene.importpng2ftsMap(png, tiles, result[0])
+                self.scene.importpng2ftsMap(png, tiles, result[0].id)
 
             else:
                 progressDialog.setValue(3)

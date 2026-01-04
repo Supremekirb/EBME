@@ -37,6 +37,7 @@ from src.actions.fts_actions import (ActionAddPalette, ActionChangeCollision,
 from src.actions.hotspot_actions import (ActionChangeHotspotColour,
                                          ActionChangeHotspotComment,
                                          ActionChangeHotspotLocation)
+from src.actions.misc_actions import ActionReplaceTileset
 from src.actions.npc_actions import (ActionAddNPCInstance,
                                      ActionChangeNPCInstance, ActionCreateNPC,
                                      ActionDeleteNPCInstance,
@@ -562,6 +563,11 @@ class MapEditorScene(QGraphicsScene):
             if isinstance(c, ActionAddSectorUserDataField) or isinstance(c, ActionRemoveSectorUserDataField) or isinstance(c, ActionImportSectorUserData):
                 actionType = "userdata"
                 self.parent().sidebarSector.fromSectors()
+            
+            if isinstance(c, ActionReplaceTileset):
+                actionType = "tile"
+                self.parent().sidebarTile.tilesetSelect.setCurrentIndex(c.index)
+                self.parent().sidebarTile.scene.update()
 
         match actionType:
             case "tile":
