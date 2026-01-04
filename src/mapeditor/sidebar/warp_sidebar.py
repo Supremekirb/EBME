@@ -200,7 +200,8 @@ class SidebarWarp(QWidget):
         self.teleportFlag.editingFinished.connect(self.toWarp)
         
         self.teleportName = QLineEdit()
-        self.teleportName.setToolTip("Name of the location in the PSI Teleport menu.")
+        self.teleportName.setToolTip("Name of the location in the PSI Teleport menu. Max 25 characters.")
+        self.teleportName.setMaxLength(25)
         self.teleportName.editingFinished.connect(self.toWarp)
         
         teleportGroupBoxLayout.addRow("Destination", self.teleportCoords)
