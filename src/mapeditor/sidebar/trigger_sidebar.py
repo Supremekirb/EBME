@@ -465,8 +465,7 @@ Switch: Automatically triggers some text when walked over, if the flag is set.""
         self.doorStyle.setToolTip("Warp style to use. See the Warp Styles Table script in the CCS Library.")
 
         self.doorText = QLineEdit(self.doorData)
-        self.doorText.setToolTip("""Text to display when the player touches the door.
-Do this and set the position to one warp tile below the door to only display text and not warp.""")
+        self.doorText.setToolTip("""Text to display when the player touches the door.""")
         
         self.openDoorText = QPushButton("Edit CCS", self.doorData)
         self.openDoorText.clicked.connect(lambda: common.openCCSFromLabel(self.doorText.text(),

@@ -335,7 +335,7 @@ Item-type NPCs use this to determine if they are open or closed.""")
         self.NPCText2 = QLineEdit(self.NPCData)
         self.NPCText2.setToolTip("""Different behavior depending on type:
 Person & Object: Dialogue to display when an item is used. $0 for no interaction.
-Item: Item ID to give. 0x100 (256) is empty. Higher values give (value-0x100) cash.""")
+Item: Item ID to give. $100 (256) is empty. Higher values give (value-$100) cash.""")
         self.openNPCText2 = QPushButton("Edit CCS", self.NPCData)
         self.openNPCText2.clicked.connect(lambda: common.openCCSFromLabel(self.NPCText2.text(),
                                                                           os.path.join(self.projectData.dir,
