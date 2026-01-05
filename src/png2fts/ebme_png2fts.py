@@ -50,9 +50,9 @@ class EBME_png2fts(QObject):
         
         self.png2ftsProcess.setArguments(args)
         
-        self.newOutput.emit(f"Program: {self.png2ftsProcess.program()}\n")
+        self.newOutput.emit(f"Program:   {self.png2ftsProcess.program()}\n")
         self.newOutput.emit(f"Arguments: {self.png2ftsProcess.arguments()}\n")
-        self.newOutput.emit("=== Running command ===\n")
+        self.newOutput.emit("\n=== Running command ===\n\n")
 
         # https://stackoverflow.com/a/18550580/15287613 (breaks compiled code)
         env = [env for env in QProcess.systemEnvironment() if not env.startswith('PYTHONHOME=')]

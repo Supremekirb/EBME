@@ -1,4 +1,5 @@
 from PySide6.QtCore import QObject, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog, QTextEdit, QVBoxLayout
 
 
@@ -27,6 +28,9 @@ class DebugOutputDialog(QDialog):
         layout.addWidget(self.text)
         
         self.text.setText(STREAM.logged)
+        font = QFont("Monospace")
+        font.setStyleHint(QFont.StyleHint.Monospace)
+        self.text.setFont(font)
         
         self.setLayout(layout)
         

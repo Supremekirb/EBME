@@ -1,4 +1,5 @@
 from PySide6.QtCore import QTemporaryFile
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (QDialog, QFileDialog, QFormLayout, QHBoxLayout,
                                QLabel, QLineEdit, QMessageBox, QPushButton,
                                QSpinBox, QTextEdit, QVBoxLayout)
@@ -110,6 +111,9 @@ class png2ftsMapEditorGui(QDialog):
         self.outputLabel = QLabel("Output")
         self.output = QTextEdit()
         self.output.setReadOnly(True)
+        font = QFont("Monospace")
+        font.setStyleHint(QFont.StyleHint.Monospace)
+        self.output.setFont(font)
 
         self.placeOnMapButton = QPushButton("Place on map")
         self.placeOnMapButton.clicked.connect(lambda: self.done(2))
