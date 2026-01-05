@@ -25,7 +25,7 @@ class png2ftsMapEditorGui(QDialog):
         self.png2fts = EBME_png2fts(self)
         self.png2fts.succeeded.connect(self.onSuccess)
         self.png2fts.failed.connect(self.onFailure)
-        self.png2fts.newOutput.connect(lambda x: self.output.append(x))
+        self.png2fts.newOutput.connect(self.onNewOutput)
 
     def closeEvent(self, event):
         if not self.running: # dont close when executing png2fts
@@ -33,6 +33,12 @@ class png2ftsMapEditorGui(QDialog):
                 self.done(1)
             else:
                 self.done(0)
+    
+    def onNewOutput(self, text: str):
+        cursor = self.output.textCursor()
+        cursor.movePosition(cursor.MoveOperation.End)
+        self.output.setTextCursor(cursor)
+        self.output.insertPlainText(text)
 
     def convert(self):
         if not self.pngInput.text():
@@ -49,6 +55,7 @@ class png2ftsMapEditorGui(QDialog):
         self.pngInput.setDisabled(True)
         self.pngBrowse.setDisabled(True)
         self.tilesetNumber.setDisabled(True)
+        self.extraArgs.setDisabled(True)
         self.goButton.setDisabled(True)
         self.cancelButton.setDisabled(True)
         self.placeOnMapButton.setDisabled(True)
@@ -56,7 +63,8 @@ class png2ftsMapEditorGui(QDialog):
         self.running = True
         self.png2fts.convert(self.projectData, 
                              self.pngInput.text(),
-                             int(self.tilesetNumber.text()))
+                             int(self.tilesetNumber.text()),
+                             self.extraArgs.text())
 
     def onSuccess(self):
         self.running = False
@@ -70,6 +78,7 @@ class png2ftsMapEditorGui(QDialog):
         self.pngInput.setEnabled(True)
         self.pngBrowse.setEnabled(True)
         self.tilesetNumber.setEnabled(True)
+        self.extraArgs.setEnabled(True)
         self.goButton.setEnabled(True)
         self.cancelButton.setEnabled(True)
 
@@ -86,6 +95,9 @@ class png2ftsMapEditorGui(QDialog):
 
         self.tilesetNumber = QSpinBox()
         self.tilesetNumber.setRange(0, len(self.projectData.tilesets)-1)
+        
+        self.extraArgs = QLineEdit()
+        self.extraArgs.setPlaceholderText("(None)")
 
         self.goCancelLayout = QHBoxLayout()
         self.goButton = QPushButton("Go")
@@ -116,6 +128,7 @@ class png2ftsMapEditorGui(QDialog):
         formLayout.addRow(self.disclaimer)
         formLayout.addRow("Input file", self.pngInputLayout)
         formLayout.addRow("Tileset to replace", self.tilesetNumber)
+        formLayout.addRow("Extra command-line args", self.extraArgs)
         formLayout.addRow(self.goCancelLayout)
         formLayout.addRow(self.outputLabel)
         formLayout.addRow(self.output)
