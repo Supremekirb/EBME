@@ -3,6 +3,6 @@ numpy == 2.1.2
 pillow == 11.0.0
 pyside6 == 6.8.0.2
 pyyaml == 6.0.2
-qtawesome == 1.3.1
-pygame # for ???
-requests # for update checking
+qtawesome == 1.3.1 # Version is important..?
+pygame == 2.6.1 # for gnat attack
+requests == 2.32.3 # for update checking. Version is important; nuitka bug prevents upgrading this and numpy bugs prevent upgrading nuitka
