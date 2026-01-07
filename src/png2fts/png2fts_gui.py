@@ -9,6 +9,7 @@ from src.coilsnake.fts_interpreter import FullTileset
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import png2ftsLicenseDialog
 from src.png2fts.ebme_png2fts import EBME_png2fts
+from src.widgets.layout import HSeparator
 
 
 class png2ftsMapEditorGui(QDialog):
@@ -56,6 +57,7 @@ class png2ftsMapEditorGui(QDialog):
         self.pngInput.setDisabled(True)
         self.pngBrowse.setDisabled(True)
         self.tilesetNumber.setDisabled(True)
+        self.pythonOverride.setDisabled(True)
         self.extraArgs.setDisabled(True)
         self.goButton.setDisabled(True)
         self.cancelButton.setDisabled(True)
@@ -65,6 +67,7 @@ class png2ftsMapEditorGui(QDialog):
         self.png2fts.convert(self.projectData, 
                              self.pngInput.text(),
                              int(self.tilesetNumber.text()),
+                             self.pythonOverride.text(),
                              self.extraArgs.text())
 
     def onSuccess(self):
@@ -79,13 +82,14 @@ class png2ftsMapEditorGui(QDialog):
         self.pngInput.setEnabled(True)
         self.pngBrowse.setEnabled(True)
         self.tilesetNumber.setEnabled(True)
+        self.pythonOverride.setEnabled(True)
         self.extraArgs.setEnabled(True)
         self.goButton.setEnabled(True)
         self.cancelButton.setEnabled(True)
 
     def setupUI(self):
-        self.disclaimer = QLabel("png2fts support is still somewhat experimental.\nUse at your own risk!\nYou need Python installed on your system to use png2fts.")
-
+        self.disclaimer = QLabel("png2fts support is still somewhat experimental.\nUse at your own risk!\nYou need Python and PIL installed on your system to use png2fts.")
+        
         self.pngInputLayout = QHBoxLayout()
         self.pngInput = QLineEdit()
         self.pngInput.setPlaceholderText("Path to PNG file")
@@ -96,6 +100,10 @@ class png2ftsMapEditorGui(QDialog):
 
         self.tilesetNumber = QSpinBox()
         self.tilesetNumber.setRange(0, len(self.projectData.tilesets)-1)
+        
+        self.pythonOverride = QLineEdit()
+        self.pythonOverride.setPlaceholderText("(Use `python`)")
+        self.pythonOverride.setToolTip("Provide a path to a Python interpreter.\nYou only need to use this if you know why you're doing it.")
         
         self.extraArgs = QLineEdit()
         self.extraArgs.setPlaceholderText("(None)")
@@ -132,6 +140,8 @@ class png2ftsMapEditorGui(QDialog):
         formLayout.addRow(self.disclaimer)
         formLayout.addRow("Input file", self.pngInputLayout)
         formLayout.addRow("Tileset to replace", self.tilesetNumber)
+        formLayout.addRow(HSeparator())
+        formLayout.addRow("Python override", self.pythonOverride)
         formLayout.addRow("Extra command-line args", self.extraArgs)
         formLayout.addRow(self.goCancelLayout)
         formLayout.addRow(self.outputLabel)

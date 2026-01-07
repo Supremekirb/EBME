@@ -4,5 +4,6 @@ pillow == 11.0.0
 pyside6 == 6.8.0.2
 pyyaml == 6.0.2
 qtawesome == 1.3.1
-pygame # for ???
-requests # for update checking
+pygame == 2.6.1 # for gnat attack
+requests == 2.32.3 # for update checking
+certifi == 2025.4.26 # dependency of requests, however, a later version has a bug with nuitka, so we must specify this version.

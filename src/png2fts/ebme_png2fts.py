@@ -15,7 +15,7 @@ class EBME_png2fts(QObject):
     succeeded = Signal()
     newOutput = Signal(str)
     
-    def convert(self, projectData: ProjectData, pngPath: str, tilesetNumber: int, extraArgs: str=None):
+    def convert(self, projectData: ProjectData, pngPath: str, tilesetNumber: int, pythonOverride: str=None, extraArgs: str=None):
         self.temporaryMapFile = QTemporaryFile()
         self.temporaryMapFile.open()
 
@@ -27,7 +27,11 @@ class EBME_png2fts(QObject):
 
         self.png2ftsThread = QThread()
         self.png2ftsProcess = QProcess()
-        self.png2ftsProcess.setProgram("python") # TODO double-check if it's possible to use the bundled Python (it may not be?)
+        
+        if pythonOverride is not None and pythonOverride != "":
+            self.png2ftsProcess.setProgram(pythonOverride)
+        else:
+            self.png2ftsProcess.setProgram("python")
         
         self.convertedTileset: FullTileset|None = None
 
@@ -43,7 +47,7 @@ class EBME_png2fts(QObject):
                     '-m', self.temporaryMapFile.fileName()
                     ])
         
-        if (cleanExtraArgs := extraArgs.strip()) != "":
+        if extraArgs is not None and (cleanExtraArgs := extraArgs.strip()) != "":
             args.extend(cleanExtraArgs.split())
             
         args.extend([pngPath])
