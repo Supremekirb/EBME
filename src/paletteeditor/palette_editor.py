@@ -26,8 +26,9 @@ from src.misc.dialogues import (AboutDialog, AdvancedPalettePreviewDialog,
 from src.objects.palette_settings import PaletteSettings
 from src.widgets.input import ColourButton, FlagInput
 from src.widgets.misc import IconLabel
-from src.widgets.palette import (PaletteListItem, PaletteTreeWidget,
-                                 SubpaletteListItem)
+from src.widgets.palette import (PaletteGroupListItem, PaletteListItem,
+                                 PaletteTreeWidget, SubpaletteListItem,
+                                 TilesetListItem)
 
 if TYPE_CHECKING:
     from src.main.main import MainApplication
@@ -532,6 +533,41 @@ class PaletteEditor(QWidget):
         
         action = ActionRemovePaletteSettingsChild(current.settings, top.settings)
         self.undoStack.push(action)
+    
+    def selectPaletteMain(self, paletteGroup: int, palette: int|None=None, subpalette: int|None=None):
+        if (item := self.findPaletteTreeItem(self.paletteTree, paletteGroup, palette, subpalette)) is not None:
+            self.paletteTree.setCurrentItem(item)
+        
+    def selectPaletteCompare(self, paletteGroup: int, palette: int|None=None, subpalette: int|None=None):
+        if (item := self.findPaletteTreeItem(self.comparePaletteTree, paletteGroup, palette, subpalette)) is not None:
+            self.comparePaletteTree.setCurrentItem(item)
+    
+    def findPaletteTreeItem(self, tree: PaletteTreeWidget, paletteGroup: int, palette: int|None=None, subpalette: int|None=None):
+        item = None
+        for t in range(0, tree.topLevelItemCount()):
+            tItem: TilesetListItem = tree.topLevelItem(t)
+            for pg in range(0, tItem.childCount()):  
+                pgItem: PaletteGroupListItem = tItem.child(pg)
+                if pgItem.paletteGroup != paletteGroup: continue
+                tItem.setExpanded(True)
+                if palette is not None:
+                    for p in range(0, pgItem.childCount()):
+                        pItem: PaletteListItem = pgItem.child(p)
+                        if pItem.palette != palette: continue
+                        pgItem.setExpanded(True)
+                        if subpalette is not None:
+                            for sp in range(0, pItem.childCount()):
+                                spItem: SubpaletteListItem = pItem.child(sp)
+                                if spItem.subpalette != subpalette: continue
+                                pItem.setExpanded(True)
+                                item = spItem
+                                break
+                        else:
+                            item = pItem
+                            break
+                else:
+                    item = pgItem
+        return item
         
     def setupUI(self):
         layout = QHBoxLayout()

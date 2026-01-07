@@ -480,6 +480,17 @@ class TileEditor(QWidget):
         self.onTileSelect(tile)
         self.arrangementScene.update()
         self.collisionScene.update()
+    
+    def gotoCurrentPaletteInEditor(self):
+        # TODO this also happens in tile sidebar. Is to do with tab bar reparenting seemingly
+        mainApp: "MainApplication" = self.parent().parent().parent()
+        mainApp.paletteWin.selectPaletteMain(self.state.currentPaletteGroup, self.state.currentPalette, self.state.currentSubpalette)
+        mainApp.mainTabWin.setCurrentIndex(3)
+    
+    def compareCurrentPaletteInEditor(self):
+        mainApp: "MainApplication" = self.parent().parent().parent()
+        mainApp.paletteWin.selectPaletteCompare(self.state.currentPaletteGroup, self.state.currentPalette, self.state.currentSubpalette)
+        mainApp.mainTabWin.setCurrentIndex(3)
         
     def setupUI(self):
         contentLayout = QVBoxLayout()
@@ -593,6 +604,14 @@ class TileEditor(QWidget):
         self.paletteView.colourChanged.connect(self.selectColour)
         self.paletteView.colourEdited.connect(self.onColourEdit)
         self.paletteView.subpaletteChanged.connect(self.onSubpaletteSelect)
+        
+        paletteButtonsLayout = QHBoxLayout()
+        self.gotoPaletteEditor = QPushButton(icons.ICON_PALETTE, "Reveal in Palette Editor")
+        self.gotoPaletteEditor.clicked.connect(self.gotoCurrentPaletteInEditor)
+        self.gotoPaletteEditorCmp = QPushButton(icons.ICON_MIRROR_H, "Compare in Palette Editor")
+        self.gotoPaletteEditorCmp.clicked.connect(self.compareCurrentPaletteInEditor)
+        paletteButtonsLayout.addWidget(self.gotoPaletteEditor)
+        paletteButtonsLayout.addWidget(self.gotoPaletteEditorCmp)
                 
         self.tilesetSelect = QComboBox()
         self.tilesetSelect.addItems(str(i.id) for i in self.projectData.tilesets)
@@ -645,6 +664,7 @@ class TileEditor(QWidget):
         self.editPaletteButton = QPushButton("Edit")
         self.editPaletteButton.clicked.connect(self.paletteView.openEditor)
         paletteLayout.addWidget(self.editPaletteButton)
+        paletteLayout.addLayout(paletteButtonsLayout)
         paletteLayout.addStretch()
         # paletteLayout.setStretch(0, 100)
         
