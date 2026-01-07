@@ -56,6 +56,9 @@ class SidebarGame(QWidget):
         self.renderThisRegion = QPushButton("Render this region")
         self.renderThisRegion.clicked.connect(self.renderRegion)
         
+        self.renderScreenShot = QPushButton("Render screen size")
+        self.renderScreenShot.clicked.connect(self.renderScreen)
+        
         layout.addWidget(QLabel("Click to lock the preview in place."))
         layout.addWidget(self.showScreenMask)
         layout.addWidget(self.screenMaskOpacityLabel)
@@ -64,6 +67,7 @@ class SidebarGame(QWidget):
         layout.addWidget(self.showPreviewNPC)
         layout.addWidget(self.obeyCollision)
         layout.addWidget(self.renderThisRegion)
+        layout.addWidget(self.renderScreenShot)
         groupbox.setLayout(layout)
         contentLayout.addWidget(groupbox)
         contentLayout.addStretch()
@@ -103,6 +107,11 @@ class SidebarGame(QWidget):
             
         rect = master.boundingRect()
         self.mapeditor.renderMap(rect.left(), rect.top(), rect.right(), rect.bottom(), True)
+    
+    def renderScreen(self):
+        x, y = self.mapeditor.scene.previewNPC.pos().toTuple()
+        y += 1 # this seems to make it match the game
+        self.mapeditor.renderMap(x-128, y-112, x+128, y+112, True)
             
     def toggleObeyCollision(self):
         self.state.previewCollides = self.obeyCollision.isChecked()
