@@ -88,6 +88,8 @@ class png2ftsMapEditorGui(QDialog):
         self.cancelButton.setEnabled(True)
 
     def setupUI(self):
+        self.disclaimer = QLabel("png2fts support is still somewhat experimental.\nUse at your own risk!\nYou need Python and PIL installed on your system to use png2fts.")
+        
         self.pngInputLayout = QHBoxLayout()
         self.pngInput = QLineEdit()
         self.pngInput.setPlaceholderText("Path to PNG file")
@@ -135,6 +137,7 @@ class png2ftsMapEditorGui(QDialog):
 
         layout = QVBoxLayout()
         formLayout = QFormLayout()
+        formLayout.addRow(self.disclaimer)
         formLayout.addRow("Input file", self.pngInputLayout)
         formLayout.addRow("Tileset to replace", self.tilesetNumber)
         formLayout.addRow(HSeparator())
