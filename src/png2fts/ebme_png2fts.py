@@ -1,4 +1,3 @@
-import sys
 import traceback
 
 from PySide6.QtCore import (QObject, QProcess, QSettings, QTemporaryFile,
@@ -32,7 +31,7 @@ class EBME_png2fts(QObject):
         if pythonOverride is not None and pythonOverride != "":
             self.png2ftsProcess.setProgram(pythonOverride)
         else:
-            self.png2ftsProcess.setProgram(sys.executable)
+            self.png2ftsProcess.setProgram("python")
         
         self.convertedTileset: FullTileset|None = None
 

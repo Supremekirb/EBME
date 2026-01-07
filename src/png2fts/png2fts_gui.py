@@ -57,6 +57,7 @@ class png2ftsMapEditorGui(QDialog):
         self.pngInput.setDisabled(True)
         self.pngBrowse.setDisabled(True)
         self.tilesetNumber.setDisabled(True)
+        self.pythonOverride.setDisabled(True)
         self.extraArgs.setDisabled(True)
         self.goButton.setDisabled(True)
         self.cancelButton.setDisabled(True)
@@ -81,6 +82,7 @@ class png2ftsMapEditorGui(QDialog):
         self.pngInput.setEnabled(True)
         self.pngBrowse.setEnabled(True)
         self.tilesetNumber.setEnabled(True)
+        self.pythonOverride.setEnabled(True)
         self.extraArgs.setEnabled(True)
         self.goButton.setEnabled(True)
         self.cancelButton.setEnabled(True)
@@ -98,7 +100,7 @@ class png2ftsMapEditorGui(QDialog):
         self.tilesetNumber.setRange(0, len(self.projectData.tilesets)-1)
         
         self.pythonOverride = QLineEdit()
-        self.pythonOverride.setPlaceholderText("(Use sys.executable)")
+        self.pythonOverride.setPlaceholderText("(Use `python`)")
         self.pythonOverride.setToolTip("Provide a path to a Python interpreter.\nYou only need to use this if you know why you're doing it.")
         
         self.extraArgs = QLineEdit()
