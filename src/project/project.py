@@ -19,6 +19,7 @@ import src.misc.common as common
 import src.misc.debug as debug
 import src.misc.icons as icons
 import src.tileeditor.tile_editor as tile_editor
+from src.actions.misc_actions import ActionChangeProjectMetadata
 from src.coilsnake.project_data import ProjectData
 from src.gnat.gnat_attack import GnatAttack
 from src.misc import flushrefs
@@ -43,6 +44,9 @@ class Project(QWidget):
         self.disableReload()
         self.disableEditors()
         self.projectInfo.setDisabled(True)
+        
+        self.mainWin.undoStack.undone.connect(self.loadProjectInfo)
+        self.mainWin.undoStack.redone.connect(self.loadProjectInfo)
         
         self.isSaving = False
         
@@ -78,12 +82,16 @@ class Project(QWidget):
         self.mainWin.mainTabWin.setTabEnabled(2, True)
         self.mainWin.mainTabWin.setTabEnabled(3, True)
         self.mainWin.mainTabWin.setTabEnabled(4, True)
+        self.mainWin.sharedActionUndo.setEnabled(True)
+        self.mainWin.sharedActionRedo.setEnabled(True)
 
     def disableEditors(self):
         self.mainWin.mainTabWin.setTabEnabled(1, False)
         self.mainWin.mainTabWin.setTabEnabled(2, False)
         self.mainWin.mainTabWin.setTabEnabled(3, False)
         self.mainWin.mainTabWin.setTabEnabled(4, False)
+        self.mainWin.sharedActionUndo.setDisabled(True)
+        self.mainWin.sharedActionRedo.setDisabled(True)
 
     def openDirectory(self, dir: str=None):
         """Open a project at `dir` and initialise data. (If the user cancels, don't do anything)
@@ -125,7 +133,7 @@ class Project(QWidget):
             self.projectInfo.setDisabled(True)
             self.disableOpen()
 
-            self.window().setWindowTitle("EBME")
+            self.updateTitle()
             self.updateStatusLabel("Loading project...")
             
             # close non-blocking project-related dialogues
@@ -386,10 +394,17 @@ class Project(QWidget):
         QDesktopServices.openUrl("file://" + self.recents[index]["path"])
 
     def loadProjectInfo(self):
+        self.projectTitleInput.blockSignals(True)
+        self.projectAuthorInput.blockSignals(True)
+        self.projectDescInput.blockSignals(True)
         self.projectTitleInput.setText(self.projectData.getProjectName())
         self.projectAuthorInput.setText(self.projectData.getProjectAuthor())
         self.projectDescInput.setPlainText(self.projectData.getProjectDescription())
         self.projectVersionLabel.setText(f"CoilSnake version: {common.getCoilsnakeVersion(self.projectData.getProjectVersion())}")
+        self.projectTitleInput.blockSignals(False)
+        self.projectAuthorInput.blockSignals(False)
+        self.projectDescInput.blockSignals(False)
+        self.updateTitle()
         
         # rebuild the list of available features
         # start by clearing the layout
@@ -431,18 +446,26 @@ class Project(QWidget):
         # since we call this when changing project names too, update the recents list
         self.addRecent(self.projectData.getProjectName(), path)
 
-        self.window().setWindowTitle(f"EBME - {self.projectData.getProjectName()} - {self.projectData.dir}")
+        self.updateTitle()
         
-    # TODO make this undo-able
     def changeProjectInfo(self):
         if hasattr(self, "projectData"):
+            self.projectDescInput.blockSignals(True) # so we don't want to trigger this function again
+            action = ActionChangeProjectMetadata(self.projectData, self.projectTitleInput.text(), self.projectAuthorInput.text(), self.projectDescInput.toPlainText())
+            self.projectDescInput.blockSignals(False)
             self.projectData.projectSnake['Title'] = self.projectTitleInput.text()
             self.projectData.projectSnake['Author'] = self.projectAuthorInput.text()
             # the other fields have an "editing finished" signal, but this one only has "text changed"
-            self.projectDescInput.blockSignals(True) # so we don't want to trigger this function again
             self.projectData.projectSnake['Description'] = self.projectDescInput.toPlainText()
-            self.projectDescInput.blockSignals(False)
-            
+            self.mainWin.undoStack.push(action)
+            self.updateTitle()
+    
+    def updateTitle(self):
+        if hasattr(self, "projectData"):
+            self.window().setWindowTitle(f"EBME - {self.projectData.getProjectName()} - {self.projectData.dir}")
+        else:
+            self.window().setWindowTitle("EBME")
+        self.mainWin.updateTitleAsterisk()
             
     def checkForUpdates(self):
         def _threaded(worker: Worker):
@@ -505,6 +528,10 @@ class Project(QWidget):
         self.menuFile.addActions([self.openAction, self.saveAction, self.reloadAction])
         self.menuFile.addSeparator()
         self.menuFile.addAction(self.mainWin.sharedActionSettings)
+        
+        self.menuEdit = QMenu("&Edit")
+        self.menuEdit.addAction(self.mainWin.sharedActionUndo)
+        self.menuEdit.addAction(self.mainWin.sharedActionRedo)
 
         self.menuHelp = QMenu("&Help")
         self.menuHelp.addAction(self.mainWin.sharedActionAbout)
@@ -512,7 +539,7 @@ class Project(QWidget):
             self.menuHelp.addAction(self.mainWin.sharedActionDebug)
         self.menuHelp.addAction(self.mainWin.sharedActionReport)
 
-        self.menuItems = (self.menuFile, self.menuHelp)
+        self.menuItems = (self.menuFile, self.menuEdit, self.menuHelp)
 
         self.titleLabel = QLabel(pixmap=QPixmap(":/logos/logo.png"))
         self.statusLabel = QLabel("No project loaded yet")

@@ -83,3 +83,46 @@ class ActionReplaceTileset(QUndoCommand):
     
     def id(self):
         return common.ACTIONINDEX.REPLACETILESET
+    
+
+class ActionChangeProjectMetadata(QUndoCommand):
+    def __init__(self, projectData: ProjectData, name: str, author: str, desc: str):
+        super().__init__()
+        self.setText("Change project metadata")
+        
+        self.projectData = projectData
+        
+        self.name = name
+        self.author = author
+        self.desc = desc
+        
+        self._name = self.projectData.getProjectName()
+        self._author = self.projectData.getProjectAuthor()
+        self._desc = self.projectData.getProjectDescription()
+        
+    def redo(self):
+        self.projectData.projectSnake["Title"] = self.name
+        self.projectData.projectSnake["Author"] = self.author
+        self.projectData.projectSnake["Description"] = self.desc
+    
+    def undo(self):
+        self.projectData.projectSnake["Title"] = self._name
+        self.projectData.projectSnake["Author"] = self._author
+        self.projectData.projectSnake["Description"] = self._desc
+    
+    def mergeWith(self, other):
+        # wrong action type
+        if other.id() != common.ACTIONINDEX.UPDATEPROJECTMETADATA:
+            return False
+        # operates on wrong project data
+        if other.projectData != self.projectData:
+            return False
+        # success
+        self.name = other.name
+        self.author = other.author
+        self.desc = other.desc
+        return True
+            
+
+    def id(self):
+        return common.ACTIONINDEX.UPDATEPROJECTMETADATA

@@ -1,7 +1,7 @@
 import logging
 import traceback
 
-from PySide6.QtCore import QSettings, Qt, QPoint
+from PySide6.QtCore import QSettings, Qt
 from PySide6.QtGui import (QAction, QDesktopServices, QFontDatabase, QIcon,
                            QKeySequence)
 from PySide6.QtWidgets import (QLabel, QMainWindow, QMenuBar, QMessageBox,
@@ -32,7 +32,7 @@ class MainApplication(QMainWindow):
         self.setWindowIcon(self.icon)
         
         self.undoStack = SignalUndoStack()
-        self.undoStack.cleanChanged.connect(self.updateTitle)
+        self.undoStack.cleanChanged.connect(self.updateTitleAsterisk)
         
         self.undoHistoryLabel = UndoHistoryLine(self.undoStack)
         self.undoHistoryLabel.setElideMode(Qt.TextElideMode.ElideLeft)
@@ -144,7 +144,7 @@ class MainApplication(QMainWindow):
         else:
             self.gnatWin.gameScene.gameState.pauseGame()
                 
-    def updateTitle(self):
+    def updateTitleAsterisk(self):
         title = self.window().windowTitle()
         if not self.undoStack.isClean():
             if not title.endswith("*"):
