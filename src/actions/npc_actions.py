@@ -235,6 +235,11 @@ class ActionCreateNPC(QUndoCommand):
         
         self.projectData = projectData
         self.npc = npc
+        
+        if len(self.projectData.npcs) >= 3855:
+            common.showErrorMsg("Could not create NPC",
+                                "The maximum number of NPCs is 3855.")
+            raise RuntimeError("Maximum number of NPCs reached.")
     
     def redo(self):
         self.projectData.npcs.append(self.npc)
