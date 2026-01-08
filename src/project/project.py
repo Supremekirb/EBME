@@ -236,7 +236,7 @@ class Project(QWidget):
                     self.mainWin.mainTabWin.addTab(self.mainWin.mapWin, "Map Editor")
                     self.mainWin.mainTabWin.addTab(self.mainWin.tileWin, "Tile Editor")
                     self.mainWin.mainTabWin.addTab(self.mainWin.paletteWin, "Palette Editor")
-                    self.mainWin.mainTabWin.addTab(self.mainWin.gnatWin, "☕")
+                    self.mainWin.mainTabWin.addTab(self.mainWin.gnatWin, icons.ICON_GNAT_ATTACK, "")
                     
                     self.updateStatusLabel(f"Project: {self.projectData.getProjectName()}")
                     self.enableEditors()

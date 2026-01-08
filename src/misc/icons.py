@@ -219,3 +219,6 @@ def init_icons():
     
     global ICON_STACK 
     ICON_STACK = icon("ph.stack")
+    
+    global ICON_GNAT_ATTACK
+    ICON_GNAT_ATTACK = icon("ph.coffee")

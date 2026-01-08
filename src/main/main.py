@@ -208,7 +208,7 @@ class MainApplication(QMainWindow):
         self.mainTabWin.addTab(self.mapWin, "Map Editor")
         self.mainTabWin.addTab(self.tileWin, "Tile Editor")
         self.mainTabWin.addTab(self.paletteWin, "Palette Editor")
-        self.mainTabWin.addTab(self.gnatWin, "☕")
+        self.mainTabWin.addTab(self.gnatWin, icons.ICON_GNAT_ATTACK, "")
 
         self.mainTabWin.setTabEnabled(1, False)
         self.mainTabWin.setTabEnabled(2, False)
