@@ -18,7 +18,7 @@ class MapChange:
         common.moveListItem(self.events, index, target)
 
 class MapChangeEvent:
-    def __init__(self, tileset: int, flag: int=0, changes: list["TileChange"] = [], comment: str=None):
+    def __init__(self, tileset: int, flag: int, changes: list["TileChange"], comment: str=None):
         self.tileset = tileset
         self.flag = flag
         self.changes = changes
@@ -69,8 +69,9 @@ class MapChangeEventListItem(QTreeWidgetItem):
                 and self.checkState(1) != value
         super().setData(column, role, value)
         if isCheck:
-            tree: MapChangesTree = self.treeWidget()
-            tree.previewStateChanged.emit(self, self.checkState(1))
+            tree: MapChangesTree|None = self.treeWidget()
+            if tree is not None:
+                tree.previewStateChanged.emit(self, self.checkState(1))
 # See above...
 class MapChangesTree(QTreeWidget):
     previewStateChanged = Signal(MapChangeEventListItem, Qt.CheckState)

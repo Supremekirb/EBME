@@ -150,13 +150,17 @@ class SidebarChanges(QWidget):
             lastThing = None # Prevents re-selection as we do not want it
         
         self.tilesetSelect.setCurrentIndex(tilesetID)
-        self.mapeditor.scene.enabledMapEvents.clear()
         self.eventsTree.clear()
         items = []
         for i in self.projectData.mapChanges[tilesetID].events:
-            items.append(MapChangeEventListItem(i))
+            item = MapChangeEventListItem(i)
+            # Try to preserve preview state
+            if i in self.mapeditor.scene.enabledMapEvents:
+                item.setCheckState(1, Qt.CheckState.Checked)
+            items.append(item)
             
         self.eventsTree.addTopLevelItems(items)
+        self.onChangePreviewState()
         
         # Re-select the old selected item if applicable
         if lastThing is not None:
@@ -223,13 +227,15 @@ class SidebarChanges(QWidget):
         self.mapeditor.scene.undoStack.push(action)
         self.mapeditor.scene.update()
     
-    def onChangePreviewState(self, item: MapChangeEventListItem, state: Qt.CheckState):
-        event = item.event
-        match state:
-            case Qt.CheckState.Checked:
-                self.mapeditor.scene.enabledMapEvents.add(event)
-            case Qt.CheckState.Unchecked:
-                self.mapeditor.scene.enabledMapEvents.discard(event)
+    def onChangePreviewState(self):
+        # We need to rebuild this from scratch to preserve the order.
+        self.mapeditor.scene.enabledMapEvents.clear()
+        for i in range(self.eventsTree.topLevelItemCount()):
+            item = self.eventsTree.topLevelItem(i)
+            if isinstance(item, MapChangeEventListItem):
+                if item.checkState(1) == Qt.CheckState.Checked:
+                    self.mapeditor.scene.enabledMapEvents.add(item.event)
+        self.mapeditor.scene.calculateMapEventTileMappings()
         self.mapeditor.scene.update()
     
     def onDoubleClick(self, item: MapChangeEventListItem|TileChangeListItem):
@@ -247,7 +253,7 @@ class SidebarChanges(QWidget):
         else:
             index = self.eventsTree.topLevelItemCount()
 
-        event = MapChangeEvent(self.tilesetSelect.currentIndex())
+        event = MapChangeEvent(self.tilesetSelect.currentIndex(), 0, [])
         action = ActionAddMapChangeEvent(event, self.projectData.mapChanges[event.tileset], index)
         self.mapeditor.scene.undoStack.push(action)
     

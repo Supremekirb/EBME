@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import numpy
+from ordered_set import OrderedSet
 from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, Qt, QTimer
 from PySide6.QtGui import (QBrush, QColor, QKeySequence, QPainter,
                            QPainterPath, QPen, QPixmap, QPolygon, QUndoCommand)
@@ -168,7 +169,8 @@ class MapEditorScene(QGraphicsScene):
         self.doorDestLine.setZValue(common.MAPZVALUES.DOORDESTLINE)
         self.doorDestLine.hide()
         
-        self.enabledMapEvents: set[MapChangeEvent] = set()
+        self.enabledMapEvents: OrderedSet[MapChangeEvent] = OrderedSet()
+        self.mapEventTileMappings: dict[dict[int, int]] = {} # Tileset: [ {Before: after} ]
         
         self.dontUpdateModeNextAction = False
         """Avoid updating the current mode when pushing an action to the stack. Unset after the action is received. Won't affect undo/redo later on."""
@@ -553,12 +555,14 @@ class MapEditorScene(QGraphicsScene):
                 or isinstance(c, ActionMoveTileChange):
                 actionType = "mapchange"
                 self.parent().sidebarChanges.refreshEvent(c.event)
+                self.calculateMapEventTileMappings()
                 
             # dont forget to update the enabled map changes!
             if isinstance(c, ActionAddMapChangeEvent) or isinstance(c, ActionRemoveMapChangeEvent) \
                 or isinstance(c, ActionMoveMapChangeEvent):
                 actionType = "mapchange"
                 self.parent().sidebarChanges.fromTileset(c.event.tileset)
+                self.calculateMapEventTileMappings()
             
             if isinstance(c, ActionAddSectorUserDataField) or isinstance(c, ActionRemoveSectorUserDataField) or isinstance(c, ActionImportSectorUserData):
                 actionType = "userdata"
@@ -1523,7 +1527,34 @@ class MapEditorScene(QGraphicsScene):
             teleport = self.projectData.teleports[id[0]]
             action = ActionMoveTeleport(teleport, coords)
             self.undoStack.push(action)
-            
+    
+    def calculateMapEventTileMappings(self):
+        """This should be called after all changes to `enabledMapEvents`."""
+        self.mapEventTileMappings = {}
+        for i in self.enabledMapEvents:
+            if i.tileset not in self.mapEventTileMappings: self.mapEventTileMappings[i.tileset] = {}
+            relevantTileChanges = [change for event in [relevantEvent for relevantEvent in self.enabledMapEvents if relevantEvent.tileset == i.tileset] for change in event.changes]
+            for j in relevantTileChanges:
+                checking = j.after
+                endLoop = False
+                while not endLoop:
+                    for k in relevantTileChanges:
+                        if k == j:
+                            # We hit the same one as ourself,
+                            # so nothing beyond here applies.
+                            # Break and terminate the while loop.
+                            endLoop = True
+                            break
+                        if checking == k.before:
+                            # Then get the next one and check again.
+                            # Break, but don't terminate the while loop.
+                            checking = k.after
+                            break
+                    else:
+                        # We hit the end of the loop naturally (should never happen?)
+                        break
+                self.mapEventTileMappings[i.tileset][j.before] = checking
+        
     def drawBackground(self, painter: QPainter, rect: QRectF):
         super().drawBackground(painter, rect)
         start = EBCoords(*rect.topLeft().toTuple())
@@ -1548,22 +1579,15 @@ class MapEditorScene(QGraphicsScene):
                 coords = EBCoords.fromTile(x, y)
                 try:
                     tile = self.projectData.getTile(coords)
-                    
-                    # handle map events
-                    for i in self.enabledMapEvents:
-                        if i.tileset == tile.tileset:
-                            for j in i.changes:
-                                if j.before == tile.tile:
-                                    # not sure how i feel about doing it this way
-                                    # doesnt seem to impact performance
-                                    tile = MapTile(j.after, tile.coords, tile.tileset, tile.palettegroup, tile.palette)
-                                    tint = QSettings().value("mapeditor/TileChangesTint", type=bool, defaultValue=False)
+                    overrideTileID = self.mapEventTileMappings.get(tile.tileset, {}).get(tile.tile, tile.tile)
+                    if tile.tile != overrideTileID:
+                        tint = QSettings().value("mapeditor/TileChangesTint", type=bool, defaultValue=False)
                                     
                     if not previewing:
                         graphic = self.projectData.getTileGraphic(tile.tileset,
                                                                     tile.palettegroup,
                                                                     tile.palette,
-                                                                    tile.tile)
+                                                                    overrideTileID)
                         if not graphic.hasRendered:
                             palette = self.projectData.getPaletteGroup(tile.palettegroup).palettes[tile.palette]
                             graphic.render(self.projectData.getTileset(tile.tileset), palette)
@@ -1571,7 +1595,7 @@ class MapEditorScene(QGraphicsScene):
                         graphic = self.projectData.getTileGraphic(tile.tileset,
                                                                   self.state.previewingPaletteGroup,
                                                                   self.state.previewingPalette,
-                                                                  tile.tile)
+                                                                  overrideTileID)
                         if not graphic.hasRendered:
                             palette = self.projectData.getPaletteGroup(
                                 self.state.previewingPaletteGroup).palettes[self.state.previewingPalette]
@@ -1595,7 +1619,7 @@ class MapEditorScene(QGraphicsScene):
                         painter.setPen(Qt.PenStyle.NoPen)
                         
                         tileset = self.projectData.getTileset(tile.tileset)
-                        collisionMap = tileset.tiles[tile.tile].collision
+                        collisionMap = tileset.tiles[overrideTileID].collision
                         if len(set(collisionMap)) > 1: # special-casing for if all the collision is the same
                             for cx in range(0, 4):
                                 for cy in range(0, 4):
@@ -1636,21 +1660,15 @@ class MapEditorScene(QGraphicsScene):
                     try:
                         coords = EBCoords.fromTile(x, y)
                         tile = self.projectData.getTile(coords)
-                        # for map changes, tile IDs are shown with the 'after' in the main place and the 'before' underneath
-                        for i in self.enabledMapEvents:
-                            if i.tileset == tile.tileset:
-                                for j in i.changes:
-                                    if j.before == tile.tile:
-                                        # not sure how i feel about doing it this way
-                                        # doesnt seem to impact performance
-                                        painter.setPen(Qt.GlobalColor.gray)
-                                        painter.drawText((x*32)+7, (y*32)+32, str(tile.tile).zfill(3))   
-                                        tile = MapTile(j.after, tile.coords, tile.tileset, tile.palettegroup, tile.palette)
+                        overrideTileID = self.mapEventTileMappings.get(tile.tileset, {}).get(tile.tile, tile.tile)
+                        if tile.tile != overrideTileID:
+                                painter.setPen(Qt.GlobalColor.gray)
+                                painter.drawText((x*32)+7, (y*32)+32, str(tile.tile).zfill(3))   
 
                         painter.setPen(Qt.GlobalColor.black)
-                        painter.drawText((x*32)+8, (y*32)+23, str(tile.tile).zfill(3))
+                        painter.drawText((x*32)+8, (y*32)+23, str(overrideTileID).zfill(3))
                         painter.setPen(Qt.GlobalColor.white)
-                        painter.drawText((x*32)+7, (y*32)+22, str(tile.tile).zfill(3))           
+                        painter.drawText((x*32)+7, (y*32)+22, str(overrideTileID).zfill(3))           
                     except Exception:
                         logging.warning(traceback.format_exc())
         
