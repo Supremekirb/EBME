@@ -24,6 +24,7 @@ from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AutoMinitileRearrangerDialog,
                                 FindUnusedMinitilesDialog,
                                 RenderMinitilesDialog, RenderTilesDialog,
+                                ReplaceSwapMinitileInstancesDialog,
                                 SettingsDialog)
 from src.tileeditor.arrangement_editor import TileArrangementWidget
 from src.tileeditor.collision_editor import (TileEditorCollisionPresetList,
@@ -347,6 +348,12 @@ class TileEditor(QWidget):
             
     def onFindUnused(self):
         FindUnusedMinitilesDialog.findUnusedMinitiles(self, self.projectData, self.state.currentTileset)
+    
+    def onReplaceMinitiles(self):
+        action = ReplaceSwapMinitileInstancesDialog.replaceOrSwapMinitiles(self, self.projectData, self.state.currentTileset)
+        
+        if action:
+            self.undoStack.push(action)
         
     def updateMinitile(self, minitile: Minitile|int):
         if isinstance(minitile, int):
@@ -737,7 +744,9 @@ class TileEditor(QWidget):
         self.autoRearrangeAction.triggered.connect(self.onAutoRearrange)
         self.findUnusedAction = QAction(icons.ICON_UNUSED_OBJECT, "&Unused minitile finder...")
         self.findUnusedAction.triggered.connect(self.onFindUnused)
-        self.menuTools.addActions([self.renderTilesAction, self.renderMinitilesAction, self.autoRearrangeAction, self.findUnusedAction, self.parent().sharedActionTileSpace])
+        self.replaceMinitilesAction = QAction(icons.ICON_STACK, "&Replace/swap minitile instances...")
+        self.replaceMinitilesAction.triggered.connect(self.onReplaceMinitiles)
+        self.menuTools.addActions([self.renderTilesAction, self.renderMinitilesAction, self.autoRearrangeAction, self.findUnusedAction, self.replaceMinitilesAction, self.parent().sharedActionTileSpace])
         self.parent().tileScratchSpace.scene.tileSelected.connect(self.tileScratchSpacePicked)
         
         self.menuHelp = QMenu("&Help")        

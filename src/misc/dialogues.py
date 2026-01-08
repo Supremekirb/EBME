@@ -21,7 +21,8 @@ import src.misc.icons as icons
 import src.misc.quotes as quotes
 from src.actions.changes_actions import (ActionAddTileChange,
                                          ActionChangeTileChange)
-from src.actions.fts_actions import (ActionChangeSubpaletteColour,
+from src.actions.fts_actions import (ActionChangeArrangement,
+                                     ActionChangeSubpaletteColour,
                                      ActionReplacePalette, ActionSwapMinitiles)
 from src.actions.misc_actions import MultiActionWrapper
 from src.actions.sector_actions import (ActionAddSectorUserDataField,
@@ -1789,3 +1790,63 @@ class TileChangeEditDialog(QDialog):
             change.before = dialog.selectedBefore
             change.after = dialog.selectedAfter
             return ActionAddTileChange(event, index, change)
+
+
+class ReplaceSwapMinitileInstancesDialog(QDialog):
+    def __init__(self, parent, projectData: ProjectData, tileset: int):
+        super().__init__(parent)
+        self.setWindowTitle("Replace instances of minitiles")
+        self.projectData = projectData
+        
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        
+        self.tileset = QComboBox()
+        for i in self.projectData.tilesets:
+            self.tileset.addItem(str(i.id))
+        self.tileset.setCurrentText(str(tileset))
+        
+        self.before = QSpinBox()
+        self.before.setMinimum(0)
+        self.before.setMaximum(common.MAXMINITILES-1)
+        
+        self.after = QSpinBox()
+        self.after.setMinimum(0)
+        self.after.setMaximum(common.MAXMINITILES-1)
+        
+        self.swap = QCheckBox("Swap (instead of replace)")
+        
+        self.buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        
+        layout.addWidget(QLabel("Tileset"))
+        layout.addWidget(self.tileset)
+        layout.addWidget(QLabel("Before"))
+        layout.addWidget(self.before)
+        layout.addWidget(QLabel("After"))
+        layout.addWidget(self.after)
+        layout.addWidget(self.swap)
+        layout.addStretch()
+        layout.addWidget(self.buttons)
+        
+    
+    @staticmethod
+    def replaceOrSwapMinitiles(parent, projectData: ProjectData, tileset: int) -> MultiActionWrapper|None:
+        dialog = ReplaceSwapMinitileInstancesDialog(parent, projectData, tileset)
+        result = dialog.exec()
+        if result == QDialog.DialogCode.Accepted:
+            selectedTileset = projectData.getTileset(int(dialog.tileset.currentText()))
+            swap = dialog.swap.isChecked()
+            actions: list[ActionChangeArrangement] = []
+            for tile in selectedTileset.tiles:
+                for i in range(16):
+                    if tile.getMinitileID(i) == dialog.before.value():
+                        newMetadata = tile.getMetadata(i)
+                        newMetadata = newMetadata - dialog.before.value() + dialog.after.value() 
+                        actions.append(ActionChangeArrangement(tile, newMetadata, i))
+                    if swap and tile.getMinitileID(i) == dialog.after.value():
+                        newMetadata = tile.getMetadata(i)
+                        newMetadata = newMetadata - dialog.after.value() + dialog.before.value()
+                        actions.append(ActionChangeArrangement(tile, newMetadata, i))
+            return MultiActionWrapper(actions, "Replace/swap minitile instances")

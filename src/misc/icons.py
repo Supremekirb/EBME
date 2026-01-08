@@ -216,3 +216,6 @@ def init_icons():
     
     global ICON_DIRECTIONS_IN
     ICON_DIRECTIONS_IN = icon("ph.arrows-in-cardinal")
+    
+    global ICON_STACK 
+    ICON_STACK = icon("ph.stack")
