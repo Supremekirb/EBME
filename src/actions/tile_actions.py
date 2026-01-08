@@ -39,6 +39,7 @@ class ActionSwapTiles(QUndoCommand):
         self.tileset = tileset
         
     def redo(self):
+        # Replace tiles on the map
         for i in self.projectData.tiles.flat:
             i: MapTile
             if i.tileset == self.tileset:
@@ -46,8 +47,23 @@ class ActionSwapTiles(QUndoCommand):
                     i.tile = self.after
                 elif i.tile == self.after:
                     i.tile = self.before
+        # Replace map changes
+        for event in self.projectData.mapChanges[self.tileset].events:
+            for change in event.changes:
+                # the "before" and "after" fields of this and the changes are totally unrelated despite the name
+                if change.before == self.before:
+                    change.before = self.after
+                elif change.before == self.after:
+                    change.before = self.before
+
+                if change.after == self.before:
+                    change.after = self.after
+                elif change.after == self.after:
+                    change.after = self.before
+        # Reorder tiles in the tileset
         tileset = self.projectData.getTileset(self.tileset)
         tileset.swapTiles(self.before, self.after)
+        # Clear the cache
         self.projectData.clobberTileGraphicsCache(self.tileset)
     
     def undo(self):

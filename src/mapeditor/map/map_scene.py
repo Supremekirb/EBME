@@ -576,6 +576,8 @@ class MapEditorScene(QGraphicsScene):
             if isinstance(c, ActionSwapTiles):
                 actionType = "tile"
                 self.parent().sidebarTile.scene.update()
+                self.parent().sidebarChanges.refreshEvent()
+                self.calculateMapEventTileMappings()
 
         match actionType:
             case "tile":
