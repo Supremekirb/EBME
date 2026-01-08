@@ -19,6 +19,7 @@ from src.actions.fts_actions import (ActionAddPalette, ActionChangeArrangement,
                                      ActionChangeSubpaletteColour,
                                      ActionRemovePalette, ActionSwapMinitiles)
 from src.actions.misc_actions import ActionReplaceTileset, MultiActionWrapper
+from src.actions.tile_actions import ActionSwapTiles
 from src.coilsnake.fts_interpreter import Minitile, Tile
 from src.coilsnake.project_data import ProjectData
 from src.misc.dialogues import (AboutDialog, AutoMinitileRearrangerDialog,
@@ -128,6 +129,8 @@ class TileEditor(QWidget):
                 self.collisionScene.loadTileset(tileset)
                 self.collisionScene.loadPalette(palette)
                 self.collisionScene.update()
+            elif isinstance(c, ActionSwapTiles):
+                self.onTilesetSelect()
         
         match actionType:
             case "bitmap":
@@ -224,6 +227,10 @@ class TileEditor(QWidget):
         self.arrangementScene.loadTile(tileObj)
         self.collisionScene.loadTile(tileObj)
         self.presetList.verifyTileCollision(tileObj)
+    
+    def onTileRearrange(self, before: int, after: int):
+        action = ActionSwapTiles(self.projectData, before, after, self.state.currentTileset)
+        self.undoStack.push(action)
     
     def onColourEdit(self):
         self.projectData.clobberTileGraphicsCache()
@@ -544,8 +551,9 @@ class TileEditor(QWidget):
         self.minitileScene = MinitileScene(self, self.projectData)
         self.minitileView = MinitileView(self.minitileScene)
         
-        self.tileScene = TilesetDisplayGraphicsScene(self.projectData, True, 6)
+        self.tileScene = TilesetDisplayGraphicsScene(self.projectData, True, 6, canDragRearrange=True)
         self.tileScene.tileSelected.connect(self.onTileSelect)
+        self.tileScene.tileRearranged.connect(self.onTileRearrange)
         self.tileView = HorizontalGraphicsView(self.tileScene)
         self.tileView.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         self.tileView.setFixedHeight(32*self.tileScene.rowSize+1+self.tileView.horizontalScrollBar().sizeHint().height())

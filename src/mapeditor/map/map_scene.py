@@ -47,7 +47,7 @@ from src.actions.sector_actions import (ActionAddSectorUserDataField,
                                         ActionChangeSectorAttributes,
                                         ActionImportSectorUserData,
                                         ActionRemoveSectorUserDataField)
-from src.actions.tile_actions import ActionPlaceTile
+from src.actions.tile_actions import ActionPlaceTile, ActionSwapTiles
 from src.actions.trigger_actions import (ActionAddTrigger, ActionDeleteTrigger,
                                          ActionMoveTrigger,
                                          ActionUpdateTrigger)
@@ -571,6 +571,10 @@ class MapEditorScene(QGraphicsScene):
             if isinstance(c, ActionReplaceTileset):
                 actionType = "tile"
                 self.parent().sidebarTile.tilesetSelect.setCurrentIndex(c.index)
+                self.parent().sidebarTile.scene.update()
+            
+            if isinstance(c, ActionSwapTiles):
+                actionType = "tile"
                 self.parent().sidebarTile.scene.update()
 
         match actionType:

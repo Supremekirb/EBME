@@ -139,6 +139,7 @@ TEMPMODEINDEX = IntEnum("TEMPMODEINDEX", ["NONE",
 
 ACTIONINDEX = IntEnum("ACTIONINDEX", ["MULTI", # wrapper to merge many commands
                                       "TILEPLACE", # cannot merge with itself
+                                      "TILESWAP", # cannot merge with itself
                                       "NPCMOVE", # drag on the map, cannot merge with itself
                                       "NPCMOVESIDEBAR", # coords change in sidebar, can merge with itself
                                       "NPCCHANGE", # can merge with itself

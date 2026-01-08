@@ -7,8 +7,9 @@ from PIL import ImageQt
 from PySide6.QtCore import QPoint, QRect, QRectF, QSettings, QSize, Qt, Signal
 from PySide6.QtGui import (QBrush, QColor, QMouseEvent, QPainter, QPaintEvent,
                            QPixmap, QResizeEvent)
-from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsScene,
-                               QGraphicsSceneMouseEvent, QSizePolicy, QWidget)
+from PySide6.QtWidgets import (QGraphicsPixmapItem, QGraphicsRectItem,
+                               QGraphicsScene, QGraphicsSceneMouseEvent,
+                               QSizePolicy, QWidget)
 
 import src.misc.common as common
 from src.coilsnake.fts_interpreter import (FullTileset, Minitile, Palette,
@@ -298,8 +299,9 @@ class TileCollisionWidget(TileGraphicsWidget):
 class TilesetDisplayGraphicsScene(QGraphicsScene):
     tileSelected = Signal(int)
     tilePicked = Signal(int)
+    tileRearranged = Signal(int, int)
         
-    def __init__(self, projectData: ProjectData, horizontal: bool = False, rowSize: int = 6, forcedPalette: Palette|None=None, forcedTileIDs: bool = False):
+    def __init__(self, projectData: ProjectData, horizontal: bool = False, rowSize: int = 6, forcedPalette: Palette|None=None, forcedTileIDs: bool = False, canDragRearrange: bool = False):
         super().__init__()
         
         self.projectData = projectData
@@ -308,38 +310,121 @@ class TilesetDisplayGraphicsScene(QGraphicsScene):
         self.forcedPalette = forcedPalette
         self.forcedPaletteCache: dict[int, QPixmap] = {}
         self.forcedTileIDs = forcedTileIDs
-        
-        self.selectionIndicator = QGraphicsPixmapItem(QPixmap(":/ui/selectTile.png"))
+        self.canDragRearrange = canDragRearrange
         
         if not horizontal:
             self.setSceneRect(0, 0, self.rowSize*32, (common.MAXTILES*32)//self.rowSize)
         else:
             self.setSceneRect(0, 0, (common.MAXTILES*32)//self.rowSize, self.rowSize*32)
-            
+
+        self.sourcedGrabTileMask = QGraphicsRectItem(0, 0, 32, 32)
+        self.sourcedGrabTileMask.setBrush(Qt.GlobalColor.white)
+        self.sourcedGrabTileMask.setPen(Qt.PenStyle.NoPen)
+        self.sourcedGrabTileMask.setZValue(0)
+        self.sourcedGrabTileMask.hide()
+        self.addItem(self.sourcedGrabTileMask)
+        
+        self.selectionIndicator = QGraphicsPixmapItem(QPixmap(":/ui/selectTile.png"))
+        self.selectionIndicator.setZValue(1)
         self.addItem(self.selectionIndicator)
-        self.setForegroundBrush((QBrush(QPixmap(":/grids/32grid0.png"))))
+        
+        self.grid = QGraphicsRectItem(self.sceneRect())
+        self.grid.setBrush(QBrush(QPixmap(":/grids/32grid0.png")))
+        self.grid.setZValue(2)
+        self.addItem(self.grid)
+        
+        self.dropIndicator = QGraphicsRectItem(-0.5, -0.5, 33, 33)
+        self.dropIndicator.setBrush(Qt.BrushStyle.NoBrush)
+        self.dropIndicator.setPen(QColor(Qt.GlobalColor.white))
+        self.dropIndicator.hide()
+        self.dropIndicator.setZValue(3)
+        self.addItem(self.dropIndicator)
+        
+        self.grabTile = QGraphicsPixmapItem()
+        self.grabTileOutline = QGraphicsRectItem(-0.5, -0.5, 33, 33)
+        self.grabTileOutline.setBrush(Qt.BrushStyle.NoBrush)
+        self.grabTileOutline.setPen(QColor(Qt.GlobalColor.yellow))
+        self.grabTileOutline.setParentItem(self.grabTile)
+        self.grabTile.setZValue(4)
+        self.grabTile.hide()
+        self.addItem(self.grabTile)
+            
         self.setBackgroundBrush((QBrush(QPixmap(":/ui/bg.png"))))
+        
+        self._mouseDownPos = EBCoords(0, 0)
+        self._dragging = False
         
         self.currentTileset = 0
         self.currentPaletteGroup = 0
         self.currentPalette = 0
     
-    def cursorOverTile(self):
-        return self.posToTileIndex(*self.selectionIndicator.pos().toTuple())
-    
     def moveCursorToTile(self, tile: int):
         x, y = self.tileIndexToPos(tile)
         self.selectionIndicator.setPos(x*32, y*32)
+    
+    def drop(self, pos: EBCoords):
+        self._dragging = False
+        self.dropIndicator.hide()
+        self.grabTile.hide()
+        self.sourcedGrabTileMask.hide()
+        startX, startY = self._mouseDownPos.coords()
+        endX, endY = pos.coords()
+        startX = common.cap(startX, 0, self.sceneRect().width()-1)
+        startY = common.cap(startY, 0, self.sceneRect().height()-1)
+        endX = common.cap(endX, 0, self.sceneRect().width()-1)
+        endY = common.cap(endY, 0, self.sceneRect().height()-1)
+        startTile = self.posToTileIndex(startX//32, startY//32)
+        endTile = self.posToTileIndex(endX//32, endY//32)
+        if startTile == endTile: return
+        self.tileRearranged.emit(startTile, endTile)
         
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
-        pos = EBCoords(*event.scenePos().toTuple())
-        if event.modifiers() in (Qt.KeyboardModifier.ControlModifier, Qt.KeyboardModifier.ShiftModifier):
-            self.tilePicked.emit(self.posToTileIndex(*pos.coordsTile()))
-        else:
-            self.tileSelected.emit(self.posToTileIndex(*pos.coordsTile()))
-            self.selectionIndicator.setPos(*pos.roundToTile())
-        
+        if event.button() == Qt.MouseButton.LeftButton:
+            pos = EBCoords(*event.scenePos().toTuple())
+            self._mouseDownPos = pos
+            graphic = self.projectData.getTileGraphic(self.currentTileset,
+                                                    self.currentPaletteGroup,
+                                                    self.currentPalette,
+                                                    self.posToTileIndex(*pos.coordsTile()))
+            if not graphic.hasRendered:
+                graphic.render(self.projectData.getTileset(self.currentTileset),
+                            self.projectData.getPaletteGroup(self.currentPaletteGroup).palettes[self.currentPalette])
+            self.grabTile.setPixmap(graphic.rendered)
         super().mousePressEvent(event)
+    
+    def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent):
+        if Qt.MouseButton.LeftButton in event.buttons():
+            pos = EBCoords(*event.scenePos().toTuple())
+            unclampedPos = EBCoords(*event.scenePos().toTuple())
+            pos.x = common.cap(pos.x, 0, self.sceneRect().width()-1)
+            pos.y = common.cap(pos.y, 0, self.sceneRect().height()-1)
+            if self.canDragRearrange and pos.roundToTile() != self._mouseDownPos.roundToTile():
+                self.dropIndicator.setPos(*pos.roundToTile())
+                self.dropIndicator.show()
+                self.grabTile.setPos(unclampedPos.x-16, unclampedPos.y-32)
+                self.grabTile.show()
+                self.sourcedGrabTileMask.setPos(*self._mouseDownPos.roundToTile())
+                self.sourcedGrabTileMask.show()
+                self._dragging = True
+            else:
+                self.dropIndicator.hide()
+                self.grabTile.hide()
+                self.sourcedGrabTileMask.hide()
+                self._dragging = False
+        super().mouseMoveEvent(event)
+        
+    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton:
+            pos = EBCoords(*event.scenePos().toTuple())
+            if self._dragging:
+                self.drop(pos)
+            else:
+                if event.modifiers() in (Qt.KeyboardModifier.ControlModifier, Qt.KeyboardModifier.ShiftModifier):
+                    self.tilePicked.emit(self.posToTileIndex(*pos.coordsTile()))
+                else:
+                    self.tileSelected.emit(self.posToTileIndex(*pos.coordsTile()))
+                    self.selectionIndicator.setPos(*pos.roundToTile())
+        super().mouseReleaseEvent(event)
     
     def drawBackground(self, painter: QPainter, rect: QRectF | QRect):
         super().drawBackground(painter, rect)

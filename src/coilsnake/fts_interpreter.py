@@ -39,6 +39,13 @@ class FullTileset:
                 elif t.getMinitileID(i) == mt2:
                     t.metadata[i] = t.metadata[i] - mt2 + mt1
                 # happily we do not need to invalidate the image cache when doing this
+    
+    def swapTiles(self, t1: int, t2: int):
+        if t1 == t2:
+            return
+        temp = self.tiles[t1]
+        self.tiles[t1] = self.tiles[t2]
+        self.tiles[t2] = temp
             
     def getPaletteGroup(self, groupID):
         """From a palette group ID, get a PaletteGroup object"""
