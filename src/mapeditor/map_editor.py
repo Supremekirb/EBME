@@ -343,6 +343,13 @@ class MapEditor(QWidget):
             self.npcForegroundMaskAction.setChecked(True)
         self.npcForegroundMaskAction.changed.connect(self.scene.toggleNPCForegroundMask)
         
+        self.enemySpritesAction = QAction("Use &battle sprites on spawn plates", shortcut=QKeySequence("Ctrl+E"))
+        self.enemySpritesAction.setCheckable(True)
+        if settings.value("UseBattleSprites", type=bool, defaultValue=False):
+            self.enemySpritesAction.setChecked(True)
+        self.enemySpritesAction.changed.connect(self.scene.update)
+        self.enemySpritesAction.changed.connect(lambda: QSettings().setValue("mapeditor/UseBattleSprites", self.enemySpritesAction.isChecked()))
+        
         self.enemyLinesAction = QAction("Show &enemy spawn lines in Enemy mode")
         self.enemyLinesAction.setCheckable(True)
         if settings.value("ShowEnemyLines", type=bool, defaultValue=False):
@@ -397,7 +404,7 @@ class MapEditor(QWidget):
         self.menuView.addActions([self.npcIDAction, self.npcVisualBoundsAction,
                                   self.npcCollisionBoundsAction, self.npcForegroundMaskAction])
         self.menuView.addSeparator()
-        self.menuView.addActions([self.enemyLinesAction])
+        self.menuView.addActions([self.enemySpritesAction, self.enemyLinesAction])
         self.menuView.addMenu(self.enemyLinesDirectionMenu)
         self.menuView.addSeparator()
         self.menuView.addActions([self.warpIDAction])

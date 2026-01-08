@@ -1115,7 +1115,11 @@ class MapEditorScene(QGraphicsScene):
             
     def refreshEnemyMapGroup(self, group: int):
         self.parent().sidebarEnemy.view.ensureCorrectColour(group)
-        self.projectData.enemyMapGroups[group].render(self.projectData)
+        groupObj = self.projectData.enemyMapGroups[group]
+        groupObj.renderBg()
+        groupObj.renderEnemiesOverworld(self.projectData)
+        groupObj.prepareEnemiesBattle(self.projectData)
+        groupObj.renderFg(self.projectData)
         self.update()
 
     def changeSectorBrush(self):
@@ -1662,9 +1666,49 @@ class MapEditorScene(QGraphicsScene):
                         group = self.projectData.enemyMapGroups[tile.groupID]
                         if group.groupID == 0:
                             continue
-                        if group.rendered is None:
-                            group.render(self.projectData)
-                        painter.drawPixmap(r*64, c*64, group.rendered)
+                        if group.renderedBg is None:
+                            group.renderBg()
+                        if group.renderedEnemiesOverworld is None:
+                            group.renderEnemiesOverworld(self.projectData)
+                        if group.preparedEnemiesBattle is None:
+                            group.prepareEnemiesBattle(self.projectData)
+                        if group.renderedFg is None:
+                            group.renderFg(self.projectData)
+                        
+                        # Draw the BG. This is the colour
+                        # TODO - would it be better if we drew the colour here..?
+                        painter.drawPixmap(r*64, c*64, group.renderedBg)
+                        
+                        # Draw the sprites.
+                        if QSettings().value("mapeditor/UseBattleSprites", type=bool, defaultValue=True):
+                            # Lots of tricky things here to enable drawing battle sprites that interact with zoom nicely
+                            # First, set clipping to this enemy tile. Do it before we scale, so it's correct.
+                            painter.setClipRect(r*64, c*64, 64, 64, Qt.ClipOperation.ReplaceClip)
+                            # Find the current scale. They're at m11 and m22 on the matrix.
+                            transform = painter.transform()
+                            sX = transform.m11()
+                            sY = transform.m22()
+                            # Undo the scaling for now.
+                            # Scales less than one will act as normal (they look bad if the sprite size is maintained)
+                            if sX > 1:
+                                painter.scale(1/sX, 1/sY)
+                            else:
+                                sX = sY = 1
+                            # Basically we just need to pick the right things to multiply by the scale.
+                            # This is more or less everything except to do with the size of the pixmap.
+                            for pixmap, dX, dY in group.preparedEnemiesBattle:
+                                drawX = (r*64*sX)+(dX*sX) - pixmap.width()//2
+                                drawY = (c*64*sY)+(dY*sY) - pixmap.height()
+                                painter.drawPixmap(drawX, drawY, pixmap)
+                            # And now just undo what we messed around with
+                            painter.setClipping(False)
+                            if sX > 1:
+                                painter.scale(sX, sY)
+                        # We're drawing overworld sprites without special treatment.
+                        else:
+                            painter.drawPixmap(r*64, c*64, group.renderedEnemiesOverworld)
+                        # Draw the FG, which is the header with info
+                        painter.drawPixmap(r*64, c*64, group.renderedFg)
                     except Exception:
                         logging.warning(traceback.format_exc())
 

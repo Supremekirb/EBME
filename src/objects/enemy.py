@@ -40,7 +40,10 @@ class EnemyMapGroup:
         self.subGroup1Rate = subgroup1rate
         self.subGroup2Rate = subgroup2rate
         
-        self.rendered: QPixmap | None = None
+        self.renderedBg: QPixmap | None = None
+        self.renderedEnemiesOverworld: QPixmap | None = None
+        self.renderedFg: QPixmap | None = None
+        self.preparedEnemiesBattle: list[list[QPixmap, int, int]] | None = None # List of lists of pixmaps and offsets for them to be drawn at.
         
         if colour == None:
             self.colour = EnemyMapGroup.colourGen(self.groupID)
@@ -49,13 +52,17 @@ class EnemyMapGroup:
 
         EnemyMapGroup.colours[self.groupID] = EnemyMapGroup.colourGen(self.groupID)
 
-    def render(self, projectData: "ProjectData"):
+    def renderBg(self):
         pixmap = QPixmap(64, 64)
         pixmap.fill(QColor.fromRgb(self.colour[0], self.colour[1], self.colour[2], 178))
+        self.renderedBg = pixmap
+
+    def renderEnemiesOverworld(self, projectData: "ProjectData"):
+        pixmap = QPixmap(64, 64)
+        pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter()
         pixmap.initPainter(painter)
         painter.begin(pixmap)
-        
         
         # Enemy overworld sprites
         sprites1: list[QPixmap] = []
@@ -68,7 +75,7 @@ class EnemyMapGroup:
             for e in projectData.enemyGroups[i["Enemy Group"]].enemies:
                 spr = projectData.getSprite(projectData.enemySprites[e["Enemy"]])
                 sprites2.append(QPixmap.fromImage(ImageQt.ImageQt(spr.renderFacingImg(4))))
-        
+
         if len(sprites1) > 0:
             distribution = 42//len(sprites1)
             for i, sprite in reversed(list(enumerate(sprites1))):
@@ -83,6 +90,62 @@ class EnemyMapGroup:
                     48 - sprite.width()//2, 64-(distribution*i) - sprite.height(),
                     sprite
                 )
+        
+        painter.end()
+        
+        self.renderedEnemiesOverworld = pixmap
+    
+    def prepareEnemiesBattle(self, projectData: "ProjectData"):
+        # Enemy battle sprites
+        sprites1: list[list[QPixmap, int, int]] = []
+        sprites2: list[list[QPixmap, int, int]] = []
+        seenSpr1: set[int] = set()
+        seenSpr2: set[int] = set()
+        for i in self.subGroup1.values():
+            # For this, we are going to remove double-up sprites.
+            # It's hard to make this a toggleable setting due to setting up groupings here.
+            for e in projectData.enemyGroups[i["Enemy Group"]].enemies:
+                try:
+                    spr = projectData.getBattleSprite(e["Enemy"])
+                except KeyError: # Not all enemies have a battle sprite
+                    continue
+                if spr.id in seenSpr1:
+                    continue
+                seenSpr1.add(spr.id)
+                sprites1.append([QPixmap.fromImage(spr.img), 16, 0])
+        for i in self.subGroup2.values():
+            for e in projectData.enemyGroups[i["Enemy Group"]].enemies:
+                try:
+                    spr = projectData.getBattleSprite(e["Enemy"])
+                except KeyError:
+                    continue
+                if spr.id in seenSpr2:
+                    continue
+                seenSpr2.add(spr.id)
+                sprites2.append([QPixmap.fromImage(spr.img), 48, 0])
+
+        # This is similar to the overworld sprites, but we can't include pixmap size stuff at all.
+        # That stuff is applied when drawing, to avoid scaling issues.
+        if len(sprites1) > 0:
+            distribution = 42//len(sprites1)
+            for i, sprite in enumerate(sprites1):
+                sprite = sprite[0]
+                sprites1[i][2] = 64 - (distribution*i)
+        if len(sprites2) > 0:
+            distribution = 42//len(sprites2)
+            for i, sprite in enumerate(sprites2):
+                sprite = sprite[0]
+                sprites2[i][2] = 64 - (distribution*i)
+        
+        # This reordering means "First group on top of second group, lower enemies first"
+        self.preparedEnemiesBattle = list(reversed(sprites1 + sprites2))
+
+    def renderFg(self, projectData: "ProjectData"):
+        pixmap = QPixmap(64, 64)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter()
+        pixmap.initPainter(painter)
+        painter.begin(pixmap)
         
         # Values background
         painter.setBrush(Qt.GlobalColor.black)
@@ -148,7 +211,7 @@ class EnemyMapGroup:
         
         painter.end()
         
-        self.rendered = pixmap       
+        self.renderedFg = pixmap       
     
     @staticmethod
     def colourGen(i: int) -> tuple[int, int, int]:

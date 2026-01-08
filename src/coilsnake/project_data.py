@@ -41,7 +41,7 @@ class ProjectData():
         self.enemyMapGroups: list[EnemyMapGroup] = []
         self.enemyGroups: list[EnemyGroup] = []
         self.enemySprites: list[int] = [] # enemy id --> sprite id
-        self.battleSprites: list[BattleSprite] = []
+        self.battleSprites: dict[int, BattleSprite] = {}
         self.hotspots: list[Hotspot] = []
         self.warps: list[Warp] = []
         self.teleports: list[Teleport] = []
@@ -283,6 +283,8 @@ class ProjectData():
         return self.npcs[id]
     def getSprite(self, id: int) -> Sprite:
         return self.sprites[id]
+    def getBattleSprite(self, id: int) -> BattleSprite:
+        return self.battleSprites[id]
     def getEnemyTile(self, coords: EBCoords) -> EnemyTile:
         return self.enemyPlacements[coords.coordsEnemy()[1], coords.coordsEnemy()[0]]
 

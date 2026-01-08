@@ -10,7 +10,7 @@ class BattleSpriteModule(DataModule):
     NAME = "battle sprites"
     
     def load(data: ProjectData):
-        battleSprites = []
+        battleSprites = {}
         for key in data.projectSnake["resources"]["eb.EnemyModule"].keys():
             path = data.getResourcePath("eb.EnemyModule", key)
             if str(key).split("/")[0] == "BattleSprites": # cursed but i dont know how else
@@ -18,7 +18,8 @@ class BattleSpriteModule(DataModule):
                     sprImg = ImageQt.ImageQt(Image.open(path).convert("RGBA"))
                 except FileNotFoundError:
                     raise SubResourceNotFoundError(f"Couldn't find battle sprite at {path}")
-                battleSprites.append(BattleSprite(int(str(key).split("/")[1]), sprImg)) # also cursed
+                id = int(str(key).split("/")[1]) # also cursed
+                battleSprites[id] = BattleSprite(id, sprImg)
 
         data.battleSprites = battleSprites
     
