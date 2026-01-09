@@ -145,6 +145,18 @@ class Project(QWidget):
             self.loadingProgress.setMinimum(0)
             self.loadingProgress.setValue(0)
 
+            # Fixes a Windows bug where the old workers don't get properly discarded,
+            # causing their signals to get called more and more times.
+            # Why is that platform-dependant...??
+            # I think it may have to do with garbage collection,
+            # but I'm not sure if it's in the thread or workers.
+            # To be safe, disconnect everything.
+            self.projectIOThread.started.disconnect()
+            self.projectIOThread = QThread()
+            if hasattr(self, "worker"):
+                self.worker.updates.disconnect()
+                self.worker.returns.disconnect()
+
             self.worker = Worker(load.readDirectory, dir)
             self.worker.updates.connect(self.updateStatusLabel)
             self.worker.returns.connect(self.finishedProjectLoad)
@@ -283,6 +295,13 @@ class Project(QWidget):
         self.loadingProgress.setMaximum(0)
         self.loadingProgress.setMinimum(0) 
         self.loadingProgress.setValue(0)
+        
+        # Same bugfix as in openDirectory.
+        self.projectIOThread.started.disconnect()
+        self.projectIOThread = QThread()
+        if hasattr(self, "worker"):
+            self.worker.updates.disconnect()
+            self.worker.returns.disconnect()
         
         self.worker = Worker(save.writeDirectory, self.projectData)
         self.worker.updates.connect(self.updateStatusLabel)
