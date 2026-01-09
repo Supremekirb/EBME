@@ -416,6 +416,7 @@ class MapEditorScene(QGraphicsScene):
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
         # Workaround for some systems and swapping sector primary button
         if self._skipNextCtxEvent:
+            self._skipNextCtxEvent = False
             return
         
         # if we're holding Alt, don't do anything, because we're copying coords in mousePressEvent
