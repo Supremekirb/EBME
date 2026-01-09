@@ -435,7 +435,9 @@ class MapEditorNPC(QGraphicsPixmapItem):
             menu.addAction(icons.ICON_COPY, "Copy", self.scene().onCopy)
             menu.addAction(icons.ICON_PASTE, "Paste", self.scene().onPaste)
             menu.exec(event.screenPos())
-            super().contextMenuEvent(event)
+            event.accept()
+        else:
+            event.ignore()
             
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent):
         if (not self.isDummy) and self.scene().state.mode == common.MODEINDEX.NPC:

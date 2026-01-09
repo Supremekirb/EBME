@@ -234,7 +234,8 @@ class MapEditorScene(QGraphicsScene):
                         elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                             self.selectSector(coords, True, True)
                 case common.MODEINDEX.SECTOR:
-                    if event.buttons() == Qt.MouseButton.LeftButton:
+                    primaryButton = Qt.MouseButton.RightButton if QSettings().value("main/swapSectorMBs", False, type=bool) else Qt.MouseButton.LeftButton
+                    if event.buttons() == primaryButton:
                         if event.modifiers() == Qt.KeyboardModifier.NoModifier:
                             self.selectSector(coords)
                         elif event.modifiers() == Qt.KeyboardModifier.ControlModifier:
@@ -308,11 +309,23 @@ class MapEditorScene(QGraphicsScene):
                                 self.selectSector(coords, True)
                                 
                     case common.MODEINDEX.SECTOR:
-                        if event.buttons() == Qt.MouseButton.LeftButton:
+                        primaryButton = Qt.MouseButton.RightButton if QSettings().value("main/swapSectorMBs", False, type=bool) else Qt.MouseButton.LeftButton
+                        if event.buttons() == primaryButton:
                             if event.modifiers() == Qt.KeyboardModifier.NoModifier:
                                 self.selectSector(coords)
                             if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
                                 self.selectSector(coords, True)
+                        # Left-click context menu stuff.
+                        # Right-click is handled by the Qt-level contextMenuEvent system.
+                        if primaryButton == Qt.MouseButton.RightButton and event.buttons() == Qt.MouseButton.LeftButton:
+                            ctxEvent = QGraphicsSceneContextMenuEvent(QGraphicsSceneContextMenuEvent.Type.GraphicsSceneContextMenu)
+                            ctxEvent.setPos(event.pos())
+                            ctxEvent.setScreenPos(event.screenPos())
+                            ctxEvent.setScenePos(event.scenePos())
+                            ctxEvent.setModifiers(event.modifiers())
+                            ctxEvent.setTimestamp(event.timestamp())
+                            ctxEvent.setReason(QGraphicsSceneContextMenuEvent.Reason.Other)
+                            self.event(ctxEvent)
                     
                     case common.MODEINDEX.ENEMY:
                         if event.buttons() == Qt.MouseButton.LeftButton:
@@ -374,7 +387,8 @@ class MapEditorScene(QGraphicsScene):
                     if event.buttons() == Qt.MouseButton.RightButton:
                         self.selectMultipleSectors(coords)
                 case common.MODEINDEX.SECTOR:
-                    if event.buttons() == Qt.MouseButton.LeftButton:
+                    primaryButton = Qt.MouseButton.RightButton if QSettings().value("main/swapSectorMBs", False, type=bool) else Qt.MouseButton.LeftButton
+                    if event.buttons() == primaryButton:
                         self.selectMultipleSectors(coords)
                     
     def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent):        
@@ -393,23 +407,29 @@ class MapEditorScene(QGraphicsScene):
         super().mouseReleaseEvent(event)
         
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
-        # query if we have any other buttons pressed. We should only ever open the context menu if ONLY RMB was pressed.
-        # (also on some systems (mine) it looks like RMB is still in mouseButtons at this point so...)
-        if QApplication.mouseButtons() not in [Qt.MouseButton.NoButton, Qt.MouseButton.RightButton]:
-            return
-        
         # if we're holding Alt, don't do anything, because we're copying coords in mousePressEvent
         if Qt.KeyboardModifier.AltModifier in event.modifiers():
-            return super().contextMenuEvent(event)
+            return
         
-        items = self.items(event.scenePos())
+        # Optional button swapping for Sector mode.
+        # In that case, we send this event manually from mousePressEvent,
+        # and ignore otherwise.
+        if self.state.tempMode == common.TEMPMODEINDEX.NONE and self.state.mode == common.MODEINDEX.SECTOR:
+            primaryButton = Qt.MouseButton.LeftButton if QSettings().value("main/swapSectorMBs", False, type=bool) else Qt.MouseButton.RightButton
+        else:
+            primaryButton = Qt.MouseButton.RightButton
+            
+        # query if we have any other buttons pressed. We should only ever open the context menu if ONLY RMB was pressed.
+        # (also on some systems (mine) it looks like RMB is still in mouseButtons at this point so...)
+        if QApplication.mouseButtons() not in [Qt.MouseButton.NoButton, primaryButton]:
+            return
         
-        # first, see if anything should get the menu first
-        for i in items:
-            if isinstance(i, (MapEditorNPC, trigger.MapEditorTrigger)):
-                i.contextMenuEvent(event)
-                return
-
+        # Now call the default implementation.
+        # This passes the event to items, which will accept the event if they can.
+        # If the event isn't accepted, then nothing took it.
+        super().contextMenuEvent(event)
+        if event.isAccepted(): return
+        
         # no items to pass the event to
         if self.state.tempMode == common.TEMPMODEINDEX.NONE:
             menu = QMenu()
@@ -449,7 +469,7 @@ class MapEditorScene(QGraphicsScene):
                     menu.addAction(icons.ICON_EXPORT, "Move &warp here...", lambda: self.moveWarp(EBCoords(x, y)))
                     menu.addAction(icons.ICON_EXPORT, "Move &teleport here...", lambda: self.moveTeleport(EBCoords(x, y)))    
                 case _:
-                    return super().contextMenuEvent(event)
+                    return
             menu.exec(event.screenPos())
 
     def onAction(self, command: QUndoCommand):

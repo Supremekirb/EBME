@@ -207,7 +207,9 @@ class MapEditorTrigger(QGraphicsPixmapItem):
             menu.addAction(icons.ICON_FIX, "Fix collision", self.scene().parent().sidebarTrigger.fixTriggerCollision)
             
             menu.exec(event.screenPos())
-            super().contextMenuEvent(event)
+            event.accept()
+        else:
+            event.ignore()
         
     # for typing
     def scene(self) -> "MapEditorScene":
