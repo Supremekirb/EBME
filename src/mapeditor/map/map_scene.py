@@ -178,7 +178,7 @@ class MapEditorScene(QGraphicsScene):
         self._lastSector = self.projectData.getSector(EBCoords(0, 0))
         self._lastCoords = EBCoords(0, 0)
         
-        self_skipNextCtxEvent = False
+        self._skipNextCtxEvent = False
     
     def updateSelected(self):
         match self.state.mode:
