@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QMessageBox
 from ebme import ROOT_DIR
 
 # Current version number/ID
-VERSION = "1.4.0"
+VERSION = "1.4.1"
 
 # Pretty much just for posterity's sake
 VERSIONHISTORY = IntEnum("VERSIONHISTORY", ["pre-alpha",
@@ -24,12 +24,18 @@ VERSIONHISTORY = IntEnum("VERSIONHISTORY", ["pre-alpha",
                                             "0.2.1",
                                             "1.0.0",
                                             "1.3.37",
-                                            "1.4.0"],
+                                            "1.4.0",
+                                            "1.4.1"],
                                             start = 0)
 
 # Add new versions here. Add the new one at the top.
 # Don't forget a linebreak between versions!
 CHANGELOG = """\
+=== 1.4.1 ===
+(09/01/2026)
+This update fixes an issue on Windows where the map editor may start to behave strangely when a project is loaded or saved several times.
+It also fixes a small issue with swapping the mouse buttons in Sector mode on some systems.
+
 === 1.4.0 ===
 (09/01/2026)
 It's been a while, hasn't it?
