@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QMessageBox
 from ebme import ROOT_DIR
 
 # Current version number/ID
-VERSION = "1.3.37"
+VERSION = "1.4.0"
 
 # Pretty much just for posterity's sake
 VERSIONHISTORY = IntEnum("VERSIONHISTORY", ["pre-alpha",
@@ -23,12 +23,22 @@ VERSIONHISTORY = IntEnum("VERSIONHISTORY", ["pre-alpha",
                                             "0.2.0",
                                             "0.2.1",
                                             "1.0.0",
-                                            "1.3.37"],
+                                            "1.3.37",
+                                            "1.4.0"],
                                             start = 0)
 
 # Add new versions here. Add the new one at the top.
 # Don't forget a linebreak between versions!
 CHANGELOG = """\
+=== 1.4.0 ===
+(09/01/2026)
+It's been a while, hasn't it?
+This release adds the Changes mode, which you can use to edit events that swap out tiles on the map, \
+and a user data system for adding your own properties to sectors.
+It also adds most of a year's worth of gradual work: \
+there are performance improvements, small tweaks, battle sprites for enemies, undo capabilities for png2fts, and a ton more.
+Full changelog: Help -> About EBME -> Visit the repository in GitHub.
+
 === 1.3.37 ===
 (01/04/2025)
 This release adds a lot of cool stuff! \
