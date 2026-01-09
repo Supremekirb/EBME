@@ -177,6 +177,8 @@ class MapEditorScene(QGraphicsScene):
         
         self._lastSector = self.projectData.getSector(EBCoords(0, 0))
         self._lastCoords = EBCoords(0, 0)
+        
+        self_skipNextCtxEvent = False
     
     def updateSelected(self):
         match self.state.mode:
@@ -317,15 +319,20 @@ class MapEditorScene(QGraphicsScene):
                                 self.selectSector(coords, True)
                         # Left-click context menu stuff.
                         # Right-click is handled by the Qt-level contextMenuEvent system.
-                        if primaryButton == Qt.MouseButton.RightButton and event.buttons() == Qt.MouseButton.LeftButton:
-                            ctxEvent = QGraphicsSceneContextMenuEvent(QGraphicsSceneContextMenuEvent.Type.GraphicsSceneContextMenu)
-                            ctxEvent.setPos(event.pos())
-                            ctxEvent.setScreenPos(event.screenPos())
-                            ctxEvent.setScenePos(event.scenePos())
-                            ctxEvent.setModifiers(event.modifiers())
-                            ctxEvent.setTimestamp(event.timestamp())
-                            ctxEvent.setReason(QGraphicsSceneContextMenuEvent.Reason.Other)
-                            self.event(ctxEvent)
+                        if primaryButton == Qt.MouseButton.RightButton:
+                            if event.buttons() == Qt.MouseButton.LeftButton:
+                                ctxEvent = QGraphicsSceneContextMenuEvent(QGraphicsSceneContextMenuEvent.Type.GraphicsSceneContextMenu)
+                                ctxEvent.setPos(event.pos())
+                                ctxEvent.setScreenPos(event.screenPos())
+                                ctxEvent.setScenePos(event.scenePos())
+                                ctxEvent.setModifiers(event.modifiers())
+                                ctxEvent.setTimestamp(event.timestamp())
+                                ctxEvent.setReason(QGraphicsSceneContextMenuEvent.Reason.Other)
+                                self.event(ctxEvent)
+                            else:
+                                if event.buttons() == primaryButton:
+                                    # Depending on system, the context menu may be triggered again. This is a workaround.
+                                    self._skipNextCtxEvent = True
                     
                     case common.MODEINDEX.ENEMY:
                         if event.buttons() == Qt.MouseButton.LeftButton:
@@ -407,6 +414,10 @@ class MapEditorScene(QGraphicsScene):
         super().mouseReleaseEvent(event)
         
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent):
+        # Workaround for some systems and swapping sector primary button
+        if self._skipNextCtxEvent:
+            return
+        
         # if we're holding Alt, don't do anything, because we're copying coords in mousePressEvent
         if Qt.KeyboardModifier.AltModifier in event.modifiers():
             return
