@@ -9,6 +9,7 @@ class SectorModule(YMLResourceDataModule):
     NAME = "sectors"
     MODULE = "eb.MapModule"
     RESOURCE = "map_sectors"
+    FILE = "map_sectors.yml"
     FLOW_STYLE = False
     
     def _resourceLoad(data: ProjectData, map_sectors):

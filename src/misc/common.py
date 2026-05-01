@@ -228,11 +228,16 @@ COILSNAKEVERSIONNAMES = {
     12: "4.2",
 }
 
-COILSNAKEFEATUREIDS = IntEnum("COILSNAKEFEATUREIDS", ["CREATENPCS"])
+COILSNAKEFEATUREIDS = IntEnum("COILSNAKEFEATUREIDS", ["CREATENPCS", "DEPRECATEFILEMAPPINGS"])
 COILSNAKEFEATURES = {
     COILSNAKEFEATUREIDS.CREATENPCS: {
         "name": "Create new NPCs",
         "desc": "Add new entries to the NPC configuration table.",
+        "available": lambda version: version > 12
+    },
+    COILSNAKEFEATUREIDS.DEPRECATEFILEMAPPINGS: {
+        "name": "Literal file paths",
+        "desc": "Use hardcoded file paths instead of mappings from Project.snake, which will become deprecated eventually.",
         "available": lambda version: version > 12
     }
 }

@@ -7,6 +7,7 @@ class NPCModule(YMLResourceDataModule):
     NAME = "NPCs"
     MODULE = ("eb.MiscTablesModule", "eb.ExpandedTablesModule")
     RESOURCE = "npc_config_table"
+    FILE = "npc_config_table.yml"
     FLOW_STYLE = False
     
     def _resourceLoad(data: ProjectData, npc_config_table):

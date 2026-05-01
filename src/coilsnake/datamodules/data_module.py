@@ -24,12 +24,14 @@ class DataModule:
 class ProjectResourceDataModule(DataModule):
     """
     Data module that provides a standard interface for singular Project.snake resources.
-    Subclass and reimplement NAME, MODULE, RESOURCE, _resourceLoad, and _resourceSave
+    Subclass and reimplement NAME, MODULE, RESOURCE, FILE, _resourceLoad, and _resourceSave
     """
     MODULE: str|tuple[str] = ""
     """A Project.snake module key or a list of modules to attempt to find the resource in."""
     RESOURCE = ""
     """A Project.snake resource key"""
+    FILE = ""
+    """A hardcoded file path, used when Project.snake mappings is considered deprecated"""
     
     @classmethod
     def load(cls, projectData: ProjectData):
@@ -40,7 +42,7 @@ class ProjectResourceDataModule(DataModule):
     
         for module in modules:
             try:
-                with openCoilsnakeResource(module, cls.RESOURCE, "r", projectData) as file:
+                with openCoilsnakeResource(module, cls.RESOURCE, cls.FILE, "r", projectData) as file:
                     cls._resourceLoad(projectData, file)
                 break
             except CoilsnakeResourceNotFoundError:
@@ -58,7 +60,7 @@ class ProjectResourceDataModule(DataModule):
         
         for module in modules:
             try:
-                with openCoilsnakeResource(module, cls.RESOURCE, "w", projectData) as file:
+                with openCoilsnakeResource(module, cls.RESOURCE, cls.FILE, "w", projectData) as file:
                     rep = cls._resourceSave(projectData)
                     shutil.copyfileobj(rep, file)
                 break
@@ -79,7 +81,7 @@ class ProjectResourceDataModule(DataModule):
 class YMLResourceDataModule(ProjectResourceDataModule):
     """
     Data module that provides a standard interface for single-YML Project.snake resources.
-    Subclass and reimplement NAME, MODULE, RESOURCE, FLOW_STYLE, _resourceLoad, and _resourceSave.
+    Subclass and reimplement NAME, MODULE, RESOURCE, FILE, FLOW_STYLE, _resourceLoad, and _resourceSave.
     See ProjectResourceDataModule for more information.
     """
     FLOW_STYLE = False
@@ -94,7 +96,7 @@ class YMLResourceDataModule(ProjectResourceDataModule):
     
         for module in modules:
             try:
-                with openCoilsnakeResource(module, cls.RESOURCE, "r", projectData) as file:
+                with openCoilsnakeResource(module, cls.RESOURCE, cls.FILE, "r", projectData) as file:
                     resource = yaml.load(file, Loader=yaml.CSafeLoader)
                     cls._resourceLoad(projectData, resource)
                 break
@@ -114,7 +116,7 @@ class YMLResourceDataModule(ProjectResourceDataModule):
         yml = cls._resourceSave(projectData)                
         for module in modules:
             try:
-                with openCoilsnakeResource(module, cls.RESOURCE, "w", projectData) as file:
+                with openCoilsnakeResource(module, cls.RESOURCE, cls.FILE, "w", projectData) as file:
                     yaml.dump(yml, file, Dumper=yaml.CSafeDumper, default_flow_style=cls.FLOW_STYLE, sort_keys=False)
                 break
             except CoilsnakeResourceNotFoundError:

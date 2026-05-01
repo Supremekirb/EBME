@@ -7,6 +7,7 @@ class EnemyGroupModule(YMLResourceDataModule):
     NAME = "enemy groups"
     MODULE = "eb.EnemyModule"
     RESOURCE = "enemy_groups"
+    FILE = "enemy_groups.yml"
     
     def _resourceLoad(data: ProjectData, enemy_groups):
         enemyGroups = []

@@ -1,4 +1,5 @@
 import contextlib
+import os
 
 from PySide6.QtCore import QSettings
 
@@ -22,9 +23,12 @@ def getLineEnding() -> str|None:
         
 
 @contextlib.contextmanager
-def openCoilsnakeResource(module: str, resource: str, mode: str, projectData: ProjectData):
+def openCoilsnakeResource(module: str, resource: str, file: str, mode: str, projectData: ProjectData):
     try:
-        path = projectData.getResourcePath(module, resource)
+        if projectData.isFeatureAvailable(common.COILSNAKEFEATUREIDS.DEPRECATEFILEMAPPINGS):
+            path = os.path.join(projectData.dir, file)
+        else:
+            path = projectData.getResourcePath(module, resource)
         
         # only respect newline setting when writing
         # I don't know if it will cause any problems
@@ -38,7 +42,10 @@ def openCoilsnakeResource(module: str, resource: str, mode: str, projectData: Pr
         yield file
 
     except FileNotFoundError as e:
-        raise FileNotFoundError(f"Could not find the resource {module}.{resource} at {path}.") from e
+        if projectData.isFeatureAvailable(common.COILSNAKEFEATUREIDS.DEPRECATEFILEMAPPINGS):
+            raise FileNotFoundError(f"Coild not find the file at {path}.") from e
+        else:
+            raise FileNotFoundError(f"Could not find the resource {module}.{resource} at {path}.") from e
     
     finally:
         try:

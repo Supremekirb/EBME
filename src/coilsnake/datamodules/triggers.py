@@ -10,6 +10,7 @@ class TriggerModule(YMLResourceDataModule):
     NAME = "triggers"
     MODULE = "eb.DoorModule"
     RESOURCE = "map_doors"
+    FILE = "map_doors.yml"
     FLOW_STYLE = None
     
     def _resourceLoad(data: ProjectData, map_doors):

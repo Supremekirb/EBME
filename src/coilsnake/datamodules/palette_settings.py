@@ -9,6 +9,7 @@ class PaletteSettingsModule(YMLResourceDataModule):
     NAME = "palette settings"
     MODULE = "eb.TilesetModule"
     RESOURCE = "map_palette_settings"
+    FILE = "map_palette_settings.yml"
     FLOW_STYLE = False
     
     def _resourceLoad(data: ProjectData, map_palette_settings):

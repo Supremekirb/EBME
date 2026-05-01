@@ -7,6 +7,7 @@ class MapMusicModule(YMLResourceDataModule):
     NAME = "map music"
     MODULE = "eb.MapMusicModule"
     RESOURCE = "map_music"
+    FILE = "map_music.yml"
     FLOW_STYLE = None
     
     def _resourceLoad(data: ProjectData, map_music):

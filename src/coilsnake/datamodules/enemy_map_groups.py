@@ -7,6 +7,7 @@ class EnemyMapGroupModule(YMLResourceDataModule):
     NAME = "enemy map groups"
     MODULE = "eb.MapEnemyModule"
     RESOURCE = "map_enemy_groups"
+    FILE = "map_enemy_groups.yml"
     FLOW_STYLE = None
     
     def _resourceLoad(data: ProjectData, map_enemy_groups):

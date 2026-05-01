@@ -7,6 +7,7 @@ class MapChangesModule(YMLResourceDataModule):
     NAME = "map changes"
     MODULE = "eb.MapEventModule"
     RESOURCE = "map_changes"
+    FILE = "map_changes.yml"
     FLOW_STYLE = None
     
     def _resourceLoad(data: ProjectData, map_changes):

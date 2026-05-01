@@ -4,6 +4,7 @@ import re
 
 from PIL import Image
 
+import src.misc.common as common
 from src.coilsnake.datamodules.data_module import YMLResourceDataModule
 from src.coilsnake.project_data import ProjectData
 from src.misc.exceptions import (CoilsnakeResourceNotFoundError,
@@ -15,12 +16,16 @@ class SpriteModule(YMLResourceDataModule):
     NAME = "sprites"
     MODULE = "eb.SpriteGroupModule"
     RESOURCE = "sprite_groups"
+    FILE = "sprite_groups.yml"
     
     def _resourceLoad(data: ProjectData, sprite_groups):        
         spritesList = []
         for id, spr in sprite_groups.items():
             try:
-                sprPath = data.getResourcePath("eb.SpriteGroupModule", f"SpriteGroups/{id:03}")
+                if data.isFeatureAvailable(common.COILSNAKEFEATUREIDS.DEPRECATEFILEMAPPINGS):
+                    sprPath = os.path.join(data.dir, "SpriteGroups", f"{id:03}.png")
+                else:
+                    sprPath = data.getResourcePath("eb.SpriteGroupModule", f"SpriteGroups/{id:03}")
             except CoilsnakeResourceNotFoundError: # CoilSnake-next projects do not include extra sprite paths in Project.snake
                 logging.warning(f"Couldn't find sprite {id:03} in Project.snake, probably a CoilSnake-next project. Trying to load directly...")
                 try:

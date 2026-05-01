@@ -7,6 +7,7 @@ class PlayerGFXModule(YMLResourceDataModule):
     NAME = "player character graphics"
     MODULE = "eb.MiscTablesModule"
     RESOURCE = "playable_char_gfx_table"
+    FILE = "playable_char_gfx_table.yml"
     
     def _resourceLoad(data: ProjectData, playable_char_gfx_table):
         gfx = {}

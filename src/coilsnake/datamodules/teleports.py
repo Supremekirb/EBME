@@ -8,6 +8,7 @@ class TeleportModule(YMLResourceDataModule):
     NAME = "teleports"
     MODULE = "eb.MiscTablesModule"
     RESOURCE = "psi_teleport_dest_table"
+    FILE = "psi_teleport_dest_table.yml"
     FLOW_STYLE = None
     
     def _resourceLoad(data: ProjectData, teleport_table):

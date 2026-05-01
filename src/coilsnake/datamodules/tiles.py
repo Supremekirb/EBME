@@ -13,6 +13,7 @@ class TileModule(ProjectResourceDataModule):
     NAME = "tiles"
     MODULE = "eb.MapModule"
     RESOURCE = "map_tiles"
+    FILE = "map_tiles.map"
     
     def _resourceLoad(data: ProjectData, map_tiles):    
         tileArray = numpy.zeros(shape=[320, 256], dtype=numpy.object_)

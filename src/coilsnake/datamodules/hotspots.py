@@ -8,6 +8,7 @@ class HotspotModule(YMLResourceDataModule):
     NAME = "hotspots"
     MODULE = "eb.MiscTablesModule"
     RESOURCE = "map_hotspots"
+    FILE = "map_hotspots.yml"
     FLOW_STYLE = None
     
     def _resourceLoad(data: ProjectData, map_hotspots):

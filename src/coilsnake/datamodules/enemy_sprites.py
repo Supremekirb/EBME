@@ -6,6 +6,7 @@ class EnemySpriteModule(YMLResourceDataModule):
     NAME = "enemy sprites"
     MODULE = "eb.EnemyModule"
     RESOURCE = "enemy_configuration_table"
+    FILE = "enemy_configuration_table.yml"
     
     def _resourceLoad(data: ProjectData, enemy_configuration_table):
         enemySprites = []

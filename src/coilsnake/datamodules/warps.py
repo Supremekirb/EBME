@@ -8,6 +8,7 @@ class WarpModule(YMLResourceDataModule):
     NAME = "warps"
     MODULE = "eb.MiscTablesModule"
     RESOURCE = "teleport_destination_table"
+    FILE = "teleport_destination_table.yml"
     FLOW_STYLE = None
     
     def _resourceLoad(data: ProjectData, warp_table):

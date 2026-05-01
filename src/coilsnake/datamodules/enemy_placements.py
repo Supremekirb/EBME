@@ -10,6 +10,7 @@ class EnemyPlacementsModule(YMLResourceDataModule):
     NAME = "enemy placements"
     MODULE = "eb.MapEnemyModule"
     RESOURCE = "map_enemy_placement"
+    FILE = "map_enemy_placement.yml"
     FLOW_STYLE = False
     
     def _resourceLoad(data: ProjectData, map_enemy_placement):

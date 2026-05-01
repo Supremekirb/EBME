@@ -8,6 +8,7 @@ class NPCInstanceModule(YMLResourceDataModule):
     NAME = "NPC instances"
     MODULE = "eb.MapSpriteModule"
     RESOURCE = "map_sprites"
+    FILE = "map_sprites.yml"
     FLOW_STYLE = None
     
     def _resourceLoad(data: ProjectData, map_sprites):        
