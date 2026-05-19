@@ -53,7 +53,7 @@ class MapMusicHierarchy:
             index = self.entries.index(entry)
         else:
             index = entry
-        common.moveListItem(self.changes, index, target)
+        common.moveListItem(self.entries, index, target)
         
 class MapMusicHierarchyListItem(QTreeWidgetItem):
     def __init__(self, hierachy: MapMusicHierarchy):
